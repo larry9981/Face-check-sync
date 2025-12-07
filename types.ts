@@ -41,3 +41,16 @@ export interface CartItem {
   product: Product;
   quantity: number;
 }
+
+export interface Order {
+  id: string;
+  customerName: string;
+  items: string;
+  total: number;
+  date: string;
+  status: 'paid' | 'pending';
+  shippingAddress: string;
+  paymentMethod: string;
+  email?: string;
+  phone?: string;
+}

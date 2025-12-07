@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -136,7 +137,27 @@
 
         .desktop-only { display: none !important; }
         .mobile-only { display: block !important; }
-      }
+        
+        /* Product Modal Mobile Layout Fix */
+        .product-modal-mobile {
+            flex-direction: column !important;
+            padding: 1.5rem !important;
+            align-items: center;
+            gap: 20px !important;
+        }
+        /* Targets the flex children (Image Container and Text Container) */
+        .product-modal-mobile > div {
+            min-width: 0 !important; 
+            width: 100% !important;
+            flex: none !important;
+            margin-bottom: 0px;
+        }
+        /* Ensure the close button (1st child) is not affected by width:100% if it's position absolute */
+        .product-modal-mobile > button {
+            width: 40px !important; /* Restore button width */
+            flex: none;
+        }
+    }
       
       /* Stripe Element Styling */
       .StripeElement {

@@ -4,101 +4,150 @@ import { theme, styles } from '../theme';
 import { Product, Plan } from '../types';
 import { PayPalButton, StripePaymentForm, QRCodePayment } from './PaymentIntegration';
 import { SHOP_PRODUCTS } from '../products';
-import { hashCode } from '../utils';
+import { hashCode, ELEMENT_ADVICE } from '../utils';
 
 export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose, onBuyProduct }: { t: any, missingElement: string, aiAdvice?: string, onClose: () => void, onBuyProduct: (p: Product) => void }) => {
     const elKey = missingElement || 'Metal';
+    const adviceData = ELEMENT_ADVICE[elKey] || ELEMENT_ADVICE['Metal'];
     
-    // Dynamic Advice from Translations
-    const colorAdvice = t[`advice${elKey}Color`] || "Gold, White";
-    const dirAdvice = t[`advice${elKey}Direction`] || "West";
-    const habitAdvice = t[`advice${elKey}Habit`] || "Organization";
-    const descAdvice = t[`advice${elKey}Desc`] || "Your element needs balance.";
-    const nameAdvice = t[`advice${elKey}Name`] || "Consult a master for name changes.";
-    const philosophyAdvice = t[`advice${elKey}Philosophy`] || "Balance is key.";
+    // Dynamic Advice from Translations or Utils
+    const colorAdvice = t[`advice${elKey}Color`] || adviceData.color;
+    const dirAdvice = t[`advice${elKey}Direction`] || adviceData.direction;
+    const habitAdvice = t[`advice${elKey}Habit`] || adviceData.habit;
+    const descAdvice = t[`advice${elKey}Desc`] || adviceData.desc;
+    const nameAdvice = t[`advice${elKey}Name`] || "Consult a master.";
+    // Fetch Diet and Home advice from translations if available, else fallback to utils
+    const dietAdvice = t[`advice${elKey}Diet`] || adviceData.diet || "Eat balanced meals.";
+    const homeAdvice = t[`advice${elKey}Home`] || adviceData.home || "Keep your home clean.";
 
     const matchingProducts = SHOP_PRODUCTS.filter(p => p.element === missingElement).slice(0, 4);
+
+    const SectionHeader = ({ icon, title }: { icon: string, title: string }) => (
+        <h3 style={{
+            color: theme.gold, 
+            borderBottom: `1px solid ${theme.darkGold}`, 
+            paddingBottom: '10px', 
+            marginTop: '30px', 
+            marginBottom: '15px',
+            fontFamily: 'Cinzel, serif',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+        }}>
+            <i className={`fas ${icon}`}></i> {title}
+        </h3>
+    );
+
+    const AdviceBox = ({ content }: { content: string }) => (
+        <div style={{
+            background: 'rgba(255,255,255,0.05)', 
+            padding: '15px', 
+            borderRadius: '4px', 
+            lineHeight: '1.8',
+            color: '#e0e0e0',
+            borderLeft: `3px solid ${theme.gold}`,
+            whiteSpace: 'pre-wrap', // Preserve newlines
+            textAlign: 'justify'
+        }}>
+            {content}
+        </div>
+    );
 
     return (
         <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.95)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)'}}>
             <div style={{...styles.glassPanel, maxWidth: '800px', width: '95%', maxHeight: '90vh', overflowY: 'auto', textAlign: 'left'}}>
-                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '10px'}}>
+                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '10px'}}>
                     <h2 style={{color: theme.gold, margin: 0, fontFamily: 'Cinzel, serif'}}>{t.balanceTitle}</h2>
                     <button onClick={onClose} style={{background: 'transparent', border: 'none', color: '#888', fontSize: '2rem', cursor: 'pointer'}}>&times;</button>
                 </div>
                 
                 <div style={{marginBottom: '30px'}}>
-                    <h3 style={{color: '#fff', fontSize: '1.2rem', marginBottom: '10px'}}>
-                        {t.yourWeakest}: <span style={{color: theme.gold, fontSize: '1.5rem'}}>{t[`element${elKey}`]}</span>
-                    </h3>
-                    <p style={{color: '#ccc', lineHeight: '1.6'}}>{descAdvice}</p>
+                    <div style={{textAlign: 'center', marginBottom: '20px'}}>
+                         <div style={{fontSize: '1rem', color: '#aaa'}}>{t.yourWeakest}</div>
+                         <div style={{fontSize: '2.5rem', color: theme.gold, fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{t[`element${elKey}`]}</div>
+                    </div>
 
-                    {/* AI Specific Advice Section */}
+                    {/* 1. Five Elements Advice */}
+                    <SectionHeader icon="fa-balance-scale" title={t.adviceCategoryFiveElements || "Five Elements Advice"} />
+                    <p style={{color: '#ccc', marginBottom: '15px', lineHeight: '1.6'}}>{descAdvice}</p>
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px'}}>
+                        <div style={{background: 'rgba(212, 175, 55, 0.1)', padding: '10px', borderRadius: '4px'}}>
+                            <strong style={{color: theme.gold}}>{t.luckyColors}:</strong> {colorAdvice}
+                        </div>
+                        <div style={{background: 'rgba(212, 175, 55, 0.1)', padding: '10px', borderRadius: '4px'}}>
+                            <strong style={{color: theme.gold}}>{t.luckyDirection}:</strong> {dirAdvice}
+                        </div>
+                        <div style={{background: 'rgba(212, 175, 55, 0.1)', padding: '10px', borderRadius: '4px'}}>
+                            <strong style={{color: theme.gold}}>{t.luckyHabit}:</strong> {habitAdvice}
+                        </div>
+                    </div>
+                    
+                    {/* Specific AI Advice integration - IMPROVED TYPOGRAPHY */}
                     {aiAdvice && (
-                        <div style={{marginTop: '20px', background: 'rgba(212, 175, 55, 0.1)', padding: '20px', borderRadius: '4px', border: `1px solid ${theme.darkGold}`}}>
-                            <h4 style={{color: theme.gold, marginTop: 0, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '10px'}}>
-                                <i className="fas fa-scroll"></i> {t.reportHeaderAdvice}
-                            </h4>
-                            <div style={{color: '#e0e0e0', fontStyle: 'italic', lineHeight: '1.6'}}>
-                                {aiAdvice.replace(/[#*]/g, '')}
-                            </div>
+                        <div style={{
+                            marginTop: '25px', 
+                            color: '#eee', 
+                            padding: '25px', 
+                            background: 'rgba(5, 5, 17, 0.6)',
+                            borderRadius: '8px',
+                            border: `1px solid ${theme.darkGold}`,
+                            lineHeight: '1.9',
+                            fontSize: '1.05rem',
+                            whiteSpace: 'pre-wrap', // Crucial for paragraph separation
+                            fontFamily: 'Noto Serif, serif',
+                            textAlign: 'justify'
+                        }}>
+                             <h4 style={{color: theme.gold, marginTop: 0, marginBottom: '15px', fontFamily: 'Cinzel, serif', fontSize: '1.1rem', borderBottom: '1px dashed rgba(138,110,47,0.3)', paddingBottom: '10px'}}>
+                                <i className="fas fa-magic" style={{marginRight: '10px'}}></i>
+                                {t.masterOptimizationBtn} (AI)
+                             </h4>
+                             {aiAdvice.replace(/[#*]/g, '')}
                         </div>
                     )}
-                    
-                    <div style={{marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px'}}>
-                        <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '4px'}}>
-                            <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.luckyColors}</strong>
-                            {colorAdvice}
-                        </div>
-                        <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '4px'}}>
-                            <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.luckyDirection}</strong>
-                            {dirAdvice}
-                        </div>
-                        <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '4px'}}>
-                            <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.luckyHabit}</strong>
-                            {habitAdvice}
-                        </div>
-                        <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '4px'}}>
-                            <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.namingAdvice}</strong>
-                            {nameAdvice}
-                        </div>
-                    </div>
-                    
-                    <div style={{marginTop: '20px', background: 'rgba(212, 175, 55, 0.1)', padding: '15px', borderRadius: '4px', borderLeft: `3px solid ${theme.gold}`}}>
-                        <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.philosophy}</strong>
-                        <em style={{color: '#e0e0e0'}}>"{philosophyAdvice}"</em>
-                    </div>
-                </div>
 
-                <h3 style={{color: theme.gold, borderTop: `1px solid ${theme.darkGold}`, paddingTop: '20px', marginTop: '20px'}}>{t.recommendedCures}</h3>
-                <div style={{display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px'}}>
-                    {matchingProducts.map(prod => {
-                        const zodiacLocal = t[`zodiac${prod.zodiac}`] || t[`star${prod.zodiac}`] || prod.zodiac;
-                        const name = t[prod.nameKey] ? t[prod.nameKey].replace('{zodiac}', zodiacLocal) : prod.defaultName;
-                        // Seed cache matching ShopPage
-                        const seed = hashCode(prod.id);
-                        const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prod.imagePrompt)}?width=512&height=512&nologo=true&seed=${seed}`;
-                        return (
-                            <div key={prod.id} style={{minWidth: '140px', background: 'rgba(0,0,0,0.5)', border: `1px solid ${theme.darkGold}`, borderRadius: '8px', padding: '10px', textAlign: 'center'}}>
-                                <img 
-                                    src={imgUrl} 
-                                    style={{width: '100px', height: '100px', borderRadius: '4px'}} 
-                                    loading="lazy"
-                                    onError={(e: any) => e.target.src = "https://placehold.co/100x100/000000/d4af37?text=Item"} 
-                                />
-                                <div style={{fontSize: '0.8rem', color: theme.gold, margin: '5px 0', height: '35px', overflow: 'hidden'}}>{name}</div>
-                                <div style={{fontWeight: 'bold', fontSize: '0.9rem'}}>{prod.price}</div>
-                                <button style={{...styles.button, padding: '5px 10px', fontSize: '0.7rem', marginTop: '5px', minWidth: 'auto'}} onClick={() => onBuyProduct(prod)}>{t.buyNow}</button>
-                            </div>
-                        );
-                    })}
+                    {/* 2. Naming Advice */}
+                    <SectionHeader icon="fa-signature" title={t.namingAdvice} />
+                    <AdviceBox content={nameAdvice} />
+
+                    {/* 3. Home Feng Shui Advice */}
+                    <SectionHeader icon="fa-home" title={t.adviceCategoryHome || "Home Feng Shui"} />
+                    <AdviceBox content={homeAdvice} />
+
+                    {/* 4. Dietary Advice */}
+                    <SectionHeader icon="fa-utensils" title={t.adviceCategoryDiet || "Dietary Advice"} />
+                    <AdviceBox content={dietAdvice} />
+
+                    {/* 5. Lucky Jewelry / Accessories */}
+                    <SectionHeader icon="fa-gem" title={t.adviceCategoryJewelry || "Lucky Jewelry"} />
+                    <div style={{display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px'}}>
+                        {matchingProducts.map(prod => {
+                            const zodiacLocal = t[`zodiac${prod.zodiac}`] || t[`star${prod.zodiac}`] || prod.zodiac;
+                            const name = t[prod.nameKey] ? t[prod.nameKey].replace('{zodiac}', zodiacLocal) : prod.defaultName;
+                            // Seed cache matching ShopPage
+                            const seed = hashCode(prod.id);
+                            const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prod.imagePrompt)}?width=512&height=512&nologo=true&seed=${seed}`;
+                            return (
+                                <div key={prod.id} style={{minWidth: '140px', background: 'rgba(0,0,0,0.5)', border: `1px solid ${theme.darkGold}`, borderRadius: '8px', padding: '10px', textAlign: 'center'}}>
+                                    <img 
+                                        src={imgUrl} 
+                                        style={{width: '100px', height: '100px', borderRadius: '4px'}} 
+                                        loading="lazy"
+                                        onError={(e: any) => e.target.src = "https://placehold.co/100x100/000000/d4af37?text=Item"} 
+                                    />
+                                    <div style={{fontSize: '0.8rem', color: theme.gold, margin: '5px 0', height: '35px', overflow: 'hidden'}}>{name}</div>
+                                    <div style={{fontWeight: 'bold', fontSize: '0.9rem'}}>{prod.price}</div>
+                                    <button style={{...styles.button, padding: '5px 10px', fontSize: '0.7rem', marginTop: '5px', minWidth: 'auto'}} onClick={() => onBuyProduct(prod)}>{t.buyNow}</button>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
         </div>
     );
 };
 
-export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow }: { t: any, product: Product, onClose: () => void, onAddToCart: () => void, onBuyNow: () => void }) => {
+export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow, onSwitchProduct, isPageMode = false }: { t: any, product: Product, onClose: () => void, onAddToCart: () => void, onBuyNow: () => void, onSwitchProduct?: (p: Product) => void, isPageMode?: boolean }) => {
     const [imgLoaded, setImgLoaded] = useState(false);
     const [imgError, setImgError] = useState(false);
     const [isAdded, setIsAdded] = useState(false);
@@ -118,71 +167,179 @@ export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow 
         setTimeout(() => setIsAdded(false), 2000);
     };
 
-    return (
-        <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)'}}>
-            <div style={{...styles.glassPanel, maxWidth: '900px', display: 'flex', flexDirection: 'row', gap: '30px', padding: '30px', maxHeight: '90vh', overflowY: 'auto'}} className="product-modal-mobile">
-                <button onClick={onClose} style={{position: 'absolute', top: '15px', right: '20px', background: 'transparent', border: 'none', color: '#fff', fontSize: '2rem', cursor: 'pointer', zIndex: 10}}>&times;</button>
-                
-                <div style={{flex: 1, minWidth: '300px', position: 'relative', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', borderRadius: '8px', border: `1px solid ${theme.gold}`}}>
-                    {/* Spinner Background */}
-                    {!imgLoaded && !imgError && (
-                        <div style={{position: 'absolute', zIndex: 0}}>
-                            <i className="fas fa-circle-notch fa-spin" style={{fontSize: '3rem', color: theme.darkGold}}></i>
-                        </div>
-                    )}
-                    
-                    {imgError ? (
-                        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#666', zIndex: 2}}>
-                            <i className="fas fa-image" style={{fontSize: '3rem', marginBottom: '10px'}}></i>
-                            <span>Image Unavailable</span>
-                            <button onClick={() => { setImgError(false); setImgLoaded(false); }} style={{...styles.secondaryButton, marginTop: '10px', fontSize: '0.8rem'}}>Retry</button>
-                        </div>
-                    ) : (
-                        <img 
-                            src={imageUrl} 
-                            style={{width: '100%', borderRadius: '8px', zIndex: 1, display: 'block'}} 
-                            onLoad={() => setImgLoaded(true)}
-                            onError={() => { setImgLoaded(true); setImgError(true); }}
-                            alt={name}
-                        />
-                    )}
-                </div>
+    const containerStyle: React.CSSProperties = isPageMode ? {
+        position: 'relative',
+        width: '100%',
+        maxWidth: '1200px',
+        margin: '0 auto',
+        zIndex: 1
+    } : {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'rgba(0,0,0,0.85)',
+        zIndex: 3000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backdropFilter: 'blur(8px)'
+    };
 
-                <div style={{flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                    <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2rem', marginBottom: '10px'}}>{name}</h2>
-                    <div style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '20px'}}>{product.price}</div>
-                    <div style={{borderTop: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '20px 0', marginBottom: '30px', lineHeight: '1.6', color: '#ccc'}}><p>{desc}</p></div>
-                    <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap'}}>
-                        <button style={{...styles.button, marginTop: 0, flex: 1}} onClick={onBuyNow}>{t.buyNow}</button>
-                        <button 
-                            style={{
-                                ...styles.secondaryButton, 
-                                marginTop: 0, 
-                                flex: 1, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center', 
-                                gap: '10px',
-                                background: isAdded ? '#27ae60' : 'transparent',
-                                borderColor: isAdded ? '#27ae60' : theme.darkGold,
-                                color: isAdded ? '#fff' : theme.darkGold,
-                                transition: 'all 0.3s'
-                            }} 
-                            onClick={handleAddToCartClick}
-                            disabled={isAdded}
-                        >
-                            {isAdded ? <><i className="fas fa-check"></i> Added!</> : <><i className="fas fa-shopping-cart"></i> {t.addToCart}</>}
-                        </button>
+    return (
+        <div style={containerStyle}>
+            <div style={{...styles.glassPanel, maxWidth: '900px', width: '95%', maxHeight: isPageMode ? 'none' : '90vh', overflowY: isPageMode ? 'visible' : 'auto', position: 'relative', display: 'flex', flexDirection: 'column'}}>
+                
+                {isPageMode ? (
+                    <button 
+                        onClick={onClose} 
+                        style={{
+                            position: 'absolute', 
+                            top: '20px', 
+                            left: '20px', 
+                            background: 'rgba(0,0,0,0.6)', 
+                            border: `1px solid ${theme.gold}`, 
+                            borderRadius: '4px', 
+                            color: theme.gold, 
+                            padding: '8px 15px',
+                            cursor: 'pointer', 
+                            zIndex: 20, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px',
+                            fontFamily: 'Cinzel, serif',
+                            fontSize: '0.9rem',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(212, 175, 55, 0.2)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
+                    >
+                        <i className="fas fa-arrow-left"></i> {t.backBtn}
+                    </button>
+                ) : (
+                    <button 
+                        onClick={onClose} 
+                        style={{
+                            position: 'absolute', 
+                            top: '15px', 
+                            right: '15px', 
+                            background: 'rgba(0,0,0,0.6)', 
+                            border: '1px solid #d4af37', 
+                            borderRadius: '50%', 
+                            width: '40px', 
+                            height: '40px', 
+                            color: '#d4af37', 
+                            fontSize: '1.5rem', 
+                            cursor: 'pointer', 
+                            zIndex: 20, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(212, 175, 55, 0.2)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
+                    >
+                        &times;
+                    </button>
+                )}
+                
+                <div style={{display: 'flex', flexDirection: 'row', gap: '30px', padding: '20px', marginTop: isPageMode ? '40px' : '0'}} className="product-modal-mobile">
+                    <div style={{flex: 1, position: 'relative', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050511', borderRadius: '8px', border: `1px solid ${theme.gold}`}}>
+                        {!imgLoaded && !imgError && (
+                            <div style={{position: 'absolute', zIndex: 0}}>
+                                <i className="fas fa-circle-notch fa-spin" style={{fontSize: '3rem', color: theme.darkGold}}></i>
+                            </div>
+                        )}
+                        
+                        {imgError ? (
+                            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#666', zIndex: 2}}>
+                                <i className="fas fa-image" style={{fontSize: '3rem', marginBottom: '10px'}}></i>
+                                <span>Image Unavailable</span>
+                                <button onClick={() => { setImgError(false); setImgLoaded(false); }} style={{...styles.secondaryButton, marginTop: '10px', fontSize: '0.8rem'}}>Retry</button>
+                            </div>
+                        ) : (
+                            <img 
+                                src={imageUrl} 
+                                style={{width: '100%', borderRadius: '8px', zIndex: 1, display: 'block'}} 
+                                onLoad={() => setImgLoaded(true)}
+                                onError={() => { setImgLoaded(true); setImgError(true); }}
+                                alt={name}
+                            />
+                        )}
+                    </div>
+
+                    <div style={{flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                        <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2rem', marginBottom: '10px', paddingRight: '40px'}}>{name}</h2>
+                        <div style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '20px'}}>{product.price}</div>
+                        <div style={{borderTop: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '20px 0', marginBottom: '30px', lineHeight: '1.6', color: '#ccc'}}><p>{desc}</p></div>
+                        <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap'}}>
+                            <button style={{...styles.button, marginTop: 0, flex: 1}} onClick={onBuyNow}>{t.buyNow}</button>
+                            <button 
+                                style={{
+                                    ...styles.secondaryButton, 
+                                    marginTop: 0, 
+                                    flex: 1, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center', 
+                                    gap: '10px',
+                                    background: isAdded ? '#27ae60' : 'transparent',
+                                    borderColor: isAdded ? '#27ae60' : theme.darkGold,
+                                    color: isAdded ? '#fff' : theme.darkGold,
+                                    transition: 'all 0.3s'
+                                }} 
+                                onClick={handleAddToCartClick}
+                                disabled={isAdded}
+                            >
+                                {isAdded ? <><i className="fas fa-check"></i> Added!</> : <><i className="fas fa-shopping-cart"></i> {t.addToCart}</>}
+                            </button>
+                        </div>
                     </div>
                 </div>
+
+                {/* More Products / Shop List at Bottom */}
+                <div style={{marginTop: '40px', paddingTop: '20px', borderTop: `1px solid ${theme.darkGold}`}}>
+                    <h3 style={{color: theme.gold, textAlign: 'center', fontFamily: 'Cinzel, serif', marginBottom: '20px'}}>{t.moreProducts || "Complete Collection"}</h3>
+                    <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', paddingBottom: '20px'}}>
+                        {SHOP_PRODUCTS.map((p) => {
+                             const pName = t[p.nameKey] ? t[p.nameKey].replace('{zodiac}', t[`zodiac${p.zodiac}`] || p.zodiac) : p.defaultName;
+                             // Use small thumbnail for list
+                             const pSeed = hashCode(p.id);
+                             const pImg = `https://image.pollinations.ai/prompt/${encodeURIComponent(p.imagePrompt)}?width=150&height=150&nologo=true&seed=${pSeed}`;
+                             const isCurrent = p.id === product.id;
+                             
+                             return (
+                                 <div 
+                                    key={p.id} 
+                                    onClick={() => onSwitchProduct && onSwitchProduct(p)}
+                                    style={{
+                                        width: '120px', 
+                                        cursor: 'pointer', 
+                                        opacity: isCurrent ? 0.5 : 1, 
+                                        border: isCurrent ? `1px solid ${theme.gold}` : '1px solid transparent',
+                                        borderRadius: '6px',
+                                        padding: '5px',
+                                        background: 'rgba(0,0,0,0.3)',
+                                        transition: 'all 0.2s'
+                                    }}
+                                 >
+                                     <img src={pImg} style={{width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px'}} loading="lazy" />
+                                     <div style={{fontSize: '0.7rem', color: '#ccc', marginTop: '5px', height: '30px', overflow: 'hidden', textAlign: 'center'}}>{pName}</div>
+                                 </div>
+                             )
+                        })}
+                    </div>
+                </div>
+
             </div>
         </div>
     );
 };
 
-export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: () => void }) => {
-    // Detect if we should offer Chinese Payment Methods
-    // Simple heuristic: If language is Chinese, default to WeChat/Alipay, or show them
+export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: (details: any) => void }) => {
+    // Detect if we should offer Chinese Payment Methods / Contact Rules
     const isChinese = t.title === "玄机面相" || t.title === "玄機面相";
 
     const [method, setMethod] = useState<'card' | 'paypal' | 'wechat' | 'alipay'>(isChinese ? 'wechat' : 'card');
@@ -194,6 +351,10 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
     const [city, setCity] = useState('');
     const [zip, setZip] = useState('');
     const [country, setCountry] = useState('');
+    
+    // Contact Info
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
 
     const title = 'defaultName' in plan ? (plan as Product).defaultName : (plan as Plan).title;
     const priceStr = plan.price.replace(/[^0-9.]/g, '');
@@ -201,13 +362,27 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
     
     // Physical products from Shop need shipping
     const isPhysicalProduct = 'category' in plan;
-    const needsShipping = isPhysicalProduct;
-    // For non-physical products (subscriptions/readings), we proceed without address
-    const canProceedToPay = !needsShipping || (name && address && city && zip && country);
+    const needsShipping = isPhysicalProduct || plan.id === 'cart_checkout';
+    
+    // Validation Logic
+    const isPhoneRequired = isChinese;
+    const isEmailRequired = !isChinese; 
+
+    // Basic Validation Check
+    const hasShipping = !needsShipping || (name && address && city && zip && country);
+    const hasContact = (!isPhoneRequired || phone) && (!isEmailRequired || email);
+    const canProceedToPay = hasShipping && hasContact;
 
     const handleSuccess = (details?: any) => {
         setSuccessState(true);
-        setTimeout(() => onSuccess(), 2000);
+        // Include shipping info in the success callback
+        const paymentDetails = {
+            ...details,
+            shipping: needsShipping ? { name, address, city, zip, country } : null,
+            contact: { email, phone },
+            method: method
+        };
+        setTimeout(() => onSuccess(paymentDetails), 2000);
     };
 
     const handleError = (err: any) => {
@@ -231,6 +406,23 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
                      <span style={{fontSize: '1.2rem', fontWeight: 'bold', color: theme.gold}}>${priceVal.toFixed(2)}</span>
                  </div>
                  {!needsShipping && <div style={{fontSize: '0.8rem', color: '#aaa', marginTop: '5px'}}>* Digital Service (Instant Access)</div>}
+            </div>
+            
+            {/* Contact Information */}
+            <div style={{marginBottom: '20px'}}>
+                <h3 style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '10px', textTransform: 'uppercase'}}>Contact Info</h3>
+                <div style={{marginBottom: '10px'}}>
+                    <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>
+                        {t.phoneLabel} {isPhoneRequired && <span style={{color: theme.accent}}>* ({t.required})</span>}
+                    </label>
+                    <input type="tel" placeholder="+1..." style={styles.cardInput} value={phone} onChange={e => setPhone(e.target.value)} />
+                </div>
+                <div>
+                    <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>
+                        {t.emailLabel} {isEmailRequired && <span style={{color: theme.accent}}>* ({t.required})</span>}
+                    </label>
+                    <input type="email" placeholder="you@example.com" style={styles.cardInput} value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
             </div>
 
             {needsShipping && (
@@ -278,7 +470,7 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
                 </>
             ) : (
                 <div style={{padding: '10px', background: 'rgba(255,0,0,0.1)', border: '1px solid red', color: '#ffaaaa', fontSize: '0.9rem', textAlign: 'center'}}>
-                    Please complete shipping details to proceed.
+                    Please complete all required fields (*) to proceed.
                 </div>
             )}
           </div>

@@ -7,7 +7,7 @@ import { getChineseZodiac, getWesternZodiac, calculateAge } from '../utils';
 import { SHOP_PRODUCTS } from '../products';
 import { HistoryRecord } from '../types';
 
-export const LoadingSpinner = ({ t, progress }: { t: any, progress?: number }) => (
+export const LoadingSpinner = ({ t, progress, message }: { t: any, progress?: number, message?: string }) => (
   <div style={{ textAlign: 'center', padding: '3rem 1rem', width: '100%', maxWidth: '400px' }}>
     <div style={{...styles.baguaContainer, width: '100px', height: '100px', margin: '0 auto', animation: 'spin 1.5s linear infinite'}}>
        {BaguaSVG}
@@ -16,7 +16,7 @@ export const LoadingSpinner = ({ t, progress }: { t: any, progress?: number }) =
       {t.analyzingTitle}
     </h3>
     <p style={{ fontSize: '1rem', color: '#888', fontStyle: 'italic', marginBottom: '20px' }}>
-      {t.analyzingDesc}
+      {message || t.analyzingDesc}
     </p>
     
     {/* Analysis Progress Bar */}
@@ -284,16 +284,24 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
                    .replace(/\n/g, '<br/>');
     };
 
-    // Attempt to split text at the Five Elements header to insert chart
-    const splitRegex = /##\s*⚖️.*(?:\r\n|\r|\n)/;
-    const parts = (resultText || "").split(splitRegex);
-    const hasSplit = parts.length >= 2;
+    // Use specific regex to find the Master's Advice section to "hide" it from main view
+    // so we can put it in the modal.
+    const adviceRegex = /## 📜.*(?:\r\n|\r|\n)/;
+    
+    // Split text to separate the content BEFORE the advice
+    let mainContent = resultText || "";
+    const splitMatch = mainContent.match(adviceRegex);
+    let adviceContent = "";
+    
+    if (splitMatch && splitMatch.index !== undefined) {
+         adviceContent = mainContent.substring(splitMatch.index); // Keep advice for modal extraction later
+         mainContent = mainContent.substring(0, splitMatch.index); // Remove from main view
+    }
 
-    const handleBalanceClick = () => {
-        const adviceRegex = /## 📜.*?\n([\s\S]*?)(?=##|$)/;
-        const match = resultText.match(adviceRegex);
-        const aiAdvice = match ? match[1].trim() : undefined;
-        onOpenBalance(aiAdvice);
+    const handleAdviceClick = () => {
+        // Extract raw advice text to pass to modal
+        const textToPass = adviceContent.replace(/## 📜.*(?:\r\n|\r|\n)/, '').trim();
+        onOpenBalance(textToPass);
     };
 
     return (
@@ -352,45 +360,23 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
                         <div style={{marginTop:'10px'}}>{t.translating}</div>
                     </div>
                 ) : (
-                    hasSplit ? (
-                        <>
-                            {/* Intro Text */}
-                            <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(parts[0]) }} />
-                            
-                            {/* Five Elements Section (Chart Inserted Here) */}
-                            <h3 style={{color:'#8a6e2f', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginTop:'20px'}}>
-                                 ⚖️ Five Elements (Wu Xing)
-                            </h3>
-                            <FiveElementsChart elements={calculatedElements} t={t} />
-                            
-                            {/* Balance Button */}
-                            <div style={{textAlign: 'center', margin: '20px 0'}}>
-                                <button style={{...styles.button, width: 'auto', padding: '10px 20px', fontSize: '0.9rem'}} onClick={handleBalanceClick}>
-                                    <i className="fas fa-balance-scale"></i> {t.balanceBtn}
-                                </button>
-                            </div>
-                            
-                            {/* Remaining Text */}
-                            <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(parts.slice(1).join('')) }} />
-                        </>
-                    ) : (
-                        <>
-                            {/* Fallback: Chart then Full Text */}
-                             <h3 style={{color:'#8a6e2f', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginTop:'20px'}}>
-                                 ⚖️ Five Elements (Wu Xing)
-                            </h3>
-                            <FiveElementsChart elements={calculatedElements} t={t} />
-                            
-                             {/* Balance Button */}
-                            <div style={{textAlign: 'center', margin: '20px 0'}}>
-                                <button style={{...styles.button, width: 'auto', padding: '10px 20px', fontSize: '0.9rem'}} onClick={handleBalanceClick}>
-                                    <i className="fas fa-balance-scale"></i> {t.balanceBtn}
-                                </button>
-                            </div>
-                            
-                            <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(resultText) }} />
-                        </>
-                    )
+                   <>
+                        {/* Five Elements Chart */}
+                        <h3 style={{color:'#8a6e2f', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginTop:'20px'}}>
+                             ⚖️ Five Elements (Wu Xing)
+                        </h3>
+                        <FiveElementsChart elements={calculatedElements} t={t} />
+
+                        {/* Main Content (minus Master's Advice) */}
+                        <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(mainContent) }} />
+                        
+                        {/* Master Optimization Button (Replaces content) */}
+                        <div style={{textAlign: 'center', marginTop: '30px', marginBottom: '20px', borderTop: '1px solid #ddd', paddingTop: '20px'}}>
+                            <button style={{...styles.button, width: '100%', padding: '15px', fontSize: '1.1rem'}} onClick={handleAdviceClick}>
+                                <i className="fas fa-magic"></i> {t.masterOptimizationBtn || "Master Optimization Advice"}
+                            </button>
+                        </div>
+                   </>
                 )}
 
             </div>

@@ -5,13 +5,14 @@ import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 import { theme, styles } from './theme';
 import { LANGUAGES, TRANSLATIONS } from './translations';
-import { calculateAge, calculateWuXing } from './utils';
-import { UserState, Plan, CartItem, Product, HistoryRecord } from './types';
+import { calculateAge, calculateWuXing, getWesternZodiac } from './utils';
+import { UserState, Plan, CartItem, Product, HistoryRecord, Order } from './types';
 import { BaguaSVG } from './components/Icons';
 import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './components/Modals';
 import { PrivacyPolicy, TermsOfService, AboutPage } from './pages/StaticPages';
 import { ShopPage } from './pages/ShopPage';
-import { CartPage } from './pages/CartPage'; // Import CartPage
+import { CartPage } from './pages/CartPage'; 
+import { AdminPage } from './pages/AdminPage'; // Import AdminPage
 import { PricingPage } from './pages/PricingPage';
 import { RenderStartView, RenderSelectionView, RenderCameraView, RenderResultView, LoadingSpinner, RenderHistoryView } from './pages/HomeViews';
 
@@ -54,27 +55,56 @@ async function callUniversalAI(
 }
 
 // Helper for Retry with Error Parsing
-const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000): Promise<any> => {
+const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, onRetry?: (msg: string) => void): Promise<any> => {
     try {
         return await fn();
     } catch (err: any) {
         // Deep parse the error object for status codes or specific messages
         const errorObj = err.error || err;
-        const status = errorObj?.status || errorObj?.code;
+        
+        // Extract status/code. Handle both number (429) and string ("RESOURCE_EXHAUSTED")
+        const code = errorObj?.code;
+        const status = errorObj?.status;
         const message = errorObj?.message || JSON.stringify(errorObj);
         
         // Parse "retry in X seconds" if available
         let waitTime = delay;
         const retryMatch = message.match(/retry in ([0-9.]+)s/);
         if (retryMatch) {
-            waitTime = Math.ceil(parseFloat(retryMatch[1])) * 1000 + 1000; // Add 1s buffer
+            waitTime = Math.ceil(parseFloat(retryMatch[1])) * 1000 + 2000; // Add 2s buffer
         }
 
-        // Retry on Rate Limit (429) or Server Error (5xx)
-        if (retries > 0 && (status === 429 || status >= 500 || message.includes('429'))) {
-             console.warn(`Error ${status}. Retrying in ${waitTime}ms... (Retries left: ${retries})`);
+        // Abort if wait time is absurdly long (> 150 seconds)
+        if (waitTime > 150000) {
+            console.warn(`Retry time ${waitTime}ms too long. Aborting.`);
+            throw err;
+        }
+
+        // Check for 429 / Resource Exhausted / 5xx Server Errors
+        const isRateLimit = 
+            code === 429 || 
+            status === 429 ||
+            status === 'RESOURCE_EXHAUSTED' || 
+            message.includes('429') || 
+            message.includes('RESOURCE_EXHAUSTED') ||
+            message.includes('quota');
+            
+        const isServerError = (typeof code === 'number' && code >= 500) || (typeof status === 'number' && status >= 500);
+
+        if (retries > 0 && (isRateLimit || isServerError)) {
+             const seconds = Math.ceil(waitTime / 1000);
+             console.warn(`API Error (${status || code}). Retrying in ${waitTime}ms... (Retries left: ${retries})`);
+             
+             if (onRetry) {
+                 onRetry(`High traffic. Retrying in ${seconds}s...`);
+             }
+             
              await new Promise(resolve => setTimeout(resolve, waitTime));
-             return callWithRetry(fn, retries - 1, waitTime * 1.5); // Increase backoff
+             
+             // If we had a specific wait time from the API, stick closer to it for the next loop rather than exploding exponentially
+             const nextDelay = retryMatch ? waitTime : waitTime * 1.5;
+             
+             return callWithRetry(fn, retries - 1, nextDelay, onRetry); 
         }
         throw err;
     }
@@ -112,7 +142,19 @@ const resizeImage = (base64Str: string, maxWidth = 1024, maxHeight = 1024): Prom
 };
 
 const App = () => {
-  const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'shop' | 'about' | 'privacy' | 'terms' | 'history' | 'cart'>('home');
+  // Determine if we are in Admin Mode based on URL hash
+  const [isAdminMode, setIsAdminMode] = useState(window.location.hash === '#admin');
+
+  // Listen for hash changes to toggle admin mode dynamically
+  useEffect(() => {
+    const handleHashChange = () => {
+        setIsAdminMode(window.location.hash === '#admin');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'shop' | 'product-detail' | 'about' | 'privacy' | 'terms' | 'history' | 'cart'>('home');
   
   // Detect Language & Region
   const detectLanguage = () => {
@@ -149,6 +191,7 @@ const App = () => {
   const [calculatedElements, setCalculatedElements] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState<string>(""); // Custom loading message state
   const [birthDate, setBirthDate] = useState('');
   const [dobYear, setDobYear] = useState('');
   const [dobMonth, setDobMonth] = useState('');
@@ -180,6 +223,11 @@ const App = () => {
     }
   }, [isPlayingMusic]);
   useEffect(() => { if (dobYear && dobMonth && dobDay) { const m = dobMonth.padStart(2, '0'); const d = dobDay.padStart(2, '0'); setBirthDate(`${dobYear}-${m}-${d}`); } else { setBirthDate(''); } }, [dobYear, dobMonth, dobDay]);
+  
+  // Scroll to top when changing pages
+  useEffect(() => {
+      window.scrollTo(0, 0);
+  }, [currentPage, selectedProduct]);
 
   const getDaysRemaining = () => {
       if (!userState.trialStartDate) return 3; 
@@ -209,8 +257,12 @@ const App = () => {
               if (response.text) {
                   setResultText(response.text);
               }
-          } catch (e) {
+          } catch (e: any) {
               console.error("Translation failed", e);
+              // Handle quota error specifically for UI feedback
+              if (e?.status === 429 || e?.message?.includes('429') || e?.message?.includes('RESOURCE_EXHAUSTED')) {
+                  alert("Translation unavailable due to high system traffic. Showing original text.");
+              }
           } finally {
               setIsTranslating(false);
           }
@@ -300,10 +352,12 @@ const App = () => {
     if (userState.hasPaidSingle) { setUserState(prev => ({ ...prev, hasPaidSingle: false })); }
 
     const wuXingResult = calculateWuXing(dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond);
+    const starSign = getWesternZodiac(birthDate);
     setCalculatedElements(wuXingResult);
     const currentDateStr = now.toLocaleDateString();
     
     setView('analyzing');
+    setLoadingMessage(""); // Reset message
     setAnalysisProgress(0);
     const progressInterval = setInterval(() => {
         // Faster Analysis Simulation
@@ -322,6 +376,7 @@ const App = () => {
           aura: t.reportHeaderAura || "General Aura",
           elements: t.reportHeaderElements || "Five Elements (Wu Xing)",
           name: t.reportHeaderName || "Name Analysis",
+          star: t.reportHeaderStar || "Western Zodiac Analysis",
           fortune: t.reportHeaderFortune || "Temporal Fortune",
           wealth: t.reportHeaderWealth || "Wealth & Fortune",
           family: t.reportHeaderFamily || "Family & Relationships",
@@ -336,6 +391,7 @@ const App = () => {
         **Current Date/Time of Reading:** ${currentDateStr}
         Calculated Birth Five Elements (Wu Xing) Strength: Metal: ${wuXingResult.scores.Metal}%, Wood: ${wuXingResult.scores.Wood}%, Water: ${wuXingResult.scores.Water}%, Fire: ${wuXingResult.scores.Fire}%, Earth: ${wuXingResult.scores.Earth}%.
         Weakest Element in Birth Chart: ${wuXingResult.missingElement}.
+        Western Zodiac Sign: ${starSign}.
       `;
 
       if (userName) {
@@ -355,6 +411,8 @@ const App = () => {
         *   💧 **${t.elementWater}:** [Analysis]
         *   🔥 **${t.elementFire}:** [Analysis]
         *   ⛰️ **${t.elementEarth}:** [Analysis]
+        ## 🌌 ${headers.star}
+        [Analyze their Western Zodiac sign (${starSign}). Discuss personality traits and current cosmic planetary influences.]
       `;
       
       if (userName) {
@@ -375,7 +433,7 @@ const App = () => {
         ## 👴 ${headers.parents}
         [Analysis here]
         ## 📜 ${headers.advice}
-        [Provide specific practical advice here on how they can improve their ${wuXingResult.missingElement} energy. Suggest specific colors to wear, types of jewelry (e.g. gold, wood, crystal), and lifestyle habits. Be very specific.]
+        [Provide specific practical advice here on how they can improve their ${wuXingResult.missingElement} energy. Suggest specific colors to wear, types of jewelry (e.g. gold, wood, crystal), and lifestyle habits. Be very specific. Use double line breaks between paragraphs for clarity.]
         
         IMPORTANT: Output the response DIRECTLY in ${targetLangName}. 
         ENSURE "Five Elements" header is EXACTLY: ## ⚖️ ${headers.elements}
@@ -390,18 +448,22 @@ const App = () => {
       // Execute Call
       if (!apiKey) throw new Error("No API Key available.");
 
+      // Increased retries to 5 to tolerate long waits
       const apiCall = callWithRetry(() => callUniversalAI(provider, {
           model,
           prompt,
           base64Image: base64Data,
           apiKey
-      }));
+      }), 5, 4000, (retryMsg) => {
+          setLoadingMessage(retryMsg);
+      });
 
       // No Timeout Limit for Analysis (User Requested)
       const response: any = await apiCall;
       
       clearInterval(progressInterval);
       setAnalysisProgress(100);
+      setLoadingMessage("");
       await new Promise(resolve => setTimeout(resolve, 600));
       
       const newResultText = response.text || "Destiny is unclear. Please try again.";
@@ -426,12 +488,25 @@ const App = () => {
     } catch (error: any) { 
         clearInterval(progressInterval);
         setAnalysisProgress(0);
+        setLoadingMessage("");
         console.error(error); 
         let msg = "Analysis failed. Please try again.";
         const errObj = error?.error || error;
+        const errMsg = errObj?.message || JSON.stringify(errObj);
         
-        if (errObj?.status === 429) { msg = "High Traffic. Please wait a moment."; }
-        else if (error instanceof Error) { msg = `Analysis failed: ${error.message}`; }
+        // Extract wait time if present in final error
+        const retryMatch = errMsg.match(/retry in ([0-9.]+)s/);
+        
+        if (errObj?.status === 'RESOURCE_EXHAUSTED' || errObj?.code === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) { 
+            msg = "High System Traffic.";
+            if (retryMatch) {
+                msg += ` Please wait ${Math.ceil(parseFloat(retryMatch[1]))} seconds before trying again.`;
+            } else {
+                msg += " Please try again in a minute.";
+            }
+        } else if (error instanceof Error) { 
+            msg = `Analysis failed: ${error.message}`; 
+        }
         alert(msg);
         setView('selection');
     }
@@ -489,9 +564,59 @@ const App = () => {
 
   const handleBuyProduct = (product: Product) => { setShowBalanceModal(false); setSelectedProduct(null); setSelectedPlan(product); setShowPaymentModal(true); };
   
-  const handlePaymentSuccess = () => { 
+  // New handler for clicking a product in the shop
+  const handleViewProduct = (product: Product) => {
+      setSelectedProduct(product);
+      setCurrentPage('product-detail');
+      setView('start'); // Reset internal home states if necessary
+  };
+
+  const handlePaymentSuccess = (paymentDetails?: any) => { 
       if (!selectedPlan) return; 
       
+      // Save Order to "Mock Server" (localStorage)
+      const saveOrderToServer = () => {
+          const storedOrders = localStorage.getItem('mystic_all_orders');
+          const allOrders: Order[] = storedOrders ? JSON.parse(storedOrders) : [];
+          
+          let orderItems = "";
+          let total = 0;
+          
+          if (selectedPlan.id === 'cart_checkout') {
+              orderItems = cart.map(c => `${c.product.defaultName} x${c.quantity}`).join(', ');
+              total = cart.reduce((acc, c) => acc + (c.product.numericPrice * c.quantity), 0);
+          } else {
+              orderItems = 'defaultName' in selectedPlan ? (selectedPlan as Product).defaultName : (selectedPlan as Plan).title;
+              total = parseFloat(selectedPlan.price.replace(/[^0-9.]/g, ''));
+          }
+
+          const shipping = paymentDetails?.shipping || {};
+          const contact = paymentDetails?.contact || {};
+          
+          const fullAddress = shipping.address 
+            ? `${shipping.address}, ${shipping.city} ${shipping.zip}, ${shipping.country}`
+            : 'Digital Delivery';
+          const customerName = shipping.name || 'Guest User';
+
+          const newOrder: Order = {
+              id: `ORD-${Date.now().toString().slice(-6)}`,
+              date: new Date().toLocaleDateString(),
+              customerName: customerName,
+              items: orderItems,
+              total: total,
+              status: 'paid',
+              shippingAddress: fullAddress,
+              paymentMethod: paymentDetails?.method || 'unknown',
+              email: contact.email,
+              phone: contact.phone
+          };
+          
+          allOrders.unshift(newOrder); // Add to top
+          localStorage.setItem('mystic_all_orders', JSON.stringify(allOrders));
+      };
+      
+      saveOrderToServer();
+
       if (selectedPlan.id === 'cart_checkout') {
           // Clear Cart on successful checkout
           setCart([]);
@@ -512,6 +637,21 @@ const App = () => {
 
   const triggerPayment = (plan: Plan) => { setSelectedPlan(plan); setShowPaymentModal(true); };
 
+  // --- ADMIN VIEW ---
+  if (isAdminMode) {
+      return (
+          <div style={styles.appContainer}>
+               <div style={{padding: '20px', textAlign: 'center', borderBottom: `1px solid ${theme.darkGold}`}}>
+                    <h1 style={{color: theme.gold, fontFamily: 'Cinzel, serif'}}>Mystic Face Admin</h1>
+               </div>
+               <div style={styles.heroSection}>
+                    <AdminPage t={t} />
+               </div>
+          </div>
+      );
+  }
+
+  // --- MAIN APP VIEW ---
   return (
     <div style={styles.appContainer}>
       <nav style={styles.navbar}>
@@ -531,7 +671,7 @@ const App = () => {
                  <i className="fas fa-history" style={{marginRight: '5px'}}></i>{t.history}
              </span>
 
-             <div style={{position: 'relative', cursor: 'pointer', marginLeft: '10px'}} onClick={() => { setCurrentPage('cart'); setView('start'); }}>
+             <div style={{position: 'relative', cursor: 'pointer', marginLeft: '10px', marginRight: '15px'}} onClick={() => { setCurrentPage('cart'); setView('start'); }}>
                  <i className="fas fa-shopping-cart" style={{color: currentPage === 'cart' ? theme.gold : theme.gold}}></i>
                  {cart.length > 0 && <span style={{position: 'absolute', top: '-8px', right: '-8px', background: '#c0392b', color: '#fff', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{cart.reduce((a,c) => a + c.quantity, 0)}</span>}
              </div>
@@ -545,10 +685,25 @@ const App = () => {
       <div style={styles.main}>
         {showToast && <div style={{position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)', background: '#2ecc71', color: '#fff', padding: '15px 30px', borderRadius: '30px', zIndex: 3005, boxShadow: '0 5px 15px rgba(0,0,0,0.3)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px'}} className="fade-in"><i className="fas fa-check-circle"></i> {t.addToCart} - Success</div>}
         
-        {showPaywall && <PaymentModal t={t} plan={{id: 'single', title: t.planSingle, price: t.planSinglePrice, desc: t.planSingleDesc, isSub: false}} onClose={() => setShowPaywall(false)} onSuccess={() => { handlePaymentSuccess(); if (view === 'start') setView('selection'); }} />}
+        {showPaywall && <PaymentModal t={t} plan={{id: 'single', title: t.planSingle, price: t.planSinglePrice, desc: t.planSingleDesc, isSub: false}} onClose={() => setShowPaywall(false)} onSuccess={(d) => { handlePaymentSuccess(d); if (view === 'start') setView('selection'); }} />}
         {showPaymentModal && selectedPlan && <PaymentModal t={t} plan={selectedPlan} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />}
         {showBalanceModal && calculatedElements && <FiveElementsBalanceModal t={t} missingElement={calculatedElements.missingElement} aiAdvice={balanceAiAdvice} onClose={() => setShowBalanceModal(false)} onBuyProduct={handleBuyProduct} />}
-        {selectedProduct && <ProductDetailModal t={t} product={selectedProduct} onClose={() => setSelectedProduct(null)} onAddToCart={() => handleAddToCart(selectedProduct)} onBuyNow={() => handleBuyProduct(selectedProduct)} />}
+        
+        {/* Render ProductDetailModal as a standalone page section if currentPage is 'product-detail' */}
+        {currentPage === 'product-detail' && selectedProduct && (
+            <div style={{...styles.heroSection, justifyContent: 'flex-start', paddingTop: '100px'}}>
+                <ProductDetailModal 
+                    key={selectedProduct.id} // Forces fresh mount when switching products (regenerate page)
+                    isPageMode={true} 
+                    t={t} 
+                    product={selectedProduct} 
+                    onClose={() => setCurrentPage('shop')} // Close returns to shop
+                    onAddToCart={() => handleAddToCart(selectedProduct)} 
+                    onBuyNow={() => handleBuyProduct(selectedProduct)} 
+                    onSwitchProduct={(p) => setSelectedProduct(p)} 
+                />
+            </div>
+        )}
 
         {currentPage === 'home' && (
              <div style={styles.heroSection}>
@@ -557,13 +712,13 @@ const App = () => {
                     t={t} 
                     gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
                     uploadProgress={uploadProgress}
-                    userName={userName} onSetUserName={setUserName} // Pass name props
+                    userName={userName} onSetUserName={setUserName} 
                     onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
                     onStartCamera={startCamera} onUpload={handleFileUpload} onBack={() => setView('start')}
-                    language={language} // Pass language for conditional rendering
+                    language={language}
                 />}
                 {view === 'camera' && <RenderCameraView t={t} videoRef={videoRef} canvasRef={canvasRef} onStopCamera={() => { stopCamera(); setView('selection'); }} onCapture={capturePhoto} />}
-                {view === 'analyzing' && <LoadingSpinner t={t} progress={analysisProgress} />}
+                {view === 'analyzing' && <LoadingSpinner t={t} progress={analysisProgress} message={loadingMessage} />}
                 {view === 'result' && <RenderResultView 
                     t={t} birthDate={birthDate} gender={gender} calculatedElements={calculatedElements} resultText={resultText} 
                     language={language} isSpeaking={isSpeaking} isTranslating={isTranslating} LANGUAGES={LANGUAGES}
@@ -596,8 +751,9 @@ const App = () => {
              </div>
         )}
         {currentPage === 'pricing' && <div style={styles.heroSection}><PricingPage t={t} onSelectPlan={triggerPayment} /></div>}
-        {currentPage === 'shop' && <div style={styles.heroSection}><ShopPage t={t} onViewProduct={setSelectedProduct} /></div>}
+        {currentPage === 'shop' && <div style={styles.heroSection}><ShopPage t={t} onViewProduct={handleViewProduct} /></div>}
         {currentPage === 'cart' && <div style={styles.heroSection}><CartPage t={t} cart={cart} onRemove={handleRemoveFromCart} onCheckout={handleCartCheckout} /></div>}
+        {/* AdminPage removed from main flow */}
         {currentPage === 'about' && <div style={styles.heroSection}><AboutPage t={t} /></div>}
         {currentPage === 'privacy' && <div style={styles.heroSection}><PrivacyPolicy t={t} /></div>}
         {currentPage === 'terms' && <div style={styles.heroSection}><TermsOfService t={t} /></div>}

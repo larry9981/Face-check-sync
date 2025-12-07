@@ -15,35 +15,45 @@ export const ELEMENT_ADVICE: any = {
         direction: 'West',
         habit: 'Organization, Structure, Deep Breathing',
         desc: 'Your Metal energy is weak. To balance this, you need more structure and clarity. Wear metal jewelry or white clothing.',
-        shopFilter: 'Metal'
+        shopFilter: 'Metal',
+        diet: 'Eat more white foods (pears, cauliflower, radish) and spicy flavors in moderation. Avoid too much bitter food.',
+        home: 'Place metal ornaments or wind chimes in the West sector of your home. Use white or metallic decor themes.'
     },
     'Wood': {
         color: 'Green, Cyan',
         direction: 'East',
         habit: 'Growth, Learning, Gardening',
         desc: 'Your Wood energy is weak. You need to cultivate growth and flexibility. Spend time in nature and wear green accessories.',
-        shopFilter: 'Wood'
+        shopFilter: 'Wood',
+        diet: 'Eat more green leafy vegetables and sour foods (lemons, green apples). Avoid excessive spicy food.',
+        home: 'Place healthy plants or wooden furniture in the East sector. Use green colors in your living space.'
     },
     'Water': {
         color: 'Black, Blue',
         direction: 'North',
         habit: 'Reflection, Wisdom, Hydration',
         desc: 'Your Water energy is weak. Flow and adaptability are needed. Wear black or blue, and keep obsidian close to you.',
-        shopFilter: 'Water'
+        shopFilter: 'Water',
+        diet: 'Eat more black/dark foods (black beans, seaweed, black sesame) and salty flavors. Stay hydrated.',
+        home: 'Place a water feature (fountain, aquarium) or mirrors in the North sector. Use blue or black decor.'
     },
     'Fire': {
         color: 'Red, Purple, Orange',
         direction: 'South',
         habit: 'Passion, Socializing, Sunlight',
         desc: 'Your Fire energy is weak. You lack warmth and drive. Wear red items or gold to ignite your inner passion.',
-        shopFilter: 'Fire'
+        shopFilter: 'Fire',
+        diet: 'Eat more red foods (tomatoes, red peppers, red beans) and bitter flavors. Avoid cold/raw foods.',
+        home: 'Ensure the South sector is well-lit. Use candles, lamps, or red decor accents to boost energy.'
     },
     'Earth': {
         color: 'Yellow, Brown, Beige',
         direction: 'Center / Northeast',
         habit: 'Grounding, Stability, Meditation',
         desc: 'Your Earth energy is weak. You need stability. Wear gemstones like Jade or Citrine to ground yourself.',
-        shopFilter: 'Earth'
+        shopFilter: 'Earth',
+        diet: 'Eat more yellow/orange foods (pumpkin, corn, sweet potato) and sweet natural flavors.',
+        home: 'Place ceramics, crystals, or stones in the Northeast or Center of your home. Use earth tones.'
     }
 };
 

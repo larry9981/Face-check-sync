@@ -5,6 +5,7 @@ export const theme = {
   bg: '#050511',
   text: '#e0e0e0',
   panel: 'rgba(15, 15, 25, 0.85)',
+  accent: '#c0392b',
 };
 
 export const styles = {
