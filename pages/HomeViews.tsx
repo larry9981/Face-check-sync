@@ -216,20 +216,19 @@ export const RenderHistoryView = ({ t, history, onViewResult }: { t: any, histor
 export const RenderCameraView = ({ t, videoRef, canvasRef, onStopCamera, onCapture }: any) => (
     <div style={{
         ...styles.glassPanel, 
-        maxWidth: '500px', // Reduced width for portrait feel on PC
+        maxWidth: '500px', 
         width: '95%', 
         padding: '0', 
         overflow: 'hidden', 
         display: 'flex', 
         flexDirection: 'column', 
-        height: '650px', // Fixed height to ensure visibility
+        height: '650px', 
         maxHeight: '90vh',
         margin: '0 auto'
     }}>
        <div style={{flex: 1, position: 'relative', background: '#000', overflow: 'hidden'}}>
            <video ref={videoRef} autoPlay playsInline muted style={{width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)'}}></video>
            <canvas ref={canvasRef} style={{display: 'none'}}></canvas>
-           {/* Face Guide Overlay - Narrower */}
            <div style={{
                position: 'absolute', 
                top: '50%', 
@@ -242,7 +241,6 @@ export const RenderCameraView = ({ t, videoRef, canvasRef, onStopCamera, onCaptu
                opacity: 0.6, 
                boxShadow: `0 0 50px ${theme.gold} inset`
            }}></div>
-           {/* Crosshairs */}
            <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100%', height: '1px', background: theme.gold, opacity: 0.3}}></div>
            <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', height: '100%', width: '1px', background: theme.gold, opacity: 0.3}}></div>
        </div>
@@ -284,13 +282,19 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
         return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                    .replace(/## (.*)/g, '<h3 style="color:#8a6e2f;border-bottom:1px solid #ddd;padding-bottom:5px;margin-top:20px;">$1</h3>')
                    .replace(/\n/g, '<br/>');
-    }
+    };
 
     // Attempt to split text at the Five Elements header to insert chart
-    // We look for the marker used in the prompt: ## ⚖️
     const splitRegex = /##\s*⚖️.*(?:\r\n|\r|\n)/;
-    const parts = resultText.split(splitRegex);
+    const parts = (resultText || "").split(splitRegex);
     const hasSplit = parts.length >= 2;
+
+    const handleBalanceClick = () => {
+        const adviceRegex = /## 📜.*?\n([\s\S]*?)(?=##|$)/;
+        const match = resultText.match(adviceRegex);
+        const aiAdvice = match ? match[1].trim() : undefined;
+        onOpenBalance(aiAdvice);
+    };
 
     return (
         <div style={{width: '95%', maxWidth: '800px', margin: '0 auto', paddingBottom: '3rem'}}>
@@ -351,7 +355,7 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
                     hasSplit ? (
                         <>
                             {/* Intro Text */}
-                            <div dangerouslySetInnerHTML={{ __html: formatMarkdown(parts[0]) }} />
+                            <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(parts[0]) }} />
                             
                             {/* Five Elements Section (Chart Inserted Here) */}
                             <h3 style={{color:'#8a6e2f', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginTop:'20px'}}>
@@ -361,13 +365,13 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
                             
                             {/* Balance Button */}
                             <div style={{textAlign: 'center', margin: '20px 0'}}>
-                                <button style={{...styles.button, width: 'auto', padding: '10px 20px', fontSize: '0.9rem'}} onClick={onOpenBalance}>
+                                <button style={{...styles.button, width: 'auto', padding: '10px 20px', fontSize: '0.9rem'}} onClick={handleBalanceClick}>
                                     <i className="fas fa-balance-scale"></i> {t.balanceBtn}
                                 </button>
                             </div>
                             
                             {/* Remaining Text */}
-                            <div dangerouslySetInnerHTML={{ __html: formatMarkdown(parts.slice(1).join('')) }} />
+                            <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(parts.slice(1).join('')) }} />
                         </>
                     ) : (
                         <>
@@ -379,12 +383,12 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
                             
                              {/* Balance Button */}
                             <div style={{textAlign: 'center', margin: '20px 0'}}>
-                                <button style={{...styles.button, width: 'auto', padding: '10px 20px', fontSize: '0.9rem'}} onClick={onOpenBalance}>
+                                <button style={{...styles.button, width: 'auto', padding: '10px 20px', fontSize: '0.9rem'}} onClick={handleBalanceClick}>
                                     <i className="fas fa-balance-scale"></i> {t.balanceBtn}
                                 </button>
                             </div>
                             
-                            <div dangerouslySetInnerHTML={{ __html: formatMarkdown(resultText) }} />
+                            <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(resultText) }} />
                         </>
                     )
                 )}
@@ -399,10 +403,11 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
                 <div style={{display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px'}}>
                     {recommendedProducts.map(prod => {
                         const prodName = t[prod.nameKey] ? t[prod.nameKey].replace('{zodiac}', zodiacName) : prod.defaultName;
-                        const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prod.imagePrompt)}?width=200&height=200&nologo=true`;
+                        // Seed recommended product images too for speed
+                        const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prod.imagePrompt)}?width=200&height=200&nologo=true&seed=${prod.id}`;
                         return (
                             <div key={prod.id} style={{minWidth: '160px', background: 'rgba(0,0,0,0.5)', border: `1px solid ${theme.darkGold}`, borderRadius: '8px', padding: '10px', textAlign: 'center'}}>
-                                <img src={imgUrl} style={{width: '100%', borderRadius: '4px'}} />
+                                <img src={imgUrl} style={{width: '100%', borderRadius: '4px'}} loading="lazy" />
                                 <div style={{fontSize: '0.9rem', color: theme.gold, margin: '5px 0', height: '40px', overflow: 'hidden'}}>{prodName}</div>
                                 <div style={{fontWeight: 'bold', marginBottom: '5px'}}>{prod.price}</div>
                                 <button style={{...styles.button, padding: '5px 10px', fontSize: '0.8rem', marginTop: '5px', minWidth: 'auto'}} onClick={() => onBuyProduct(prod)}>{t.buyNow}</button>

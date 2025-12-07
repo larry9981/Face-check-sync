@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
@@ -10,6 +11,7 @@ import { BaguaSVG } from './components/Icons';
 import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './components/Modals';
 import { PrivacyPolicy, TermsOfService, AboutPage } from './pages/StaticPages';
 import { ShopPage } from './pages/ShopPage';
+import { CartPage } from './pages/CartPage'; // Import CartPage
 import { PricingPage } from './pages/PricingPage';
 import { RenderStartView, RenderSelectionView, RenderCameraView, RenderResultView, LoadingSpinner, RenderHistoryView } from './pages/HomeViews';
 
@@ -110,7 +112,7 @@ const resizeImage = (base64Str: string, maxWidth = 1024, maxHeight = 1024): Prom
 };
 
 const App = () => {
-  const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'shop' | 'about' | 'privacy' | 'terms' | 'history'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'shop' | 'about' | 'privacy' | 'terms' | 'history' | 'cart'>('home');
   
   // Detect Language & Region
   const detectLanguage = () => {
@@ -140,6 +142,7 @@ const App = () => {
   const [showPaywall, setShowPaywall] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [balanceAiAdvice, setBalanceAiAdvice] = useState<string | undefined>(undefined); // New state for AI Advice passed to Modal
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | Product | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -372,7 +375,7 @@ const App = () => {
         ## 👴 ${headers.parents}
         [Analysis here]
         ## 📜 ${headers.advice}
-        [Analysis here. Mention that their weakest element is ${wuXingResult.missingElement}. Explain WHY they need to supplement this specific element. Explicitly mention that wearing accessories related to ${wuXingResult.missingElement} can help balance the specific energies of today.]
+        [Provide specific practical advice here on how they can improve their ${wuXingResult.missingElement} energy. Suggest specific colors to wear, types of jewelry (e.g. gold, wood, crystal), and lifestyle habits. Be very specific.]
         
         IMPORTANT: Output the response DIRECTLY in ${targetLangName}. 
         ENSURE "Five Elements" header is EXACTLY: ## ⚖️ ${headers.elements}
@@ -456,10 +459,11 @@ const App = () => {
       setCurrentPage('home');
   };
 
-  const handleOpenBalance = () => {
+  const handleOpenBalance = (aiAdvice?: string) => {
       // Gatekeeping: Check 3-day trial or payment
       const daysRemaining = getDaysRemaining();
       if (daysRemaining > 0 || userState.isSubscribed) { 
+          setBalanceAiAdvice(aiAdvice); // Store the passed AI advice
           setShowBalanceModal(true); 
       } else { 
           setShowPaywall(true); 
@@ -467,8 +471,42 @@ const App = () => {
   };
 
   const handleAddToCart = (product: Product) => { setCart(prev => { const existing = prev.find(item => item.product.id === product.id); if (existing) { return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item); } return [...prev, { product, quantity: 1 }]; }); setShowToast(true); setTimeout(() => setShowToast(false), 2000); };
+  const handleRemoveFromCart = (productId: string) => { setCart(prev => prev.filter(item => item.product.id !== productId)); };
+  
+  const handleCartCheckout = (total: number) => {
+      // Create a dummy plan for checkout
+      const cartPlan: any = {
+          id: 'cart_checkout',
+          title: 'Cart Checkout',
+          price: `$${total.toFixed(2)}`,
+          desc: 'Items from Spiritual Shop',
+          isSub: false,
+          category: 'cart_mixed' // Treat as physical product for shipping address requirement
+      };
+      setSelectedPlan(cartPlan);
+      setShowPaymentModal(true);
+  };
+
   const handleBuyProduct = (product: Product) => { setShowBalanceModal(false); setSelectedProduct(null); setSelectedPlan(product); setShowPaymentModal(true); };
-  const handlePaymentSuccess = () => { if (!selectedPlan) return; if ('isSub' in selectedPlan) { if (selectedPlan.id === 'single') setUserState(prev => ({ ...prev, hasPaidSingle: true })); else setUserState(prev => ({ ...prev, isSubscribed: true })); } else { alert(t.success); } setShowPaymentModal(false); if (currentPage === 'pricing') handleGoHome(); };
+  
+  const handlePaymentSuccess = () => { 
+      if (!selectedPlan) return; 
+      
+      if (selectedPlan.id === 'cart_checkout') {
+          // Clear Cart on successful checkout
+          setCart([]);
+          setCurrentPage('home');
+          setView('start');
+      } else if ('isSub' in selectedPlan) { 
+          if (selectedPlan.id === 'single') setUserState(prev => ({ ...prev, hasPaidSingle: true })); 
+          else setUserState(prev => ({ ...prev, isSubscribed: true })); 
+      }
+      
+      alert(t.success); 
+      setShowPaymentModal(false); 
+      if (currentPage === 'pricing') handleGoHome(); 
+  };
+  
   const handleGoHome = () => { stopCamera(); window.speechSynthesis.cancel(); setIsSpeaking(false); setShowPaywall(false); setShowBalanceModal(false); setShowPaymentModal(false); setSelectedProduct(null); setCurrentPage('home'); setView('start'); setUploadProgress(0); setAnalysisProgress(0); };
   const getNavLinkStyle = (page: string) => ({ ...styles.navLink, color: currentPage === page ? theme.gold : theme.text, borderBottom: currentPage === page ? `2px solid ${theme.gold}` : 'none' });
 
@@ -493,8 +531,8 @@ const App = () => {
                  <i className="fas fa-history" style={{marginRight: '5px'}}></i>{t.history}
              </span>
 
-             <div style={{position: 'relative', cursor: 'pointer', marginLeft: '10px'}} onClick={() => { setCurrentPage('shop'); setView('start'); }}>
-                 <i className="fas fa-shopping-cart" style={{color: theme.gold}}></i>
+             <div style={{position: 'relative', cursor: 'pointer', marginLeft: '10px'}} onClick={() => { setCurrentPage('cart'); setView('start'); }}>
+                 <i className="fas fa-shopping-cart" style={{color: currentPage === 'cart' ? theme.gold : theme.gold}}></i>
                  {cart.length > 0 && <span style={{position: 'absolute', top: '-8px', right: '-8px', background: '#c0392b', color: '#fff', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{cart.reduce((a,c) => a + c.quantity, 0)}</span>}
              </div>
              <select style={{background: 'transparent', color: '#ccc', border: '1px solid #555', borderRadius: '4px', padding: '2px', marginLeft: '10px'}} value={language} onChange={(e) => switchLanguage(e.target.value)}>
@@ -505,11 +543,11 @@ const App = () => {
       </nav>
 
       <div style={styles.main}>
-        {showToast && <div style={{position: 'fixed', top: '80px', right: '20px', background: '#2ecc71', color: '#fff', padding: '10px 20px', borderRadius: '4px', zIndex: 2000}} className="fade-in"><i className="fas fa-check"></i> Added to Cart</div>}
+        {showToast && <div style={{position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)', background: '#2ecc71', color: '#fff', padding: '15px 30px', borderRadius: '30px', zIndex: 3005, boxShadow: '0 5px 15px rgba(0,0,0,0.3)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px'}} className="fade-in"><i className="fas fa-check-circle"></i> {t.addToCart} - Success</div>}
         
         {showPaywall && <PaymentModal t={t} plan={{id: 'single', title: t.planSingle, price: t.planSinglePrice, desc: t.planSingleDesc, isSub: false}} onClose={() => setShowPaywall(false)} onSuccess={() => { handlePaymentSuccess(); if (view === 'start') setView('selection'); }} />}
         {showPaymentModal && selectedPlan && <PaymentModal t={t} plan={selectedPlan} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />}
-        {showBalanceModal && calculatedElements && <FiveElementsBalanceModal t={t} missingElement={calculatedElements.missingElement} onClose={() => setShowBalanceModal(false)} onBuyProduct={handleBuyProduct} />}
+        {showBalanceModal && calculatedElements && <FiveElementsBalanceModal t={t} missingElement={calculatedElements.missingElement} aiAdvice={balanceAiAdvice} onClose={() => setShowBalanceModal(false)} onBuyProduct={handleBuyProduct} />}
         {selectedProduct && <ProductDetailModal t={t} product={selectedProduct} onClose={() => setSelectedProduct(null)} onAddToCart={() => handleAddToCart(selectedProduct)} onBuyNow={() => handleBuyProduct(selectedProduct)} />}
 
         {currentPage === 'home' && (
@@ -559,6 +597,7 @@ const App = () => {
         )}
         {currentPage === 'pricing' && <div style={styles.heroSection}><PricingPage t={t} onSelectPlan={triggerPayment} /></div>}
         {currentPage === 'shop' && <div style={styles.heroSection}><ShopPage t={t} onViewProduct={setSelectedProduct} /></div>}
+        {currentPage === 'cart' && <div style={styles.heroSection}><CartPage t={t} cart={cart} onRemove={handleRemoveFromCart} onCheckout={handleCartCheckout} /></div>}
         {currentPage === 'about' && <div style={styles.heroSection}><AboutPage t={t} /></div>}
         {currentPage === 'privacy' && <div style={styles.heroSection}><PrivacyPolicy t={t} /></div>}
         {currentPage === 'terms' && <div style={styles.heroSection}><TermsOfService t={t} /></div>}

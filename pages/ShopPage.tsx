@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { theme, styles } from '../theme';
 import { Product } from '../types';
 import { SHOP_PRODUCTS } from '../products';
+import { hashCode } from '../utils';
 
 export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Product) => void }) => {
     const [activeCategory, setActiveCategory] = useState<'chinese' | 'western'>('chinese');
@@ -11,6 +12,11 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
         if (activeCategory === 'western') return p.category === 'amulet';
         return true;
     });
+
+    // Helper to handle image error
+    const handleImageError = (e: any) => {
+        e.target.src = "https://placehold.co/512x512/000000/d4af37?text=Mystic+Item";
+    };
 
     return (
         <div style={{maxWidth: '1200px', width: '95%', paddingBottom: '3rem'}}>
@@ -26,11 +32,25 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
                 {filteredProducts.map((prod) => {
                    const zodiacLocal = t[`zodiac${prod.zodiac}`] || t[`star${prod.zodiac}`] || prod.zodiac;
                    const name = t[prod.nameKey] ? t[prod.nameKey].replace('{zodiac}', zodiacLocal) : prod.defaultName;
-                   const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prod.imagePrompt)}?width=400&height=400&nologo=true`;
+                   // Use numeric seed for reliable caching
+                   const seed = hashCode(prod.id);
+                   const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prod.imagePrompt)}?width=512&height=512&nologo=true&seed=${seed}`;
+                   
                    return (
                        <div key={prod.id} style={{...styles.glassPanel, maxWidth: '250px', padding: '0', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(212, 175, 55, 0.3)'}} onClick={() => onViewProduct(prod)}>
-                           <div style={{width: '100%', height: '250px', background: '#000'}}><img src={imageUrl} alt={name} style={{width: '100%', height: '100%', objectFit: 'cover'}} /></div>
-                           <div style={{padding: '1.5rem', textAlign: 'center'}}><h3 style={{fontSize: '1.1rem', color: theme.gold, marginBottom: '0.5rem', fontFamily: 'Cinzel, serif'}}>{name}</h3><p style={{color: '#fff', fontWeight: 'bold'}}>{prod.price}</p></div>
+                           <div style={{width: '100%', height: '250px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                               <img 
+                                   src={imageUrl} 
+                                   alt={name} 
+                                   style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                                   loading="lazy" 
+                                   onError={handleImageError}
+                               />
+                           </div>
+                           <div style={{padding: '1.5rem', textAlign: 'center'}}>
+                               <h3 style={{fontSize: '1.1rem', color: theme.gold, marginBottom: '0.5rem', fontFamily: 'Cinzel, serif', height: '1.5em', overflow: 'hidden'}}>{name}</h3>
+                               <p style={{color: '#fff', fontWeight: 'bold'}}>{prod.price}</p>
+                           </div>
                        </div>
                    );
                 })}

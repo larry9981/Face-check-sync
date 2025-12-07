@@ -86,6 +86,16 @@ export const calculateAge = (dateStr: string) => {
     return age;
 };
 
+export const hashCode = (str: string) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return Math.abs(hash);
+};
+
 export const calculateWuXing = (year: string, month: string, day: string, hour: string, minute: string, second: string) => {
     const numStr = `${year}${month}${day}${hour}${minute}${second}`;
     let hash = 0;
