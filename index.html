@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Mystic Face Reader - AI Fortune Teller</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Stripe.js for Real Credit Card Processing -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+      :root {
+        --color-bg: #050511;
+        --color-primary: #d4af37; /* Metallic Gold */
+        --color-secondary: #8a6e2f;
+        --color-accent: #c0392b; /* Seal Red */
+        --color-text: #e0e0e0;
+        --color-panel: rgba(20, 20, 35, 0.90);
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        font-family: 'Noto Serif', serif;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      h1, h2, h3, button {
+        font-family: 'Cinzel', serif;
+      }
+
+      /* Global Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #111;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--color-secondary);
+        border-radius: 4px;
+      }
+
+      /* CRT / Mystical Grain Effect */
+      .mystical-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiAvPgo8cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMjIyIiBvcGFjaXR5PSIwLjEiIC8+Cjwvc3ZnPg==');
+        pointer-events: none;
+        z-index: 9999;
+        opacity: 0.3;
+      }
+      
+      /* Fade In Animation */
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      .fade-in {
+        animation: fadeIn 1s ease-in-out;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      /* --- Responsive Utilities --- */
+      
+      .desktop-only { display: block; }
+      .mobile-only { display: none; }
+
+      /* Responsive Navbar */
+      .nav-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+      }
+
+      /* Responsive Grid for How It Works */
+      .feature-grid {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 30px;
+      }
+
+      /* Mobile Adjustments */
+      @media (max-width: 768px) {
+        .nav-container {
+          flex-direction: column;
+          padding: 1rem;
+          gap: 1rem;
+        }
+        
+        .nav-links {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 15px;
+          font-size: 0.85rem;
+        }
+
+        .feature-grid {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        h1 { font-size: 2rem !important; }
+        p { font-size: 1rem !important; }
+        
+        .glass-panel-mobile {
+          width: 90% !important;
+          padding: 1.5rem !important;
+          margin: 0 auto;
+        }
+
+        .result-container-mobile {
+          padding: 1.5rem 1rem !important;
+        }
+
+        .desktop-only { display: none !important; }
+        .mobile-only { display: block !important; }
+      }
+      
+      /* Stripe Element Styling */
+      .StripeElement {
+        box-sizing: border-box;
+        height: 40px;
+        padding: 10px 12px;
+        border: 1px solid #8a6e2f;
+        border-radius: 4px;
+        background-color: rgba(0,0,0,0.3);
+        box-shadow: 0 1px 3px 0 #e6ebf1;
+        -webkit-transition: box-shadow 150ms ease;
+        transition: box-shadow 150ms ease;
+        color: #fff;
+      }
+      .StripeElement--focus {
+        box-shadow: 0 1px 3px 0 #cfd7df;
+      }
+      .StripeElement--invalid {
+        border-color: #fa755a;
+      }
+      .StripeElement--webkit-autofill {
+        background-color: #fefde5 !important;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <div class="mystical-overlay"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

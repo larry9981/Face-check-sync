@@ -1,0 +1,7 @@
+{
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "name": "Face check",
+  "description": "这个一个检测人的面相分析人的运势的网站"
+}
