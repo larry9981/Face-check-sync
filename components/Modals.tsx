@@ -2,13 +2,20 @@
 import React, { useState } from 'react';
 import { theme, styles } from '../theme';
 import { Product, Plan } from '../types';
-import { PayPalButton, StripePaymentForm } from './PaymentIntegration';
-import { ELEMENT_ADVICE } from '../utils';
+import { PayPalButton, StripePaymentForm, QRCodePayment } from './PaymentIntegration';
 import { SHOP_PRODUCTS } from '../products';
 
 export const FiveElementsBalanceModal = ({ t, missingElement, onClose, onBuyProduct }: { t: any, missingElement: string, onClose: () => void, onBuyProduct: (p: Product) => void }) => {
-    const advice = ELEMENT_ADVICE[missingElement] || ELEMENT_ADVICE['Metal'];
-    // Filter products that match the missing element
+    const elKey = missingElement || 'Metal';
+    
+    // Dynamic Advice from Translations
+    const colorAdvice = t[`advice${elKey}Color`] || "Gold, White";
+    const dirAdvice = t[`advice${elKey}Direction`] || "West";
+    const habitAdvice = t[`advice${elKey}Habit`] || "Organization";
+    const descAdvice = t[`advice${elKey}Desc`] || "Your element needs balance.";
+    const nameAdvice = t[`advice${elKey}Name`] || "Consult a master for name changes.";
+    const philosophyAdvice = t[`advice${elKey}Philosophy`] || "Balance is key.";
+
     const matchingProducts = SHOP_PRODUCTS.filter(p => p.element === missingElement).slice(0, 4);
 
     return (
@@ -21,23 +28,32 @@ export const FiveElementsBalanceModal = ({ t, missingElement, onClose, onBuyProd
                 
                 <div style={{marginBottom: '30px'}}>
                     <h3 style={{color: '#fff', fontSize: '1.2rem', marginBottom: '10px'}}>
-                        {t.yourWeakest}: <span style={{color: theme.gold, fontSize: '1.5rem'}}>{t[`element${missingElement}`]}</span>
+                        {t.yourWeakest}: <span style={{color: theme.gold, fontSize: '1.5rem'}}>{t[`element${elKey}`]}</span>
                     </h3>
-                    <p style={{color: '#ccc', lineHeight: '1.6'}}>{advice.desc}</p>
+                    <p style={{color: '#ccc', lineHeight: '1.6'}}>{descAdvice}</p>
                     
-                    <div style={{marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px'}}>
+                    <div style={{marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px'}}>
                         <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '4px'}}>
                             <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.luckyColors}</strong>
-                            {advice.color}
+                            {colorAdvice}
                         </div>
                         <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '4px'}}>
                             <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.luckyDirection}</strong>
-                            {advice.direction}
+                            {dirAdvice}
                         </div>
                         <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '4px'}}>
                             <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.luckyHabit}</strong>
-                            {advice.habit}
+                            {habitAdvice}
                         </div>
+                        <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '4px'}}>
+                            <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.namingAdvice}</strong>
+                            {nameAdvice}
+                        </div>
+                    </div>
+                    
+                    <div style={{marginTop: '20px', background: 'rgba(212, 175, 55, 0.1)', padding: '15px', borderRadius: '4px', borderLeft: `3px solid ${theme.gold}`}}>
+                        <strong style={{color: theme.gold, display:'block', marginBottom:'5px'}}>{t.philosophy}</strong>
+                        <em style={{color: '#e0e0e0'}}>"{philosophyAdvice}"</em>
                     </div>
                 </div>
 
@@ -87,7 +103,11 @@ export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow 
 };
 
 export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: () => void }) => {
-    const [method, setMethod] = useState<'card' | 'paypal'>('card');
+    // Detect if we should offer Chinese Payment Methods
+    // Simple heuristic: If language is Chinese, default to WeChat/Alipay, or show them
+    const isChinese = t.title === "玄机面相" || t.title === "玄機面相";
+
+    const [method, setMethod] = useState<'card' | 'paypal' | 'wechat' | 'alipay'>(isChinese ? 'wechat' : 'card');
     const [successState, setSuccessState] = useState(false);
     
     // Shipping Address State
@@ -98,16 +118,16 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
     const [country, setCountry] = useState('');
 
     const title = 'defaultName' in plan ? (plan as Product).defaultName : (plan as Plan).title;
-    // Parse price string to number (e.g. "$19.99" -> 19.99)
     const priceStr = plan.price.replace(/[^0-9.]/g, '');
     const priceVal = parseFloat(priceStr);
     
-    // Determine if we need shipping (Product vs Subscription)
-    const needsShipping = !('isSub' in plan && (plan as Plan).isSub);
+    // Physical products from Shop need shipping
+    const isPhysicalProduct = 'category' in plan;
+    const needsShipping = isPhysicalProduct;
+    // For non-physical products (subscriptions/readings), we proceed without address
     const canProceedToPay = !needsShipping || (name && address && city && zip && country);
 
-    const handleSuccess = (details: any) => {
-        console.log("Payment Completed: ", details);
+    const handleSuccess = (details?: any) => {
         setSuccessState(true);
         setTimeout(() => onSuccess(), 2000);
     };
@@ -120,7 +140,7 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
 
     return (
         <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)'}}>
-          <div style={{...styles.glassPanel, maxWidth: '500px', width: '95%', maxHeight: '90vh', overflowY: 'auto'}}>
+          <div style={{...styles.glassPanel, maxWidth: '550px', width: '95%', maxHeight: '90vh', overflowY: 'auto'}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
                 <h2 style={{color: theme.gold, margin: 0, fontFamily: 'Cinzel, serif'}}>{t.paymentTitle}</h2>
                 <button onClick={onClose} style={{background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer'}}>&times;</button>
@@ -132,9 +152,10 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
                      <span style={{fontWeight: 'bold'}}>{title}</span>
                      <span style={{fontSize: '1.2rem', fontWeight: 'bold', color: theme.gold}}>${priceVal.toFixed(2)}</span>
                  </div>
+                 {!needsShipping && <div style={{fontSize: '0.8rem', color: '#aaa', marginTop: '5px'}}>* Digital Service (Instant Access)</div>}
             </div>
 
-            {/* Shipping Form */}
+            {/* Shipping Form (Only for Physical) */}
             {needsShipping && (
                 <div style={{marginBottom: '20px'}}>
                     <h3 style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '10px', textTransform: 'uppercase'}}>{t.shippingDetails}</h3>
@@ -151,37 +172,36 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
             {/* Payment Method Toggle */}
             <div style={{marginBottom: '20px'}}>
                 <label style={{display: 'block', marginBottom: '10px', color: '#aaa'}}>{t.paymentMethod}</label>
-                <div style={{display: 'flex', gap: '10px'}}>
-                    <button style={{flex: 1, padding: '10px', background: method === 'card' ? theme.darkGold : 'transparent', border: `1px solid ${theme.darkGold}`, color: method === 'card' ? '#000' : theme.darkGold, fontWeight: 'bold'}} onClick={() => setMethod('card')}>{t.creditCard}</button>
-                    <button style={{flex: 1, padding: '10px', background: method === 'paypal' ? '#0070ba' : 'transparent', border: `1px solid ${method === 'paypal' ? '#0070ba' : theme.darkGold}`, color: method === 'paypal' ? '#fff' : theme.darkGold, fontWeight: 'bold'}} onClick={() => setMethod('paypal')}>{t.paypal}</button>
+                <div style={{display: 'grid', gridTemplateColumns: isChinese ? '1fr 1fr 1fr 1fr' : '1fr 1fr', gap: '8px'}}>
+                    
+                    {/* Chinese Methods */}
+                    {isChinese && (
+                        <>
+                             <button style={{padding: '10px', background: method === 'wechat' ? '#2ecc71' : 'transparent', border: `1px solid ${method === 'wechat' ? '#2ecc71' : theme.darkGold}`, color: method === 'wechat' ? '#fff' : theme.darkGold, fontSize: '0.8rem'}} onClick={() => setMethod('wechat')}>
+                                 <i className="fab fa-weixin"></i> WeChat
+                             </button>
+                             <button style={{padding: '10px', background: method === 'alipay' ? '#3498db' : 'transparent', border: `1px solid ${method === 'alipay' ? '#3498db' : theme.darkGold}`, color: method === 'alipay' ? '#fff' : theme.darkGold, fontSize: '0.8rem'}} onClick={() => setMethod('alipay')}>
+                                 <i className="fab fa-alipay"></i> Alipay
+                             </button>
+                        </>
+                    )}
+
+                    {/* Global Methods */}
+                    <button style={{padding: '10px', background: method === 'card' ? theme.darkGold : 'transparent', border: `1px solid ${theme.darkGold}`, color: method === 'card' ? '#000' : theme.darkGold, fontSize: '0.8rem', whiteSpace: 'nowrap'}} onClick={() => setMethod('card')}>
+                        <i className="fas fa-credit-card"></i> Card
+                    </button>
+                    <button style={{padding: '10px', background: method === 'paypal' ? '#0070ba' : 'transparent', border: `1px solid ${method === 'paypal' ? '#0070ba' : theme.darkGold}`, color: method === 'paypal' ? '#fff' : theme.darkGold, fontSize: '0.8rem'}} onClick={() => setMethod('paypal')}>
+                        <i className="fab fa-paypal"></i> PayPal
+                    </button>
                 </div>
             </div>
 
             {/* Payment Integration Rendering */}
             {canProceedToPay ? (
                 <>
-                    {method === 'card' && (
-                        <StripePaymentForm 
-                            amount={priceVal} 
-                            currency="USD" 
-                            description={title} 
-                            shippingAddress={needsShipping ? {name, address, city, zip, country} : undefined}
-                            onSuccess={handleSuccess}
-                            onError={handleError}
-                            t={t}
-                        />
-                    )}
-                    {method === 'paypal' && (
-                        <PayPalButton 
-                            amount={priceVal} 
-                            currency="USD" 
-                            description={title}
-                            shippingAddress={needsShipping ? {name, address, city, zip, country} : undefined}
-                            onSuccess={handleSuccess}
-                            onError={handleError}
-                            t={t}
-                        />
-                    )}
+                    {method === 'card' && <StripePaymentForm amount={priceVal} description={title} currency="USD" t={t} onSuccess={handleSuccess} onError={handleError} />}
+                    {method === 'paypal' && <PayPalButton amount={priceVal} description={title} currency="USD" t={t} onSuccess={handleSuccess} onError={handleError} />}
+                    {(method === 'wechat' || method === 'alipay') && <QRCodePayment provider={method} amount={priceVal} t={t} onSuccess={handleSuccess} />}
                 </>
             ) : (
                 <div style={{padding: '10px', background: 'rgba(255,0,0,0.1)', border: '1px solid red', color: '#ffaaaa', fontSize: '0.9rem', textAlign: 'center'}}>

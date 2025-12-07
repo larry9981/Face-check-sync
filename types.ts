@@ -1,8 +1,19 @@
 
 export interface UserState {
-  freeTrials: number;
+  trialStartDate: string | null; // ISO Date string for when the first reading happened
   isSubscribed: boolean;
   hasPaidSingle: boolean;
+  history: HistoryRecord[]; // Added history array
+}
+
+export interface HistoryRecord {
+  id: number;
+  date: string;
+  resultText: string;
+  elements: any;
+  name: string;
+  gender: string;
+  birthDate: string;
 }
 
 export interface Plan {

@@ -5,6 +5,7 @@ import { BaguaSVG, FaceMapSVG } from '../components/Icons';
 import { FiveElementsChart } from '../components/Charts';
 import { getChineseZodiac, getWesternZodiac, calculateAge } from '../utils';
 import { SHOP_PRODUCTS } from '../products';
+import { HistoryRecord } from '../types';
 
 export const LoadingSpinner = ({ t, progress }: { t: any, progress?: number }) => (
   <div style={{ textAlign: 'center', padding: '3rem 1rem', width: '100%', maxWidth: '400px' }}>
@@ -55,18 +56,35 @@ export const RenderStartView = ({ t, freeTrials, onStart }: { t: any, freeTrials
     </div>
 );
 
-export const RenderSelectionView = ({ t, gender, dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond, uploadProgress, onSetGender, onSetDobYear, onSetDobMonth, onSetDobDay, onSetDobHour, onSetDobMinute, onSetDobSecond, onStartCamera, onUpload, onBack }: any) => {
+export const RenderSelectionView = ({ t, gender, dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond, uploadProgress, userName, onSetUserName, onSetGender, onSetDobYear, onSetDobMonth, onSetDobDay, onSetDobHour, onSetDobMinute, onSetDobSecond, onStartCamera, onUpload, onBack, language }: any) => {
     const years = Array.from({length: 151}, (_, i) => 1900 + i);
     const months = Array.from({length: 12}, (_, i) => i + 1);
     const days = Array.from({length: 31}, (_, i) => i + 1);
     const hours = Array.from({length: 24}, (_, i) => i);
     const minutesSeconds = Array.from({length: 60}, (_, i) => i);
+    
+    // Check if we should show Name Input (China context)
+    const isChinese = ['zh-CN', 'zh-TW'].includes(language);
 
     return (
       <div style={styles.glassPanel} className="glass-panel-mobile">
           <h2 style={{color: theme.gold, marginBottom: '20px', fontFamily: 'Cinzel, serif'}}>{t.chooseMethod}</h2>
           <div style={{textAlign: 'left', marginBottom: '20px'}}>
               <h3 style={{color: theme.darkGold, fontSize: '1rem', borderBottom: '1px solid rgba(138, 110, 47, 0.3)', paddingBottom: '5px', marginBottom: '15px'}}>{t.profileTitle}</h3>
+              
+              {isChinese && (
+                  <div style={{marginBottom: '15px'}}>
+                      <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.nameLabel}</label>
+                      <input 
+                        type="text" 
+                        style={styles.formInput} 
+                        value={userName} 
+                        onChange={(e) => onSetUserName(e.target.value)} 
+                        placeholder={t.nameLabel}
+                      />
+                  </div>
+              )}
+
               <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
                   <div style={{flex: 1}}>
                       <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.genderLabel}</label>
@@ -142,6 +160,56 @@ export const RenderSelectionView = ({ t, gender, dobYear, dobMonth, dobDay, dobH
               {t.backBtn}
           </button>
       </div>
+    );
+};
+
+export const RenderHistoryView = ({ t, history, onViewResult }: { t: any, history: HistoryRecord[], onViewResult: (r: HistoryRecord) => void }) => {
+    return (
+        <div style={{...styles.glassPanel, maxWidth: '800px', width: '95%'}}>
+            <h2 style={{color: theme.gold, textAlign: 'center', fontFamily: 'Cinzel, serif', marginBottom: '2rem'}}>{t.historyTitle}</h2>
+            
+            {history.length === 0 ? (
+                <div style={{textAlign: 'center', color: '#aaa', padding: '2rem'}}>{t.noHistory}</div>
+            ) : (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                    {history.map((record) => (
+                        <div key={record.id} style={{
+                            background: 'rgba(0,0,0,0.3)', 
+                            border: `1px solid ${theme.darkGold}`, 
+                            borderRadius: '8px', 
+                            padding: '15px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '10px'
+                        }}>
+                            <div>
+                                <div style={{color: theme.gold, fontWeight: 'bold'}}>{record.name || (record.gender === 'male' ? t.genderMale : t.genderFemale)}</div>
+                                <div style={{fontSize: '0.8rem', color: '#888'}}>{t.dateLabel}: {record.date}</div>
+                                <div style={{fontSize: '0.8rem', color: '#aaa'}}>
+                                   {t.elementMetal}: {record.elements.scores.Metal}% | {t.elementWood}: {record.elements.scores.Wood}%
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => onViewResult(record)} 
+                                style={{
+                                    background: 'transparent', 
+                                    border: `1px solid ${theme.gold}`, 
+                                    color: theme.gold, 
+                                    padding: '5px 15px', 
+                                    borderRadius: '4px', 
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                {t.viewResult}
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
     );
 };
 
