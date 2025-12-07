@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 import { theme, styles } from './theme';
 import { LANGUAGES, TRANSLATIONS } from './translations';
@@ -15,73 +14,41 @@ import { PricingPage } from './pages/PricingPage';
 import { RenderStartView, RenderSelectionView, RenderCameraView, RenderResultView, LoadingSpinner, RenderHistoryView } from './pages/HomeViews';
 
 const API_KEY = process.env.API_KEY;
-// Changed to gemini-2.0-flash as it is the latest/fastest model for commercial usage
-const MODEL_NAME = 'gemini-2.0-flash'; 
-
-// Constants for Optional AI Providers (Replace with real keys if switching)
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "your-openai-key";
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "your-deepseek-key";
+// Using gemini-2.5-flash as per guidelines.
+const MODEL_NAME = 'gemini-2.5-flash'; 
 
 // Music
 const AMBIENT_MUSIC_URL = "https://cdn.pixabay.com/audio/2022/02/07/audio_1919830500.mp3";
 
 // --- AI SERVICE ABSTRACTION ---
 async function callUniversalAI(
-    provider: 'Google' | 'OpenAI' | 'DeepSeek', 
+    provider: 'Google', 
     params: { model: string, prompt: string, base64Image?: string, apiKey: string }
 ) {
-    // 1. Google (Gemini)
-    if (provider === 'Google') {
-        const ai = new GoogleGenAI({ apiKey: params.apiKey });
-        return await ai.models.generateContent({
-            model: params.model,
-            contents: {
-                parts: [
-                    params.base64Image ? { inlineData: { mimeType: 'image/jpeg', data: params.base64Image } } : null,
-                    { text: params.prompt }
-                ].filter(Boolean) as any
-            }
-        });
-    }
-
-    // 2. OpenAI / DeepSeek (OpenAI Compatible)
-    const baseUrl = provider === 'DeepSeek' ? 'https://api.deepseek.com/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+    // Always use Google (Gemini)
+    const ai = new GoogleGenAI({ apiKey: params.apiKey });
     
-    // Construct Payload
-    const messages = [
-        {
-            role: "user",
-            content: [
-                { type: "text", text: params.prompt },
-                // Standard GPT-4o Vision Format
-                params.base64Image ? {
-                    type: "image_url",
-                    image_url: { url: `data:image/jpeg;base64,${params.base64Image}` }
-                } : null
-            ].filter(Boolean)
-        }
+    // Safety Settings: Critical for Face Reading apps to avoid false positives on 'Medical' or 'Harassment'
+    const safetySettings = [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE }
     ];
 
-    const response = await fetch(baseUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${params.apiKey}`
+    return await ai.models.generateContent({
+        model: params.model,
+        contents: {
+            parts: [
+                params.base64Image ? { inlineData: { mimeType: 'image/jpeg', data: params.base64Image } } : null,
+                { text: params.prompt }
+            ].filter(Boolean) as any
         },
-        body: JSON.stringify({
-            model: params.model,
-            messages: messages,
-            max_tokens: 2000
-        })
+        config: {
+            safetySettings: safetySettings
+        }
     });
-
-    if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error?.message || `API Error ${response.status}`);
-    }
-
-    const data = await response.json();
-    return { text: data.choices[0]?.message?.content || "" };
 }
 
 // Helper for Retry with Error Parsing
@@ -138,6 +105,7 @@ const resizeImage = (base64Str: string, maxWidth = 1024, maxHeight = 1024): Prom
       ctx?.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL('image/jpeg', 0.7)); // Reduced to 70% quality for faster upload
     };
+    img.onerror = () => resolve(base64Str);
   });
 };
 
@@ -158,14 +126,7 @@ const App = () => {
   };
 
   const [language, setLanguage] = useState(detectLanguage());
-  const [region, setRegion] = useState<'Global' | 'China'>('Global'); // State to track user region
   
-  // Effect to set Region based on language
-  useEffect(() => {
-      if (language === 'zh-CN') setRegion('China');
-      else setRegion('Global');
-  }, [language]);
-
   const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
   
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
@@ -235,8 +196,7 @@ const App = () => {
           setIsTranslating(true);
           try {
               if (!API_KEY) throw new Error("API Key missing");
-              // Use Google for quick translation regardless of region for stability in this demo
-              // In production, you could route this to DeepSeek if Region == China
+              // Use Google for quick translation
               const response = await callUniversalAI('Google', {
                   model: MODEL_NAME,
                   apiKey: API_KEY,
@@ -419,25 +379,13 @@ const App = () => {
         Ensure the emojis (🪙, 🌲, 💧, 🔥, ⛰️) are used at the start of each Five Elements line.
       `;
       
-      // === PROVIDER SELECTION LOGIC ===
-      // If Region is China, prefer DeepSeek. If US/Global, prefer OpenAI (ChatGPT).
-      // Fallback to Google (Gemini) if keys aren't set in this demo.
-      let provider: 'Google' | 'OpenAI' | 'DeepSeek' = 'Google';
+      // FORCE GOOGLE GEMINI
+      let provider: 'Google' = 'Google';
       let model = MODEL_NAME;
       let apiKey = API_KEY;
 
-      if (region === 'China' && DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'your-deepseek-key') {
-          provider = 'DeepSeek';
-          model = 'deepseek-chat'; // Or deepseek-vl if available
-          apiKey = DEEPSEEK_API_KEY;
-      } else if (region === 'Global' && OPENAI_API_KEY && OPENAI_API_KEY !== 'your-openai-key') {
-          provider = 'OpenAI';
-          model = 'gpt-4o'; // Best for Vision
-          apiKey = OPENAI_API_KEY;
-      }
-
       // Execute Call
-      if (!apiKey) throw new Error("No API Key available for selected region/provider.");
+      if (!apiKey) throw new Error("No API Key available.");
 
       const apiCall = callWithRetry(() => callUniversalAI(provider, {
           model,
@@ -446,7 +394,7 @@ const App = () => {
           apiKey
       }));
 
-      // No Timeout Limit for Analysis
+      // No Timeout Limit for Analysis (User Requested)
       const response: any = await apiCall;
       
       clearInterval(progressInterval);
