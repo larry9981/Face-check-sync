@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -18,7 +17,7 @@
         --color-secondary: #8a6e2f;
         --color-accent: #c0392b; /* Seal Red */
         --color-text: #e0e0e0;
-        --color-panel: rgba(20, 20, 35, 0.90);
+        --color-panel: rgba(10, 10, 20, 0.92);
       }
 
       body {
@@ -29,10 +28,12 @@
         font-family: 'Noto Serif', serif;
         overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
+        background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 100%);
       }
 
       h1, h2, h3, button {
         font-family: 'Cinzel', serif;
+        text-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
       }
 
       /* Global Scrollbar */
@@ -40,10 +41,11 @@
         width: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #111;
+        background: #000;
       }
       ::-webkit-scrollbar-thumb {
         background: var(--color-secondary);
+        border: 1px solid var(--color-primary);
         border-radius: 4px;
       }
 
@@ -57,7 +59,7 @@
         background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiAvPgo8cmVjdCB3aWR0aD0iMSIgaGVpZ2h0PSIxIiBmaWxsPSIjMjIyIiBvcGFjaXR5PSIwLjEiIC8+Cjwvc3ZnPg==');
         pointer-events: none;
         z-index: 9999;
-        opacity: 0.3;
+        opacity: 0.2;
       }
       
       /* Fade In Animation */
@@ -72,6 +74,29 @@
       @keyframes spin {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
+      }
+
+      @keyframes slowSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      @keyframes mysticalPulse {
+          0% { box-shadow: 0 0 15px rgba(212, 175, 55, 0.2) inset; opacity: 0.8; }
+          50% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.6) inset; opacity: 1; }
+          100% { box-shadow: 0 0 15px rgba(212, 175, 55, 0.2) inset; opacity: 0.8; }
+      }
+      
+      .mystical-scan-frame {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          border: 2px solid var(--color-primary);
+          border-radius: 50% 50% 45% 45%; /* Face/Palm shape */
+          animation: mysticalPulse 3s infinite;
+          box-shadow: 0 0 20px var(--color-primary);
+          z-index: 10;
       }
 
       /* --- Responsive Utilities --- */

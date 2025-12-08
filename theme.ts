@@ -6,6 +6,7 @@ export const theme = {
   text: '#e0e0e0',
   panel: 'rgba(15, 15, 25, 0.85)',
   accent: '#c0392b',
+  neonCyan: '#00f3ff',
 };
 
 export const styles = {
@@ -13,7 +14,7 @@ export const styles = {
     minHeight: '100vh',
     display: 'flex',
     flexDirection: 'column' as const,
-    background: 'radial-gradient(circle at center, #1a1a2e 0%, #050511 100%)',
+    background: 'radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 100%)',
     color: theme.text,
     fontFamily: 'Noto Serif, serif',
   },
@@ -66,7 +67,7 @@ export const styles = {
     width: '180px',
     height: '180px',
     marginBottom: '2rem',
-    animation: 'slowSpin 60s linear infinite',
+    animation: 'slowSpin 20s linear infinite',
   },
   glassPanel: {
     background: theme.panel,

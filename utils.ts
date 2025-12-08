@@ -143,3 +143,76 @@ export const calculateWuXing = (year: string, month: string, day: string, hour: 
 
     return { scores: normalized, missingElement };
 };
+
+// --- IMAGE PERSISTENCE (INDEXEDDB) ---
+// This acts as a "Local Folder" for the website.
+export const ImagePersistence = {
+    DB_NAME: 'MysticShopCache',
+    STORE_NAME: 'images',
+    dbPromise: null as Promise<IDBDatabase> | null,
+
+    init: function() {
+        if (this.dbPromise) return this.dbPromise;
+
+        this.dbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.DB_NAME, 1);
+
+            request.onupgradeneeded = (event: any) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                    db.createObjectStore(this.STORE_NAME, { keyPath: 'id' });
+                }
+            };
+
+            request.onsuccess = (event: any) => resolve(event.target.result);
+            request.onerror = (event: any) => reject(event.target.error);
+        });
+        return this.dbPromise;
+    },
+
+    loadImage: async function(productId: string, prompt: string, size: number = 512): Promise<string> {
+        try {
+            const db = await this.init();
+            
+            // 1. Check if image exists in DB
+            const tx = db.transaction(this.STORE_NAME, 'readonly');
+            const store = tx.objectStore(this.STORE_NAME);
+            
+            // Create a composite key for cache versioning (if prompt changes, id should conceptually change, 
+            // but we use productId here. You might want to append hash of prompt if descriptions change often)
+            const cacheKey = `${productId}_${size}`; 
+
+            const cachedRecord: any = await new Promise((resolve) => {
+                const req = store.get(cacheKey);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+            });
+
+            if (cachedRecord && cachedRecord.blob) {
+                // Return local URL from Blob
+                return URL.createObjectURL(cachedRecord.blob);
+            }
+
+            // 2. If not, generate/fetch it
+            const seed = hashCode(productId);
+            // Add 'flux' or other model params if needed, but keeping it standard for speed
+            const remoteUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${size}&height=${size}&nologo=true&seed=${seed}`;
+            
+            const response = await fetch(remoteUrl);
+            const blob = await response.blob();
+
+            // 3. Save to DB
+            const txWrite = db.transaction(this.STORE_NAME, 'readwrite');
+            const storeWrite = txWrite.objectStore(this.STORE_NAME);
+            storeWrite.put({ id: cacheKey, blob: blob, date: Date.now() });
+
+            return URL.createObjectURL(blob);
+
+        } catch (error) {
+            console.error("ImagePersistence Error:", error);
+            // Fallback to direct URL if DB fails
+            const seed = hashCode(productId);
+            return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${size}&height=${size}&nologo=true&seed=${seed}`;
+        }
+    }
+};

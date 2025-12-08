@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { theme, styles } from '../theme';
 import { BaguaSVG, FaceMapSVG } from '../components/Icons';
 import { FiveElementsChart } from '../components/Charts';
@@ -26,9 +26,9 @@ export const LoadingSpinner = ({ t, progress, message }: { t: any, progress?: nu
             <div style={{
                 width: `${progress}%`, 
                 height: '100%', 
-                background: `linear-gradient(90deg, ${theme.darkGold}, ${theme.gold})`, 
+                background: `linear-gradient(90deg, ${theme.darkGold}, #ffd700)`, 
                 transition: 'width 0.2s ease-out',
-                boxShadow: `0 0 10px ${theme.gold}`
+                boxShadow: `0 0 10px ${theme.darkGold}`
             }}></div>
         </div>
         <div style={{color: theme.gold, fontSize: '0.9rem', marginTop: '8px', fontFamily: 'Cinzel, serif'}}>
@@ -39,24 +39,107 @@ export const LoadingSpinner = ({ t, progress, message }: { t: any, progress?: nu
   </div>
 );
 
-export const RenderStartView = ({ t, freeTrials, onStart }: { t: any, freeTrials: number, onStart: () => void }) => (
-    <div style={styles.glassPanel} className="glass-panel-mobile">
-      <div style={{...styles.baguaContainer, margin: '0 auto 1.5rem'}}>
+export const RenderStartView = ({ t, freeTrials, onStart }: { t: any, freeTrials: number, onStart: (type: 'face' | 'palm') => void }) => {
+    const boxSize = '200px'; 
+    const imageBoxStyle = {
+        width: boxSize, 
+        height: boxSize, 
+        border: `1px solid ${theme.gold}`,
+        borderRadius: '4px',
+        background: 'rgba(0,0,0,0.3)',
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '10px',
+        boxSizing: 'border-box' as const,
+        position: 'relative' as const
+    };
+
+    return (
+    <div style={{...styles.glassPanel, border: `1px solid ${theme.darkGold}`, boxShadow: `0 0 20px rgba(212, 175, 55, 0.15)`}} className="glass-panel-mobile">
+      <div style={{...styles.baguaContainer, margin: '0 auto 1.5rem', filter: 'drop-shadow(0 0 10px #d4af37)'}}>
          {BaguaSVG}
       </div>
-      <h1 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2.5rem', marginBottom: '1rem'}}>{t.heroTitle}</h1>
+      <h1 style={{fontSize: '2.5rem', marginBottom: '1rem', color: theme.gold}}>{t.heroTitle}</h1>
       <p style={{color: '#ccc', marginBottom: '2rem', fontSize: '1.1rem'}}>{t.heroDesc}</p>
-      <div style={{display: 'flex', justifyContent: 'center', marginBottom: '20px'}}>
-          <FaceMapSVG t={t} />
+      
+      <div style={{display: 'flex', gap: '30px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '20px'}}>
+          
+          {/* FACE READING CARD */}
+          <div style={{
+              flex: '1 1 280px', 
+              maxWidth: '320px',
+              background: 'rgba(5, 5, 20, 0.6)', 
+              border: `1px solid ${theme.darkGold}`, 
+              borderRadius: '8px', 
+              padding: '30px', 
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+          }} 
+          onClick={() => onStart('face')}
+          onMouseOver={(e) => {
+              e.currentTarget.style.borderColor = theme.gold;
+              e.currentTarget.style.transform = 'translateY(-5px)';
+          }}
+          onMouseOut={(e) => {
+              e.currentTarget.style.borderColor = theme.darkGold;
+              e.currentTarget.style.transform = 'translateY(0)';
+          }}
+          >
+              <div style={imageBoxStyle}>
+                  <FaceMapSVG t={t} />
+              </div>
+              <h3 style={{color: theme.gold, fontSize: '1.4rem', margin: '0 0 15px 0'}}>{t.startBtn}</h3>
+              <button style={{...styles.button, width: '100%', marginTop: 'auto'}}>{t.scanBtn}</button>
+          </div>
+
+          {/* PALM READING CARD */}
+          <div style={{
+              flex: '1 1 280px', 
+              maxWidth: '320px',
+              background: 'rgba(5, 5, 20, 0.6)', 
+              border: `1px solid ${theme.darkGold}`, 
+              borderRadius: '8px', 
+              padding: '30px', 
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+          }}
+          onClick={() => onStart('palm')}
+          onMouseOver={(e) => {
+              e.currentTarget.style.borderColor = theme.gold;
+              e.currentTarget.style.transform = 'translateY(-5px)';
+          }}
+          onMouseOut={(e) => {
+              e.currentTarget.style.borderColor = theme.darkGold;
+              e.currentTarget.style.transform = 'translateY(0)';
+          }}
+          >
+              <div style={imageBoxStyle}>
+                  <i className="fas fa-hand-sparkles" style={{fontSize: '6rem', color: theme.gold, textShadow: '0 0 10px rgba(212,175,55,0.5)', zIndex: 2}}></i>
+                  {/* Mystical Pulse Animation */}
+                  <div style={{position: 'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width: '120px', height:'120px', borderRadius:'50%', border:`2px solid ${theme.gold}`, animation: 'mysticalPulse 3s infinite', opacity: 0.5}}></div>
+              </div>
+              <h3 style={{color: theme.gold, fontSize: '1.4rem', margin: '0 0 15px 0'}}>{t.palmBtn}</h3>
+              <button style={{...styles.button, width: '100%', marginTop: 'auto'}}>{t.scanPalmBtn}</button>
+          </div>
+
       </div>
-      <button style={styles.button} onClick={onStart}>{t.startBtn}</button>
-      <div style={{marginTop: '15px', fontSize: '0.8rem', color: '#888'}}>
+
+      <div style={{marginTop: '25px', fontSize: '0.8rem', color: '#888'}}>
           {t.freeTrialsHint.replace('{count}', freeTrials.toString())}
       </div>
     </div>
-);
+  );
+};
 
-export const RenderSelectionView = ({ t, gender, dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond, uploadProgress, userName, onSetUserName, onSetGender, onSetDobYear, onSetDobMonth, onSetDobDay, onSetDobHour, onSetDobMinute, onSetDobSecond, onStartCamera, onUpload, onBack, language }: any) => {
+export const RenderSelectionView = ({ t, readingType, gender, dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond, uploadProgress, userName, onSetUserName, onSetGender, onSetDobYear, onSetDobMonth, onSetDobDay, onSetDobHour, onSetDobMinute, onSetDobSecond, onStartCamera, onUpload, onBack, language, useAdvancedAnalysis, onToggleAdvanced }: any) => {
     const years = Array.from({length: 151}, (_, i) => 1900 + i);
     const months = Array.from({length: 12}, (_, i) => i + 1);
     const days = Array.from({length: 31}, (_, i) => i + 1);
@@ -64,24 +147,83 @@ export const RenderSelectionView = ({ t, gender, dobYear, dobMonth, dobDay, dobH
     const minutesSeconds = Array.from({length: 60}, (_, i) => i);
     
     // Check if we should show Name Input (China context)
-    const isChinese = ['zh-CN', 'zh-TW'].includes(language);
+    const isPalm = readingType === 'palm';
 
     return (
-      <div style={styles.glassPanel} className="glass-panel-mobile">
+      <div style={{...styles.glassPanel, border: `1px solid ${theme.gold}`}} className="glass-panel-mobile">
           <h2 style={{color: theme.gold, marginBottom: '20px', fontFamily: 'Cinzel, serif'}}>{t.chooseMethod}</h2>
           <div style={{textAlign: 'left', marginBottom: '20px'}}>
               <h3 style={{color: theme.darkGold, fontSize: '1rem', borderBottom: '1px solid rgba(138, 110, 47, 0.3)', paddingBottom: '5px', marginBottom: '15px'}}>{t.profileTitle}</h3>
               
-              {isChinese && (
-                  <div style={{marginBottom: '15px'}}>
-                      <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.nameLabel}</label>
-                      <input 
-                        type="text" 
-                        style={styles.formInput} 
-                        value={userName} 
-                        onChange={(e) => onSetUserName(e.target.value)} 
-                        placeholder={t.nameLabel}
-                      />
+               {/* Advanced Analysis Checkbox */}
+               <div style={{marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '4px', cursor: 'pointer'}} onClick={onToggleAdvanced}>
+                  <div style={{
+                      width: '20px', height: '20px', 
+                      border: `1px solid ${theme.gold}`, 
+                      background: useAdvancedAnalysis ? theme.gold : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>
+                      {useAdvancedAnalysis && <i className="fas fa-check" style={{color: '#000', fontSize: '0.8rem'}}></i>}
+                  </div>
+                  <span style={{color: theme.text, fontSize: '0.9rem'}}>{t.combineAnalysis}</span>
+               </div>
+
+              {useAdvancedAnalysis && (
+                  <div className="fade-in">
+                      <div style={{marginBottom: '15px'}}>
+                          <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.nameLabel}</label>
+                          <input 
+                            type="text" 
+                            style={styles.formInput} 
+                            value={userName} 
+                            onChange={(e) => onSetUserName(e.target.value)} 
+                            placeholder={t.nameLabel}
+                          />
+                      </div>
+
+                      <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+                           <div style={{flex: 2}}>
+                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.dateYear}</label>
+                               <select style={styles.formInput} value={dobYear} onChange={(e) => onSetDobYear(e.target.value)}>
+                                   <option value="">{t.dateYear}</option>
+                                   {years.map(y => <option key={y} value={y}>{y}</option>)}
+                               </select>
+                           </div>
+                           <div style={{flex: 1}}>
+                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.dateMonth}</label>
+                               <select style={styles.formInput} value={dobMonth} onChange={(e) => onSetDobMonth(e.target.value)}>
+                                   <option value="">{t.dateMonth}</option>
+                                   {months.map(m => <option key={m} value={m}>{m}</option>)}
+                               </select>
+                           </div>
+                           <div style={{flex: 1}}>
+                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.dateDay}</label>
+                               <select style={styles.formInput} value={dobDay} onChange={(e) => onSetDobDay(e.target.value)}>
+                                   <option value="">{t.dateDay}</option>
+                                   {days.map(d => <option key={d} value={d}>{d}</option>)}
+                               </select>
+                           </div>
+                      </div>
+                      <div style={{display: 'flex', gap: '10px', marginBottom: '20px'}}>
+                           <div style={{flex: 1}}>
+                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.timeHour}</label>
+                               <select style={styles.formInput} value={dobHour} onChange={(e) => onSetDobHour(e.target.value)}>
+                                   {hours.map(h => <option key={h} value={h}>{h.toString().padStart(2, '0')}</option>)}
+                               </select>
+                           </div>
+                           <div style={{flex: 1}}>
+                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.timeMinute}</label>
+                               <select style={styles.formInput} value={dobMinute} onChange={(e) => onSetDobMinute(e.target.value)}>
+                                   {minutesSeconds.map(m => <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>)}
+                               </select>
+                           </div>
+                           <div style={{flex: 1}}>
+                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.timeSecond}</label>
+                               <select style={styles.formInput} value={dobSecond} onChange={(e) => onSetDobSecond(e.target.value)}>
+                                   {minutesSeconds.map(s => <option key={s} value={s}>{s.toString().padStart(2, '0')}</option>)}
+                               </select>
+                           </div>
+                      </div>
                   </div>
               )}
 
@@ -94,55 +236,13 @@ export const RenderSelectionView = ({ t, gender, dobYear, dobMonth, dobDay, dobH
                       </select>
                   </div>
               </div>
-              <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
-                   <div style={{flex: 2}}>
-                       <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.dateYear}</label>
-                       <select style={styles.formInput} value={dobYear} onChange={(e) => onSetDobYear(e.target.value)}>
-                           <option value="">{t.dateYear}</option>
-                           {years.map(y => <option key={y} value={y}>{y}</option>)}
-                       </select>
-                   </div>
-                   <div style={{flex: 1}}>
-                       <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.dateMonth}</label>
-                       <select style={styles.formInput} value={dobMonth} onChange={(e) => onSetDobMonth(e.target.value)}>
-                           <option value="">{t.dateMonth}</option>
-                           {months.map(m => <option key={m} value={m}>{m}</option>)}
-                       </select>
-                   </div>
-                   <div style={{flex: 1}}>
-                       <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.dateDay}</label>
-                       <select style={styles.formInput} value={dobDay} onChange={(e) => onSetDobDay(e.target.value)}>
-                           <option value="">{t.dateDay}</option>
-                           {days.map(d => <option key={d} value={d}>{d}</option>)}
-                       </select>
-                   </div>
-              </div>
-              <div style={{display: 'flex', gap: '10px', marginBottom: '20px'}}>
-                   <div style={{flex: 1}}>
-                       <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.timeHour}</label>
-                       <select style={styles.formInput} value={dobHour} onChange={(e) => onSetDobHour(e.target.value)}>
-                           {hours.map(h => <option key={h} value={h}>{h.toString().padStart(2, '0')}</option>)}
-                       </select>
-                   </div>
-                   <div style={{flex: 1}}>
-                       <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.timeMinute}</label>
-                       <select style={styles.formInput} value={dobMinute} onChange={(e) => onSetDobMinute(e.target.value)}>
-                           {minutesSeconds.map(m => <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>)}
-                       </select>
-                   </div>
-                   <div style={{flex: 1}}>
-                       <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.timeSecond}</label>
-                       <select style={styles.formInput} value={dobSecond} onChange={(e) => onSetDobSecond(e.target.value)}>
-                           {minutesSeconds.map(s => <option key={s} value={s}>{s.toString().padStart(2, '0')}</option>)}
-                       </select>
-                   </div>
-              </div>
+
           </div>
-          <button style={{...styles.button, width: '100%'}} onClick={onStartCamera}>
-            <i className="fas fa-camera"></i> {t.scanBtn}
+          <button style={{...styles.button, width: '100%', background: styles.button.background, color: '#050511'}} onClick={onStartCamera}>
+            <i className={`fas ${isPalm ? 'fa-hand-sparkles' : 'fa-camera'}`}></i> {isPalm ? t.scanPalmBtn : t.scanBtn}
           </button>
           <div style={{marginTop: '15px', position: 'relative'}}>
-            <button style={{...styles.secondaryButton, width: '100%'}} onClick={() => document.getElementById('file-upload')?.click()}>
+            <button style={{...styles.secondaryButton, width: '100%', borderColor: theme.darkGold, color: theme.darkGold}} onClick={() => document.getElementById('file-upload')?.click()}>
                <i className="fas fa-upload"></i> {t.uploadBtn}
             </button>
             <input type="file" id="file-upload" accept="image/*" style={styles.input} onChange={onUpload} />
@@ -188,7 +288,7 @@ export const RenderHistoryView = ({ t, history, onViewResult }: { t: any, histor
                                 <div style={{color: theme.gold, fontWeight: 'bold'}}>{record.name || (record.gender === 'male' ? t.genderMale : t.genderFemale)}</div>
                                 <div style={{fontSize: '0.8rem', color: '#888'}}>{t.dateLabel}: {record.date}</div>
                                 <div style={{fontSize: '0.8rem', color: '#aaa'}}>
-                                   {t.elementMetal}: {record.elements.scores.Metal}% | {t.elementWood}: {record.elements.scores.Wood}%
+                                   {t.elementMetal}: {record.elements?.scores?.Metal ?? '?'}% | {t.elementWood}: {record.elements?.scores?.Wood ?? '?'}%
                                 </div>
                             </div>
                             <button 
@@ -213,61 +313,100 @@ export const RenderHistoryView = ({ t, history, onViewResult }: { t: any, histor
     );
 };
 
-export const RenderCameraView = ({ t, videoRef, canvasRef, onStopCamera, onCapture }: any) => (
-    <div style={{
-        ...styles.glassPanel, 
-        maxWidth: '500px', 
-        width: '95%', 
-        padding: '0', 
-        overflow: 'hidden', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        height: '650px', 
-        maxHeight: '90vh',
-        margin: '0 auto'
-    }}>
-       <div style={{flex: 1, position: 'relative', background: '#000', overflow: 'hidden'}}>
-           <video ref={videoRef} autoPlay playsInline muted style={{width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)'}}></video>
-           <canvas ref={canvasRef} style={{display: 'none'}}></canvas>
-           <div style={{
-               position: 'absolute', 
-               top: '50%', 
-               left: '50%', 
-               transform: 'translate(-50%, -50%)', 
-               width: '220px', 
-               height: '320px', 
-               border: `2px dashed ${theme.gold}`, 
-               borderRadius: '50% 50% 60% 60%', 
-               opacity: 0.6, 
-               boxShadow: `0 0 50px ${theme.gold} inset`
-           }}></div>
-           <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '100%', height: '1px', background: theme.gold, opacity: 0.3}}></div>
-           <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', height: '100%', width: '1px', background: theme.gold, opacity: 0.3}}></div>
-       </div>
-       <div style={{
-           padding: '15px 20px', 
-           background: '#050511', 
-           display: 'flex', 
-           justifyContent: 'space-between', 
-           alignItems: 'center', 
-           borderTop: `1px solid ${theme.darkGold}`,
-           flexShrink: 0
-       }}>
-           <button style={{...styles.secondaryButton, marginTop: 0, padding: '8px 15px', fontSize: '0.8rem'}} onClick={onStopCamera}>{t.cancelBtn}</button>
-           <button onClick={onCapture} style={{
-               width: '70px', height: '70px', borderRadius: '50%', 
-               background: '#fff', border: `4px solid ${theme.gold}`, 
-               cursor: 'pointer', boxShadow: `0 0 15px ${theme.gold}`,
-               display: 'flex', alignItems: 'center', justifyContent: 'center'
-           }}>
-               <i className="fas fa-camera" style={{fontSize: '1.8rem', color: '#333'}}></i>
-           </button>
-           <div style={{width: '60px'}}></div>
-       </div>
-    </div>
-);
+export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCamera, onCapture }: any) => {
+    const isPalm = readingType === 'palm';
+    const accentColor = theme.gold;
+    const [countdown, setCountdown] = useState(5);
 
-export const RenderResultView = ({ t, birthDate, gender, calculatedElements, resultText, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onAnalyzeAnother, onBuyProduct, onOpenBalance }: any) => {
+    // Auto-capture countdown logic
+    useEffect(() => {
+        if (countdown > 0) {
+            const timer = setTimeout(() => {
+                setCountdown(prev => prev - 1);
+            }, 1000);
+            return () => clearTimeout(timer);
+        } else {
+            // Countdown finished, capture automatically
+            onCapture();
+        }
+    }, [countdown, onCapture]);
+
+    return (
+        <div style={{
+            ...styles.glassPanel, 
+            maxWidth: '500px', 
+            width: '95%', 
+            padding: '0', 
+            overflow: 'hidden', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            height: '650px', 
+            maxHeight: '90vh',
+            margin: '0 auto',
+            border: `1px solid ${accentColor}`,
+            boxShadow: `0 0 20px rgba(212, 175, 55, 0.2)`
+        }}>
+           <div style={{flex: 1, position: 'relative', background: '#000', overflow: 'hidden'}}>
+               <video ref={videoRef} autoPlay playsInline muted style={{width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)'}}></video>
+               <canvas ref={canvasRef} style={{display: 'none'}}></canvas>
+               
+               {/* Traditional Mystical Overlay */}
+               <div className="mystical-scan-frame" style={{width: isPalm ? '280px' : '240px', height: isPalm ? '380px' : '320px'}}></div>
+
+               {/* Countdown Overlay */}
+               {countdown > 0 && (
+                   <div style={{
+                       position: 'absolute',
+                       top: 0,
+                       left: 0,
+                       width: '100%',
+                       height: '100%',
+                       display: 'flex',
+                       flexDirection: 'column',
+                       alignItems: 'center',
+                       justifyContent: 'center',
+                       background: 'rgba(0,0,0,0.3)',
+                       zIndex: 20
+                   }}>
+                       <div style={{
+                           fontSize: '6rem', 
+                           color: '#fff', 
+                           textShadow: `0 0 20px ${theme.gold}`,
+                           fontFamily: 'Cinzel, serif',
+                           fontWeight: 'bold',
+                           animation: 'pulse 1s infinite'
+                       }}>
+                           {countdown}
+                       </div>
+                       <div style={{
+                           color: theme.gold,
+                           marginTop: '10px',
+                           fontFamily: 'Cinzel, serif',
+                           fontSize: '1.2rem',
+                           letterSpacing: '2px'
+                       }}>
+                           SCANNING...
+                       </div>
+                   </div>
+               )}
+           </div>
+           
+           <div style={{
+               padding: '15px 20px', 
+               background: '#050511', 
+               display: 'flex', 
+               justifyContent: 'center', 
+               alignItems: 'center', 
+               borderTop: `1px solid ${accentColor}`,
+               flexShrink: 0
+           }}>
+               <button style={{...styles.secondaryButton, marginTop: 0, padding: '10px 30px', fontSize: '0.9rem', borderColor: accentColor, color: accentColor}} onClick={onStopCamera}>{t.cancelBtn}</button>
+           </div>
+        </div>
+    );
+};
+
+export const RenderResultView = ({ t, readingType, birthDate, gender, calculatedElements, resultText, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onAnalyzeAnother, onBuyProduct, onOpenBalance }: any) => {
     const age = calculateAge(birthDate);
     const zodiac = getChineseZodiac(birthDate);
     const starSign = getWesternZodiac(birthDate);
@@ -277,15 +416,15 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
     const starSignImg = starSign ? `https://image.pollinations.ai/prompt/${encodeURIComponent(`mystical zodiac sign ${starSign} astrology symbol golden`)}?width=300&height=300&nologo=true` : "";
     const missingElement = calculatedElements?.missingElement || 'Metal';
     const recommendedProducts = SHOP_PRODUCTS.slice(0, 3); 
+    const isPalm = readingType === 'palm';
 
     const formatMarkdown = (text: string) => {
         return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                   .replace(/## (.*)/g, '<h3 style="color:#8a6e2f;border-bottom:1px solid #ddd;padding-bottom:5px;margin-top:20px;">$1</h3>')
+                   .replace(/## (.*)/g, '<h3 style="color:#8a6e2f;border-bottom:1px solid #d4af37;padding-bottom:5px;margin-top:20px;font-family:Cinzel, serif;">$1</h3>')
                    .replace(/\n/g, '<br/>');
     };
 
     // Use specific regex to find the Master's Advice section to "hide" it from main view
-    // so we can put it in the modal.
     const adviceRegex = /## 📜.*(?:\r\n|\r|\n)/;
     
     // Split text to separate the content BEFORE the advice
@@ -315,14 +454,16 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
                     <div style={{color: '#888', fontSize: '0.8rem'}}>{t.genderLabel}</div>
                     <div style={{fontSize: '1.2rem', color: theme.gold}}>{gender === 'male' ? t.genderMale : t.genderFemale}</div>
                 </div>
-                <div style={{textAlign: 'center'}}>
-                    <div style={{color: '#888', fontSize: '0.8rem'}}>{t.dobLabel}</div>
-                    <div style={{fontSize: '1.2rem', color: theme.gold}}>{birthDate}</div>
-                </div>
+                {birthDate && (
+                    <div style={{textAlign: 'center'}}>
+                        <div style={{color: '#888', fontSize: '0.8rem'}}>{t.dobLabel}</div>
+                        <div style={{fontSize: '1.2rem', color: theme.gold}}>{birthDate}</div>
+                    </div>
+                )}
             </div>
             
-            <div style={styles.resultContainer} className="result-container-mobile">
-                <div style={styles.toolbar}>
+            <div style={{...styles.resultContainer, border: `1px solid ${theme.gold}`}} className="result-container-mobile">
+                <div style={{...styles.toolbar, borderColor: 'rgba(138, 110, 47, 0.2)'}}>
                     <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
                         <select style={{background: 'transparent', color: theme.darkGold, border: 'none', fontFamily: 'Cinzel, serif', cursor: 'pointer'}} value={language} onChange={onLanguageChange}>
                             {LANGUAGES.map((l: any) => <option key={l.code} value={l.code}>{l.label}</option>)}
@@ -333,24 +474,28 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
                     </div>
                 </div>
 
-                {/* 1. Zodiac Images at Top */}
-                <h3 style={{textAlign: 'center', color: '#8a6e2f', borderBottom: '1px solid #ddd', paddingBottom: '5px', marginTop: '10px'}}>{t.zodiacTitle}</h3>
-                <div style={{display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', marginTop: '10px', marginBottom: '30px'}}>
-                    {zodiac && (
-                        <div style={{textAlign: 'center'}}>
-                            <img src={zodiacImg} style={{width: '100px', height: '100px', borderRadius: '50%', border: `2px solid ${theme.darkGold}`}} />
-                            <div style={{fontWeight: 'bold', color: '#5d4037'}}>{zodiacName}</div>
-                            <div style={{fontSize: '0.8rem', color: '#888'}}>{t.chineseZodiac}</div>
+                {/* 1. Zodiac Images at Top - Only show if available */}
+                {(zodiac || starSign) && (
+                    <>
+                        <h3 style={{textAlign: 'center', color: '#8a6e2f', borderBottom: '1px solid #ddd', paddingBottom: '5px', marginTop: '10px', fontFamily:'Cinzel, serif'}}>{t.zodiacTitle}</h3>
+                        <div style={{display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', marginTop: '10px', marginBottom: '30px'}}>
+                            {zodiac && (
+                                <div style={{textAlign: 'center'}}>
+                                    <img src={zodiacImg} style={{width: '100px', height: '100px', borderRadius: '50%', border: `2px solid ${theme.darkGold}`}} />
+                                    <div style={{fontWeight: 'bold', color: '#5d4037'}}>{zodiacName}</div>
+                                    <div style={{fontSize: '0.8rem', color: '#888'}}>{t.chineseZodiac}</div>
+                                </div>
+                            )}
+                            {starSign && (
+                                <div style={{textAlign: 'center'}}>
+                                    <img src={starSignImg} style={{width: '100px', height: '100px', borderRadius: '50%', border: `2px solid ${theme.darkGold}`}} />
+                                    <div style={{fontWeight: 'bold', color: '#5d4037'}}>{starSignName}</div>
+                                    <div style={{fontSize: '0.8rem', color: '#888'}}>{t.westernZodiac}</div>
+                                </div>
+                            )}
                         </div>
-                    )}
-                    {starSign && (
-                        <div style={{textAlign: 'center'}}>
-                            <img src={starSignImg} style={{width: '100px', height: '100px', borderRadius: '50%', border: `2px solid ${theme.darkGold}`}} />
-                            <div style={{fontWeight: 'bold', color: '#5d4037'}}>{starSignName}</div>
-                            <div style={{fontSize: '0.8rem', color: '#888'}}>{t.westernZodiac}</div>
-                        </div>
-                    )}
-                </div>
+                    </>
+                )}
 
                 <h2 style={{textAlign: 'center', color: '#8a6e2f', fontFamily: 'Cinzel, serif', marginTop: 0}}>{t.resultTitle}</h2>
                 
@@ -361,11 +506,15 @@ export const RenderResultView = ({ t, birthDate, gender, calculatedElements, res
                     </div>
                 ) : (
                    <>
-                        {/* Five Elements Chart */}
-                        <h3 style={{color:'#8a6e2f', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginTop:'20px'}}>
-                             ⚖️ Five Elements (Wu Xing)
-                        </h3>
-                        <FiveElementsChart elements={calculatedElements} t={t} />
+                        {/* Five Elements Chart - Only if calculated */}
+                        {calculatedElements && (
+                            <>
+                                <h3 style={{color: '#8a6e2f', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginTop:'20px', fontFamily: 'Cinzel, serif'}}>
+                                     ⚖️ {t.reportHeaderElements || "Five Elements (Wu Xing)"}
+                                </h3>
+                                <FiveElementsChart elements={calculatedElements} t={t} />
+                            </>
+                        )}
 
                         {/* Main Content (minus Master's Advice) */}
                         <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(mainContent) }} />

@@ -47,9 +47,8 @@ export const FaceMapSVG = ({ t }: { t: any }) => {
   );
 
   return (
-    <div style={{position: 'relative', width: '340px', height: '400px', flex: '1 1 300px', maxWidth: '100%'}}>
-      <h3 style={{position: 'absolute', top: -10, width: '100%', textAlign: 'center', color: '#8a6e2f', fontFamily: 'Cinzel, serif', fontSize: '1.2rem', margin: 0}}>{t.faceMapTitle}</h3>
-      <svg viewBox="0 0 340 400" xmlns="http://www.w3.org/2000/svg" style={{width: '100%', height: '100%'}}>
+    <div style={{position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+      <svg viewBox="0 0 340 400" xmlns="http://www.w3.org/2000/svg" style={{width: '100%', height: '100%', maxHeight: '100%', objectFit: 'contain'}}>
         <g stroke="#d4af37" strokeWidth="1.5" fill="none" opacity="0.8">
           <path d="M110,80 C110,40 230,40 230,80 C230,130 220,240 170,260 C120,240 110,130 110,80" />
           <path d="M110,110 C100,110 100,140 110,150" />

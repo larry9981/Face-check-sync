@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
@@ -12,46 +11,166 @@ import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './co
 import { PrivacyPolicy, TermsOfService, AboutPage } from './pages/StaticPages';
 import { ShopPage } from './pages/ShopPage';
 import { CartPage } from './pages/CartPage'; 
-import { AdminPage } from './pages/AdminPage'; // Import AdminPage
+import { AdminPage } from './pages/AdminPage';
 import { PricingPage } from './pages/PricingPage';
 import { RenderStartView, RenderSelectionView, RenderCameraView, RenderResultView, LoadingSpinner, RenderHistoryView } from './pages/HomeViews';
 
-const API_KEY = process.env.API_KEY;
-// Using gemini-2.5-flash as per guidelines.
-const MODEL_NAME = 'gemini-2.5-flash'; 
+// =========================================================
+// ⚙️ AI PROVIDER CONFIGURATION (SWITCH HERE / 在此处切换模型)
+// =========================================================
+
+// 1. Choose your provider: 'Google' | 'OpenAI' | 'DeepSeek'
+// 1. 选择您的提供商: 'Google' (Gemini) | 'OpenAI' (ChatGPT) | 'DeepSeek' (深度求索)
+type AIProvider = 'Google' | 'OpenAI' | 'DeepSeek';
+const CURRENT_PROVIDER: AIProvider = 'Google'; 
+// const CURRENT_PROVIDER: AIProvider = 'DeepSeek'; 
+
+// 2. Configure Keys and Models
+// 2. 配置密钥和模型
+
+// --- GOOGLE GEMINI CONFIG ---
+const GOOGLE_API_KEY = process.env.API_KEY; // Loaded from environment
+const GOOGLE_MODEL = 'gemini-2.5-flash';
+
+// --- OPENAI (CHATGPT) CONFIG ---
+// Add your key here or use process.env.OPENAI_API_KEY
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "YOUR_OPENAI_KEY_HERE"; 
+const OPENAI_MODEL = 'gpt-4o'; // Recommended for Image Analysis
+
+// --- DEEPSEEK CONFIG ---
+// Add your key here or use process.env.DEEPSEEK_API_KEY
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "YOUR_DEEPSEEK_KEY_HERE"; 
+const DEEPSEEK_BASE_URL = "https://api.deepseek.com/chat/completions";
+const DEEPSEEK_MODEL = 'deepseek-reasoner'; // Or 'deepseek-chat'
+
+// =========================================================
 
 // Music
 const AMBIENT_MUSIC_URL = "https://cdn.pixabay.com/audio/2022/02/07/audio_1919830500.mp3";
 
 // --- AI SERVICE ABSTRACTION ---
-async function callUniversalAI(
-    provider: 'Google', 
-    params: { model: string, prompt: string, base64Image?: string, apiKey: string }
+
+// Helper: Call OpenAI-Compatible APIs (OpenAI & DeepSeek)
+async function callOpenAICompatible(
+    baseUrl: string,
+    apiKey: string,
+    model: string,
+    prompt: string,
+    base64Image?: string
 ) {
-    // Always use Google (Gemini)
-    const ai = new GoogleGenAI({ apiKey: params.apiKey });
-    
-    // Safety Settings: Critical for Face Reading apps to avoid false positives on 'Medical' or 'Harassment'
-    const safetySettings = [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE }
+    const messages: any[] = [
+        {
+            role: "user",
+            content: [
+                { type: "text", text: prompt }
+            ]
+        }
     ];
 
-    return await ai.models.generateContent({
-        model: params.model,
-        contents: {
-            parts: [
-                params.base64Image ? { inlineData: { mimeType: 'image/jpeg', data: params.base64Image } } : null,
-                { text: params.prompt }
-            ].filter(Boolean) as any
-        },
-        config: {
-            safetySettings: safetySettings
+    // Add Image if present (Vision API format)
+    if (base64Image) {
+        // Ensure data URI format
+        const imageUrl = base64Image.startsWith('data:') 
+            ? base64Image 
+            : `data:image/jpeg;base64,${base64Image}`;
+
+        messages[0].content.push({
+            type: "image_url",
+            image_url: {
+                url: imageUrl
+            }
+        });
+    }
+
+    try {
+        const response = await fetch(baseUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: model,
+                messages: messages,
+                max_tokens: 4000
+            })
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`AI Provider Error (${response.status}): ${errText}`);
         }
-    });
+
+        const data = await response.json();
+        return { text: data.choices[0].message.content };
+    } catch (error: any) {
+        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+            throw new Error("Network Error: Could not connect to AI Provider. This may be due to CORS restrictions (browser blocking) or network connectivity. Please use the 'Google' provider for best compatibility in this environment.");
+        }
+        throw error;
+    }
+}
+
+// Main Universal AI Function
+async function callUniversalAI(
+    provider: AIProvider, 
+    params: { prompt: string, base64Image?: string }
+) {
+    console.log(`[System] Calling AI Provider: ${provider}`);
+
+    switch (provider) {
+        case 'Google':
+            // Always use Google (Gemini) SDK
+            const ai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY || "" });
+            
+            // Safety Settings
+            const safetySettings = [
+                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE }
+            ];
+
+            return await ai.models.generateContent({
+                model: GOOGLE_MODEL,
+                contents: {
+                    parts: [
+                        params.base64Image ? { inlineData: { mimeType: 'image/jpeg', data: params.base64Image } } : null,
+                        { text: params.prompt }
+                    ].filter(Boolean) as any
+                },
+                config: {
+                    safetySettings: safetySettings
+                }
+            });
+
+        case 'OpenAI':
+            // Call OpenAI API
+            if (!OPENAI_API_KEY || OPENAI_API_KEY.includes("YOUR_")) throw new Error("OpenAI API Key not configured.");
+            return await callOpenAICompatible(
+                "https://api.openai.com/v1/chat/completions",
+                OPENAI_API_KEY,
+                OPENAI_MODEL,
+                params.prompt,
+                params.base64Image
+            );
+
+        case 'DeepSeek':
+            // Call DeepSeek API
+            if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY.includes("YOUR_")) throw new Error("DeepSeek API Key not configured.");
+            // Note: Check if the specific DeepSeek model supports image input. If not, this might fail or ignore the image.
+            return await callOpenAICompatible(
+                DEEPSEEK_BASE_URL,
+                DEEPSEEK_API_KEY,
+                DEEPSEEK_MODEL,
+                params.prompt,
+                params.base64Image
+            );
+
+        default:
+            throw new Error(`Unknown AI Provider: ${provider}`);
+    }
 }
 
 // Helper for Retry with Error Parsing
@@ -65,7 +184,8 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, 
         // Extract status/code. Handle both number (429) and string ("RESOURCE_EXHAUSTED")
         const code = errorObj?.code;
         const status = errorObj?.status;
-        const message = errorObj?.message || JSON.stringify(errorObj);
+        // Construct a full string dump to search for keywords
+        const message = (errorObj?.message || "") + JSON.stringify(errorObj);
         
         // Parse "retry in X seconds" if available
         let waitTime = delay;
@@ -74,16 +194,17 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, 
             waitTime = Math.ceil(parseFloat(retryMatch[1])) * 1000 + 2000; // Add 2s buffer
         }
 
-        // Abort if wait time is absurdly long (> 150 seconds)
-        if (waitTime > 150000) {
+        // Abort if wait time is absurdly long (> 180 seconds) - Increased cap for safety
+        if (waitTime > 180000) {
             console.warn(`Retry time ${waitTime}ms too long. Aborting.`);
             throw err;
         }
 
         // Check for 429 / Resource Exhausted / 5xx Server Errors
+        // Use loose equality (==) for code to catch "429" string vs 429 number
         const isRateLimit = 
-            code === 429 || 
-            status === 429 ||
+            code == 429 || 
+            status == 429 ||
             status === 'RESOURCE_EXHAUSTED' || 
             message.includes('429') || 
             message.includes('RESOURCE_EXHAUSTED') ||
@@ -102,7 +223,8 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, 
              await new Promise(resolve => setTimeout(resolve, waitTime));
              
              // If we had a specific wait time from the API, stick closer to it for the next loop rather than exploding exponentially
-             const nextDelay = retryMatch ? waitTime : waitTime * 1.5;
+             // But if we fail again immediately, backing off slightly more is safe.
+             const nextDelay = retryMatch ? waitTime + 2000 : waitTime * 1.5;
              
              return callWithRetry(fn, retries - 1, nextDelay, onRetry); 
         }
@@ -179,6 +301,7 @@ const App = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [view, setView] = useState<'start' | 'selection' | 'camera' | 'analyzing' | 'result'>('start');
+  const [readingType, setReadingType] = useState<'face' | 'palm'>('face'); // New state to toggle between face and palm reading
   const [image, setImage] = useState<string | null>(null);
   const [resultText, setResultText] = useState<string>("");
   const [showPaywall, setShowPaywall] = useState(false);
@@ -201,7 +324,8 @@ const App = () => {
   const [dobSecond, setDobSecond] = useState('00');
   const [gender, setGender] = useState('male');
   const [userName, setUserName] = useState(''); // New state for Name input
-  
+  const [useAdvancedAnalysis, setUseAdvancedAnalysis] = useState(false); // State for advanced checkbox
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -246,12 +370,13 @@ const App = () => {
       if (view === 'result' && resultText) {
           setIsTranslating(true);
           try {
-              if (!API_KEY) throw new Error("API Key missing");
-              // Use Google for quick translation
-              const response = await callUniversalAI('Google', {
-                  model: MODEL_NAME,
-                  apiKey: API_KEY,
+              // Use Google for quick translation, wrap in Retry for quota management
+              // Note: We use 'Google' explicitly for translation to ensure speed and low cost, 
+              // regardless of CURRENT_PROVIDER
+              const response = await callWithRetry(() => callUniversalAI('Google', {
                   prompt: `Translate markdown to ${newLang}. Preserve format. Text:\n\n${resultText}`
+              }), 3, 2000, (retryMsg) => {
+                  console.log("Translation waiting for quota: " + retryMsg);
               });
               
               if (response.text) {
@@ -260,7 +385,10 @@ const App = () => {
           } catch (e: any) {
               console.error("Translation failed", e);
               // Handle quota error specifically for UI feedback
-              if (e?.status === 429 || e?.message?.includes('429') || e?.message?.includes('RESOURCE_EXHAUSTED')) {
+              const errorObj = e?.error || e;
+              const msg = errorObj?.message || JSON.stringify(errorObj);
+              
+              if (errorObj?.status === 429 || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
                   alert("Translation unavailable due to high system traffic. Showing original text.");
               }
           } finally {
@@ -269,8 +397,11 @@ const App = () => {
       }
   };
 
-  const startCamera = async () => {
-    if (!birthDate) { alert("Please complete your birth date."); return; }
+  const startCamera = async (type: 'face' | 'palm') => {
+    setReadingType(type);
+    // Only enforce birth date if advanced analysis is requested
+    if (useAdvancedAnalysis && !birthDate) { alert("Please complete your birth date."); return; }
+    
     setView('camera'); 
     if (!isPlayingMusic) setIsPlayingMusic(true);
     try { 
@@ -287,27 +418,44 @@ const App = () => {
   };
   const stopCamera = () => { if (videoRef.current && videoRef.current.srcObject) { (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop()); videoRef.current.srcObject = null; } };
   
-  const capturePhoto = async () => {
+  const capturePhoto = async (): Promise<boolean> => {
     if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current; const canvas = canvasRef.current; 
+      const video = videoRef.current;
+      
+      // Ensure video is ready
+      if (video.readyState !== 4) {
+          console.warn("Video not ready yet");
+          return false;
+      }
+
+      const canvas = canvasRef.current; 
       // Set to 1024 to resize capture
       canvas.width = 1024; 
       canvas.height = (video.videoHeight / video.videoWidth) * 1024;
       
-      const ctx = canvas.getContext('2d'); if (ctx) { 
+      const ctx = canvas.getContext('2d'); 
+      if (ctx) { 
           ctx.translate(canvas.width, 0); 
           ctx.scale(-1, 1); 
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+          
+          // Image Validation removed as requested by user
+          // Proceed directly to capture
+
           const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality 
           setImage(dataUrl); 
           stopCamera(); 
-          processImage(dataUrl); 
+          processImage(dataUrl);
+          return true;
       }
     }
+    return false;
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!birthDate) { alert("Please complete your birth date."); e.target.value = ''; return; }
+    // Only enforce birth date if advanced analysis is requested
+    if (useAdvancedAnalysis && !birthDate) { alert("Please complete your birth date."); e.target.value = ''; return; }
+    
     if (!isPlayingMusic) setIsPlayingMusic(true);
     const file = e.target.files?.[0];
     if (file) {
@@ -351,9 +499,20 @@ const App = () => {
     }
     if (userState.hasPaidSingle) { setUserState(prev => ({ ...prev, hasPaidSingle: false })); }
 
-    const wuXingResult = calculateWuXing(dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond);
-    const starSign = getWesternZodiac(birthDate);
-    setCalculatedElements(wuXingResult);
+    // Conditional Calculations based on Advanced Mode
+    let wuXingResult: any = null;
+    let starSign: string | null = null;
+    let age = 0;
+
+    if (useAdvancedAnalysis && birthDate) {
+        wuXingResult = calculateWuXing(dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond);
+        starSign = getWesternZodiac(birthDate);
+        setCalculatedElements(wuXingResult);
+        age = calculateAge(birthDate);
+    } else {
+        setCalculatedElements(null); // Reset if not using advanced mode
+    }
+
     const currentDateStr = now.toLocaleDateString();
     
     setView('analyzing');
@@ -370,90 +529,155 @@ const App = () => {
       
       const langConfig = LANGUAGES.find(l => l.code === language);
       const targetLangName = langConfig?.label || 'English';
-      const age = calculateAge(birthDate);
       
+      let prompt = '';
+
       const headers = {
-          aura: t.reportHeaderAura || "General Aura",
-          elements: t.reportHeaderElements || "Five Elements (Wu Xing)",
-          name: t.reportHeaderName || "Name Analysis",
-          star: t.reportHeaderStar || "Western Zodiac Analysis",
-          fortune: t.reportHeaderFortune || "Temporal Fortune",
-          wealth: t.reportHeaderWealth || "Wealth & Fortune",
-          family: t.reportHeaderFamily || "Family & Relationships",
-          parents: t.reportHeaderParents || "Parents & Ancestors",
-          advice: t.reportHeaderAdvice || "Master's Advice"
+        aura: t.reportHeaderAura || "General Aura",
+        elements: t.reportHeaderElements || "Five Elements (Wu Xing)",
+        name: t.reportHeaderName || "Name Analysis",
+        star: t.reportHeaderStar || "Western Zodiac Analysis",
+        fortune: t.reportHeaderFortune || "Temporal Fortune",
+        wealth: t.reportHeaderWealth || "Wealth & Fortune",
+        family: t.reportHeaderFamily || "Family & Relationships",
+        parents: t.reportHeaderParents || "Parents & Ancestors",
+        advice: t.reportHeaderAdvice || "Master's Advice",
+        health: t.reportHeaderHealth || "Health Analysis",
+        love: t.reportHeaderLove || "Emotional Analysis",
+        dailyLuck: t.reportHeaderDailyLuck || "Today's Luck"
       };
 
-      // Construct Prompt
-      let prompt = `
-        You are a grandmaster of traditional Chinese physiognomy (Mianxiang) and Bazi Astrology.
-        The user is ${gender}, born on ${birthDate} at ${dobHour}:${dobMinute}:${dobSecond}. (Age: ${age}).
-        **Current Date/Time of Reading:** ${currentDateStr}
-        Calculated Birth Five Elements (Wu Xing) Strength: Metal: ${wuXingResult.scores.Metal}%, Wood: ${wuXingResult.scores.Wood}%, Water: ${wuXingResult.scores.Water}%, Fire: ${wuXingResult.scores.Fire}%, Earth: ${wuXingResult.scores.Earth}%.
-        Weakest Element in Birth Chart: ${wuXingResult.missingElement}.
-        Western Zodiac Sign: ${starSign}.
-      `;
+      if (readingType === 'palm') {
+           // --- PALMISTRY PROMPT ---
+           prompt = `
+            You are a grandmaster of Palmistry (Chiromancy).
+            The user is ${gender}.
+            **Current Date/Time of Reading:** ${currentDateStr}
+            
+            Analyze the palm image provided. Identify the Life Line, Head Line, Heart Line, and Fate Line.
+            
+            Structure your response EXACTLY as follows in Markdown:
+            ## 🔮 ${headers.dailyLuck}
+            [Analyze today's fortune based on the palm color and energy readings.]
+            
+            ## 🌿 ${headers.health}
+            [Analyze the Life Line and general hand shape for vitality and physical well-being advice.]
+            
+            ## ❤️ ${headers.love}
+            [Analyze the Heart Line for emotional stability, relationships, and love life predictions.]
+            `;
+            
+            if (useAdvancedAnalysis && wuXingResult) {
+                prompt += `
+            ## ⚖️ ${headers.elements}
+            *   🪙 **${t.elementMetal}:** [Brief analysis based on hand shape and Birth Element: Metal Strength ${wuXingResult.scores.Metal}%]
+            *   🌲 **${t.elementWood}:** [Brief analysis based on hand shape and Birth Element: Wood Strength ${wuXingResult.scores.Wood}%]
+            *   💧 **${t.elementWater}:** [Brief analysis based on hand shape and Birth Element: Water Strength ${wuXingResult.scores.Water}%]
+            *   🔥 **${t.elementFire}:** [Brief analysis based on hand shape and Birth Element: Fire Strength ${wuXingResult.scores.Fire}%]
+            *   ⛰️ **${t.elementEarth}:** [Brief analysis based on hand shape and Birth Element: Earth Strength ${wuXingResult.scores.Earth}%]
+                `;
+            } else {
+                 prompt += `
+            ## ⚖️ ${headers.elements}
+            *   🪙 **${t.elementMetal}:** [Brief analysis based on hand shape]
+            *   🌲 **${t.elementWood}:** [Brief analysis based on hand shape]
+            *   💧 **${t.elementWater}:** [Brief analysis based on hand shape]
+            *   🔥 **${t.elementFire}:** [Brief analysis based on hand shape]
+            *   ⛰️ **${t.elementEarth}:** [Brief analysis based on hand shape]
+                 `;
+            }
 
-      if (userName) {
-          prompt += `\n**User Name:** "${userName}". Analyze if this name balances their missing element (${wuXingResult.missingElement}). If Chinese characters, analyze the radicals. If other language, analyze the sound.`;
-      }
+            prompt += `
+            ## 📜 ${headers.advice}
+            [Provide specific practical advice based on the reading. Suggest specific colors to wear, jewelry, and lifestyle habits. Be very specific. Use double line breaks between paragraphs for clarity.]
+            
+            IMPORTANT: Output the response DIRECTLY in ${targetLangName}.
+           `;
+      } else {
+          // --- FACE READING PROMPT ---
+          prompt = `
+            You are a grandmaster of traditional Chinese physiognomy (Mianxiang).
+            The user is ${gender}.
+            **Current Date/Time of Reading:** ${currentDateStr}
+          `;
 
-      prompt += `
-        Analyze this person's face with a respectful, ancient, and insightful tone.
-        **CRITICAL TASK**: Compare their Birth Date (Bazi) against the Current Date (${currentDateStr}). Determine if there are any clashes or harmonies today and for this current month.
-        
-        Structure your response EXACTLY as follows in Markdown (Use the EXACT translated headers provided):
-        ## 🔮 ${headers.aura}
-        [Analysis here]
-        ## ⚖️ ${headers.elements}
-        *   🪙 **${t.elementMetal}:** [Analysis]
-        *   🌲 **${t.elementWood}:** [Analysis]
-        *   💧 **${t.elementWater}:** [Analysis]
-        *   🔥 **${t.elementFire}:** [Analysis]
-        *   ⛰️ **${t.elementEarth}:** [Analysis]
-        ## 🌌 ${headers.star}
-        [Analyze their Western Zodiac sign (${starSign}). Discuss personality traits and current cosmic planetary influences.]
-      `;
-      
-      if (userName) {
+          if (useAdvancedAnalysis && wuXingResult) {
+              prompt += `
+            The user was born on ${birthDate} at ${dobHour}:${dobMinute}:${dobSecond}. (Age: ${age}).
+            Calculated Birth Five Elements (Wu Xing) Strength: Metal: ${wuXingResult.scores.Metal}%, Wood: ${wuXingResult.scores.Wood}%, Water: ${wuXingResult.scores.Water}%, Fire: ${wuXingResult.scores.Fire}%, Earth: ${wuXingResult.scores.Earth}%.
+            Weakest Element in Birth Chart: ${wuXingResult.missingElement}.
+            Western Zodiac Sign: ${starSign}.
+            
+            **CRITICAL TASK**: Compare their Birth Date (Bazi) against the Current Date (${currentDateStr}). Determine if there are any clashes or harmonies today and for this current month.
+            
+            If User Name is provided ("${userName}"), analyze if this name balances their missing element (${wuXingResult.missingElement}).
+              `;
+          } else {
+              prompt += `
+            Analyze this person's face purely based on visual physiognomy features. Estimate their approximate age range and vitality.
+              `;
+          }
+
           prompt += `
-        ## ✍️ ${headers.name}
-        [Analyze the name "${userName}" in relation to their Five Elements. Does it help balance the missing ${wuXingResult.missingElement}? Suggest improvements if needed.]
+            Analyze this person's face with a respectful, ancient, and insightful tone.
+            
+            Structure your response EXACTLY as follows in Markdown (Use the EXACT translated headers provided):
+            ## 🔮 ${headers.aura}
+            [Analysis of overall face shape, eyes, and energy]
+          `;
+
+          if (useAdvancedAnalysis && wuXingResult) {
+             prompt += `
+            ## ⚖️ ${headers.elements}
+            *   🪙 **${t.elementMetal}:** [Analysis combined with birth chart]
+            *   🌲 **${t.elementWood}:** [Analysis combined with birth chart]
+            *   💧 **${t.elementWater}:** [Analysis combined with birth chart]
+            *   🔥 **${t.elementFire}:** [Analysis combined with birth chart]
+            *   ⛰️ **${t.elementEarth}:** [Analysis combined with birth chart]
+            ## 🌌 ${headers.star}
+            [Analyze their Western Zodiac sign (${starSign}). Discuss personality traits and current cosmic planetary influences.]
+             `;
+             if (userName) {
+                prompt += `
+            ## ✍️ ${headers.name}
+            [Analyze the name "${userName}" in relation to their Five Elements. Does it help balance the missing ${wuXingResult.missingElement}? Suggest improvements if needed.]
+                `;
+             }
+          } else {
+               prompt += `
+            ## ⚖️ ${headers.elements}
+            *   🪙 **${t.elementMetal}:** [Visual analysis of face shape]
+            *   🌲 **${t.elementWood}:** [Visual analysis of face shape]
+            *   💧 **${t.elementWater}:** [Visual analysis of face shape]
+            *   🔥 **${t.elementFire}:** [Visual analysis of face shape]
+            *   ⛰️ **${t.elementEarth}:** [Visual analysis of face shape]
+               `;
+          }
+
+          prompt += `
+            ## 📅 ${headers.fortune} (Date: ${currentDateStr})
+            *   **Today's Luck:** [Analyze today's luck based on facial glow/energy]
+            *   **Monthly Forecast:** [Analyze this month's luck]
+            ## 💰 ${headers.wealth}
+            [Analysis of nose/wealth palace]
+            ## 🏠 ${headers.family}
+            [Analysis of eyes/relationships]
+            ## 👴 ${headers.parents}
+            [Analysis of forehead/parents palace]
+            ## 📜 ${headers.advice}
+            [Provide specific practical advice here on how they can improve their energy. Suggest specific colors to wear, types of jewelry (e.g. gold, wood, crystal), and lifestyle habits. Be very specific. Use double line breaks between paragraphs for clarity.]
+            
+            IMPORTANT: Output the response DIRECTLY in ${targetLangName}. 
+            ENSURE "Five Elements" header is EXACTLY: ## ⚖️ ${headers.elements}
+            Ensure the emojis (🪙, 🌲, 💧, 🔥, ⛰️) are used at the start of each Five Elements line.
           `;
       }
-
-      prompt += `
-        ## 📅 ${headers.fortune} (Date: ${currentDateStr})
-        *   **Today's Luck:** [Analyze today's luck based on birth/current date clash/harmony]
-        *   **Monthly Forecast:** [Analyze this month's luck]
-        ## 💰 ${headers.wealth}
-        [Analysis here]
-        ## 🏠 ${headers.family}
-        [Analysis here]
-        ## 👴 ${headers.parents}
-        [Analysis here]
-        ## 📜 ${headers.advice}
-        [Provide specific practical advice here on how they can improve their ${wuXingResult.missingElement} energy. Suggest specific colors to wear, types of jewelry (e.g. gold, wood, crystal), and lifestyle habits. Be very specific. Use double line breaks between paragraphs for clarity.]
-        
-        IMPORTANT: Output the response DIRECTLY in ${targetLangName}. 
-        ENSURE "Five Elements" header is EXACTLY: ## ⚖️ ${headers.elements}
-        Ensure the emojis (🪙, 🌲, 💧, 🔥, ⛰️) are used at the start of each Five Elements line.
-      `;
       
-      // FORCE GOOGLE GEMINI
-      let provider: 'Google' = 'Google';
-      let model = MODEL_NAME;
-      let apiKey = API_KEY;
-
-      // Execute Call
-      if (!apiKey) throw new Error("No API Key available.");
-
+      // Execute Call via Universal AI Handler
       // Increased retries to 5 to tolerate long waits
-      const apiCall = callWithRetry(() => callUniversalAI(provider, {
-          model,
+      const apiCall = callWithRetry(() => callUniversalAI(CURRENT_PROVIDER, {
           prompt,
-          base64Image: base64Data,
-          apiKey
+          base64Image: base64Data
       }), 5, 4000, (retryMsg) => {
           setLoadingMessage(retryMsg);
       });
@@ -474,10 +698,10 @@ const App = () => {
           id: Date.now(),
           date: now.toLocaleDateString(),
           resultText: newResultText,
-          elements: wuXingResult,
+          elements: wuXingResult, // Might be null if not advanced
           name: userName,
           gender: gender,
-          birthDate: birthDate
+          birthDate: birthDate || "Not Provided"
       };
       setUserState(prev => {
           const updatedHistory = [newHistoryItem, ...(prev.history || [])].slice(0, 5);
@@ -658,7 +882,7 @@ const App = () => {
         <div className="nav-container">
           <div style={styles.logo} onClick={handleGoHome}>
             <div style={{width: '30px', height: '30px'}}>{BaguaSVG}</div>
-            {t.title}
+            <span style={{color: theme.gold}}>{t.title}</span>
           </div>
           <div className="nav-links">
              <span style={getNavLinkStyle('home')} onClick={handleGoHome}>{t.home}</span>
@@ -675,7 +899,7 @@ const App = () => {
                  <i className="fas fa-shopping-cart" style={{color: currentPage === 'cart' ? theme.gold : theme.gold}}></i>
                  {cart.length > 0 && <span style={{position: 'absolute', top: '-8px', right: '-8px', background: '#c0392b', color: '#fff', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{cart.reduce((a,c) => a + c.quantity, 0)}</span>}
              </div>
-             <select style={{background: 'transparent', color: '#ccc', border: '1px solid #555', borderRadius: '4px', padding: '2px', marginLeft: '10px'}} value={language} onChange={(e) => switchLanguage(e.target.value)}>
+             <select style={{background: 'rgba(0,0,0,0.5)', color: theme.gold, border: '1px solid #555', borderRadius: '4px', padding: '2px', marginLeft: '10px'}} value={language} onChange={(e) => switchLanguage(e.target.value)}>
                 {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
              </select>
           </div>
@@ -706,21 +930,23 @@ const App = () => {
         )}
 
         {currentPage === 'home' && (
-             <div style={styles.heroSection}>
-                {view === 'start' && <RenderStartView t={t} freeTrials={getDaysRemaining()} onStart={() => setView('selection')} />}
+             <div style={{...styles.heroSection, paddingTop: '1rem'}}>
+                {view === 'start' && <RenderStartView t={t} freeTrials={getDaysRemaining()} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
                 {view === 'selection' && <RenderSelectionView 
                     t={t} 
+                    readingType={readingType}
                     gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
                     uploadProgress={uploadProgress}
                     userName={userName} onSetUserName={setUserName} 
                     onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
-                    onStartCamera={startCamera} onUpload={handleFileUpload} onBack={() => setView('start')}
+                    onStartCamera={() => startCamera(readingType)} onUpload={handleFileUpload} onBack={() => setView('start')}
                     language={language}
+                    useAdvancedAnalysis={useAdvancedAnalysis} onToggleAdvanced={() => setUseAdvancedAnalysis(!useAdvancedAnalysis)}
                 />}
-                {view === 'camera' && <RenderCameraView t={t} videoRef={videoRef} canvasRef={canvasRef} onStopCamera={() => { stopCamera(); setView('selection'); }} onCapture={capturePhoto} />}
+                {view === 'camera' && <RenderCameraView t={t} readingType={readingType} videoRef={videoRef} canvasRef={canvasRef} onStopCamera={() => { stopCamera(); setView('selection'); }} onCapture={capturePhoto} />}
                 {view === 'analyzing' && <LoadingSpinner t={t} progress={analysisProgress} message={loadingMessage} />}
                 {view === 'result' && <RenderResultView 
-                    t={t} birthDate={birthDate} gender={gender} calculatedElements={calculatedElements} resultText={resultText} 
+                    t={t} readingType={readingType} birthDate={birthDate} gender={gender} calculatedElements={calculatedElements} resultText={resultText} 
                     language={language} isSpeaking={isSpeaking} isTranslating={isTranslating} LANGUAGES={LANGUAGES}
                     onLanguageChange={(e: any) => switchLanguage(e.target.value)}
                     onToggleSpeech={toggleSpeech} onAnalyzeAnother={() => { setView('selection'); setImage(null); setResultText(""); }}
@@ -730,19 +956,19 @@ const App = () => {
                     <div style={{marginTop: '4rem', maxWidth: '1000px', width: '100%'}} className="desktop-only">
                        <h2 style={{color: theme.gold, marginBottom: '2rem'}}>{t.howItWorks}</h2>
                        <div className="feature-grid">
-                          <div style={{flex: 1, minWidth: '200px'}}>
-                              <i className="fas fa-camera" style={{fontSize: '2rem', color: theme.darkGold, marginBottom: '1rem'}}></i>
-                              <h3>{t.step1Title}</h3>
+                          <div style={{flex: 1, minWidth: '200px', background: 'rgba(0,0,0,0.4)', padding:'20px', borderRadius:'8px', border:'1px solid rgba(212, 175, 55, 0.2)'}}>
+                              <i className="fas fa-fingerprint" style={{fontSize: '2rem', color: theme.gold, marginBottom: '1rem'}}></i>
+                              <h3 style={{color: theme.gold}}>{t.step1Title}</h3>
                               <p style={{color: '#aaa'}}>{t.step1Desc}</p>
                           </div>
-                          <div style={{flex: 1, minWidth: '200px'}}>
-                              <i className="fas fa-brain" style={{fontSize: '2rem', color: theme.darkGold, marginBottom: '1rem'}}></i>
-                              <h3>{t.step2Title}</h3>
+                          <div style={{flex: 1, minWidth: '200px', background: 'rgba(0,0,0,0.4)', padding:'20px', borderRadius:'8px', border:'1px solid rgba(212, 175, 55, 0.2)'}}>
+                              <i className="fas fa-microchip" style={{fontSize: '2rem', color: theme.gold, marginBottom: '1rem'}}></i>
+                              <h3 style={{color: theme.gold}}>{t.step2Title}</h3>
                               <p style={{color: '#aaa'}}>{t.step2Desc}</p>
                           </div>
-                          <div style={{flex: 1, minWidth: '200px'}}>
-                              <i className="fas fa-scroll" style={{fontSize: '2rem', color: theme.darkGold, marginBottom: '1rem'}}></i>
-                              <h3>{t.step3Title}</h3>
+                          <div style={{flex: 1, minWidth: '200px', background: 'rgba(0,0,0,0.4)', padding:'20px', borderRadius:'8px', border:'1px solid rgba(212, 175, 55, 0.2)'}}>
+                              <i className="fas fa-file-invoice-dollar" style={{fontSize: '2rem', color: theme.gold, marginBottom: '1rem'}}></i>
+                              <h3 style={{color: theme.gold}}>{t.step3Title}</h3>
                               <p style={{color: '#aaa'}}>{t.step3Desc}</p>
                           </div>
                        </div>

@@ -1,9 +1,59 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { theme, styles } from '../theme';
 import { Product } from '../types';
 import { SHOP_PRODUCTS } from '../products';
-import { hashCode } from '../utils';
+import { ImagePersistence } from '../utils';
+
+// Sub-component for individual product cards to handle async image loading
+const ProductCard = ({ product, t, onViewProduct }: { product: Product, t: any, onViewProduct: (p: Product) => void }) => {
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    const zodiacLocal = t[`zodiac${product.zodiac}`] || t[`star${product.zodiac}`] || product.zodiac;
+    const name = t[product.nameKey] ? t[product.nameKey].replace('{zodiac}', zodiacLocal) : product.defaultName;
+
+    useEffect(() => {
+        let isMounted = true;
+        setLoading(true);
+
+        // Use ImagePersistence to get cached blob or fetch new
+        ImagePersistence.loadImage(product.id, product.imagePrompt, 512)
+            .then(url => {
+                if (isMounted) {
+                    setImageUrl(url);
+                    setLoading(false);
+                }
+            })
+            .catch(() => {
+                if (isMounted) setLoading(false);
+            });
+
+        return () => { isMounted = false; };
+    }, [product.id, product.imagePrompt]);
+
+    return (
+        <div style={{...styles.glassPanel, maxWidth: '250px', padding: '0', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(212, 175, 55, 0.3)'}} onClick={() => onViewProduct(product)}>
+            <div style={{width: '100%', height: '250px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
+                {loading || !imageUrl ? (
+                     <div style={{color: theme.darkGold}}>
+                         <i className="fas fa-circle-notch fa-spin" style={{fontSize: '2rem'}}></i>
+                     </div>
+                ) : (
+                    <img 
+                        src={imageUrl} 
+                        alt={name} 
+                        style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                    />
+                )}
+            </div>
+            <div style={{padding: '1.5rem', textAlign: 'center'}}>
+                <h3 style={{fontSize: '1.1rem', color: theme.gold, marginBottom: '0.5rem', fontFamily: 'Cinzel, serif', height: '1.5em', overflow: 'hidden'}}>{name}</h3>
+                <p style={{color: '#fff', fontWeight: 'bold'}}>{product.price}</p>
+            </div>
+        </div>
+    );
+};
 
 export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Product) => void }) => {
     const [activeCategory, setActiveCategory] = useState<'chinese' | 'western'>('chinese');
@@ -12,11 +62,6 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
         if (activeCategory === 'western') return p.category === 'amulet';
         return true;
     });
-
-    // Helper to handle image error
-    const handleImageError = (e: any) => {
-        e.target.src = "https://placehold.co/512x512/000000/d4af37?text=Mystic+Item";
-    };
 
     return (
         <div style={{maxWidth: '1200px', width: '95%', paddingBottom: '3rem'}}>
@@ -29,31 +74,9 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
                 <button onClick={() => setActiveCategory('western')} style={{background: activeCategory === 'western' ? theme.gold : 'transparent', color: activeCategory === 'western' ? '#000' : theme.gold, border: `1px solid ${theme.gold}`, padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{t.shopCategoryWestern}</button>
             </div>
             <div style={{display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center'}}>
-                {filteredProducts.map((prod) => {
-                   const zodiacLocal = t[`zodiac${prod.zodiac}`] || t[`star${prod.zodiac}`] || prod.zodiac;
-                   const name = t[prod.nameKey] ? t[prod.nameKey].replace('{zodiac}', zodiacLocal) : prod.defaultName;
-                   // Use numeric seed for reliable caching
-                   const seed = hashCode(prod.id);
-                   const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prod.imagePrompt)}?width=512&height=512&nologo=true&seed=${seed}`;
-                   
-                   return (
-                       <div key={prod.id} style={{...styles.glassPanel, maxWidth: '250px', padding: '0', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(212, 175, 55, 0.3)'}} onClick={() => onViewProduct(prod)}>
-                           <div style={{width: '100%', height: '250px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                               <img 
-                                   src={imageUrl} 
-                                   alt={name} 
-                                   style={{width: '100%', height: '100%', objectFit: 'cover'}} 
-                                   loading="lazy" 
-                                   onError={handleImageError}
-                               />
-                           </div>
-                           <div style={{padding: '1.5rem', textAlign: 'center'}}>
-                               <h3 style={{fontSize: '1.1rem', color: theme.gold, marginBottom: '0.5rem', fontFamily: 'Cinzel, serif', height: '1.5em', overflow: 'hidden'}}>{name}</h3>
-                               <p style={{color: '#fff', fontWeight: 'bold'}}>{prod.price}</p>
-                           </div>
-                       </div>
-                   );
-                })}
+                {filteredProducts.map((prod) => (
+                    <ProductCard key={prod.id} product={prod} t={t} onViewProduct={onViewProduct} />
+                ))}
             </div>
         </div>
     );

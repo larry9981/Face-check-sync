@@ -18,11 +18,11 @@ export const LANGUAGES = [
 export const TRANSLATIONS: any = {
   'en': {
     title: "Mystic Face", subtitle: "AI Fortune Teller", home: "Home", pricing: "Pricing", shop: "Shop", about: "About", privacy: "Privacy", terms: "Terms", history: "History",
-    heroTitle: "Mystic Face", heroDesc: "Unlock the secrets written in your features. Ancient AI Physiognomy analysis for wealth, love, and destiny.",
-    startBtn: "Start Reading", chooseMethod: "Profile & Method", scanBtn: "Scan Face", uploadBtn: "Upload Photo", cancelBtn: "Cancel", backBtn: "Back",
-    analyzeBtn: "Analyze Destiny", analyzingTitle: "Divining Fate...", analyzingDesc: "Consulting the I Ching & Analyzing Physiognomy",
+    heroTitle: "Mystic Destiny", heroDesc: "Decode your destiny through the ancient wisdom of Physiognomy and Palmistry.",
+    startBtn: "Face Reading", palmBtn: "Palm Reading", chooseMethod: "Profile & Method", scanBtn: "Scan Face", scanPalmBtn: "Scan Palm", uploadBtn: "Upload Photo", cancelBtn: "Cancel", backBtn: "Back",
+    analyzeBtn: "Analyze Destiny", analyzingTitle: "Consulting the Spirits...", analyzingDesc: "Interpreting biometric data against ancient texts",
     resultTitle: "Destiny Analysis", readAloud: "Read", stop: "Stop", translating: "Translating...", analyzeAnother: "Analyze Another",
-    howItWorks: "How It Works", step1Title: "1. Capture", step1Desc: "Take a clear photo of your face or upload an existing one.", step2Title: "2. AI Analysis", step2Desc: "Our Gemini-powered engine maps 108 facial landmarks.", step3Title: "3. Reveal Destiny", step3Desc: "Receive a comprehensive report on wealth, health, and family.",
+    howItWorks: "How It Works", step1Title: "1. Capture", step1Desc: "Upload an image of your face or palm.", step2Title: "2. Analysis", step2Desc: "Our AI maps your features to ancient charts.", step3Title: "3. Revelation", step3Desc: "Receive your comprehensive fortune report.",
     paywallTitle: "Tribute Required", paywallDesc: "Your 3-day free trial has expired.", paySingle: "Unlock 1 Reading", paySub: "See Plans",
     footerRight: "All rights reserved.", footerDisclaimer: "This site is for entertainment purposes only.",
     pricingTitle: "Choose Your Path", planSingle: "Single Destiny", planSinglePrice: "$1.99", planSingleDesc: "One detailed face reading report including wealth, career, and love analysis.",
@@ -35,10 +35,11 @@ export const TRANSLATIONS: any = {
     zoneBrowsTitle: "Siblings", zoneBrowsDesc: "Brotherhood", zoneEyesTitle: "Spirit", zoneEyesDesc: "Wisdom", zoneSpouseTitle: "Marriage", zoneSpouseDesc: "Love",
     zoneChildrenTitle: "Children", zoneChildrenDesc: "Legacy", zoneNoseTitle: "Wealth", zoneNoseDesc: "Money", zoneMouthTitle: "Speech", zoneMouthDesc: "Relations", zoneChinTitle: "Life", zoneChinDesc: "Stability",
     dobLabel: "Date of Birth", timeLabel: "Time of Birth", dateYear: "Year", dateMonth: "Month", dateDay: "Day", timeHour: "Hour", timeMinute: "Min", timeSecond: "Sec",
-    ageLabel: "Age", profileTitle: "Personal Profile", genderLabel: "Gender", genderMale: "Male", genderFemale: "Female", genderOther: "Other", nameLabel: "Name (Optional)",
+    ageLabel: "Age", profileTitle: "Subject Profile", genderLabel: "Gender", genderMale: "Male", genderFemale: "Female", genderOther: "Other", nameLabel: "Name (Optional)",
+    combineAnalysis: "Combine Name & Birth Date Analysis",
     zodiacTitle: "Cosmic Alignment", chineseZodiac: "Chinese Zodiac", westernZodiac: "Star Sign", recommendedProducts: "Boost Your Fortune",
-    buyNow: "Buy Now", addToCart: "Add to Cart", cart: "Cart", shopTitle: "Spiritual Shop", shopDesc: "Handcrafted talismans to enhance your Qi and balance your Five Elements.",
-    shopCategoryChinese: "Chinese Zodiac Collection", shopCategoryWestern: "Star Sign Collection", productDetails: "Product Details", luckyElement: "Lucky Element Needed",
+    buyNow: "Buy Now", addToCart: "Add to Cart", cart: "Cart", shopTitle: "Spiritual Treasures", shopDesc: "Artifacts to enhance your Qi and balance your Five Elements.",
+    shopCategoryChinese: "Chinese Zodiac Collection", shopCategoryWestern: "Star Sign Collection", productDetails: "Artifact Specs", luckyElement: "Lucky Element Needed",
     zodiacRat: "Rat", zodiacOx: "Ox", zodiacTiger: "Tiger", zodiacRabbit: "Rabbit", zodiacDragon: "Dragon", zodiacSnake: "Snake", zodiacHorse: "Horse", zodiacGoat: "Goat", zodiacMonkey: "Monkey", zodiacRooster: "Rooster", zodiacDog: "Dog", zodiacPig: "Pig",
     starAries: "Aries", starTaurus: "Taurus", starGemini: "Gemini", starCancer: "Cancer", starLeo: "Leo", starVirgo: "Virgo", starLibra: "Libra", starScorpio: "Scorpio", starSagittarius: "Sagittarius", starCapricorn: "Capricorn", starAquarius: "Aquarius", starPisces: "Pisces",
     elementMetal: "Metal", elementWood: "Wood", elementWater: "Water", elementFire: "Fire", elementEarth: "Earth",
@@ -51,6 +52,7 @@ export const TRANSLATIONS: any = {
     luckyColors: "Lucky Colors", luckyDirection: "Lucky Direction", luckyHabit: "Habits to Adopt", recommendedCures: "Recommended Cures",
     namingAdvice: "Naming Advice", philosophy: "Life Philosophy",
     reportHeaderAura: "General Aura", reportHeaderElements: "Five Elements (Wu Xing)", reportHeaderName: "Name Analysis", reportHeaderStar: "Western Zodiac Analysis", reportHeaderFortune: "Temporal Fortune", reportHeaderWealth: "Wealth & Fortune", reportHeaderFamily: "Family & Relationships", reportHeaderParents: "Parents & Ancestors", reportHeaderAdvice: "Master's Advice",
+    reportHeaderHealth: "Health Analysis", reportHeaderLove: "Emotional Analysis", reportHeaderDailyLuck: "Today's Luck",
     networkTimeout: "Network Timeout!", scanQRCode: "Please scan to pay",
     
     // Master Advice
@@ -59,6 +61,7 @@ export const TRANSLATIONS: any = {
     adviceCategoryJewelry: "Lucky Jewelry",
     adviceCategoryFiveElements: "Five Elements Advice",
     masterOptimizationBtn: "Master Optimization Advice",
+    backToShop: "Back to Shop",
 
     adviceMetalColor: 'Gold, Silver, White', adviceMetalDirection: 'West', adviceMetalHabit: 'Organization, Structure', adviceMetalDesc: 'Your Metal energy is weak. You need structure and clarity.',
     adviceMetalName: 'Use names with sharp sounds (S, Z, X) or characters meaning Gold/Metal.', adviceMetalPhilosophy: '"True gold fears no fire." - Embrace hardship to refine your character.',
@@ -110,11 +113,11 @@ export const TRANSLATIONS: any = {
   },
   'zh-CN': {
     title: "玄机面相", subtitle: "AI 算命", home: "首页", pricing: "订阅", shop: "灵宝阁", about: "关于", privacy: "隐私", terms: "条款", history: "历史记录",
-    heroTitle: "玄机面相", heroDesc: "解读面相中的秘密。结合古法与AI，分析您的财运、姻缘与命运。",
-    startBtn: "开始测试", chooseMethod: "个人信息与方式", scanBtn: "扫描面相", uploadBtn: "上传照片", cancelBtn: "取消", backBtn: "返回",
-    analyzeBtn: "开始算命", analyzingTitle: "推演天机...", analyzingDesc: "正在咨询易经并分析面相",
+    heroTitle: "玄机天命", heroDesc: "透过古老智慧与现代科技，解码您的命运。",
+    startBtn: "面相测试", palmBtn: "掌纹测试", chooseMethod: "个人信息与方式", scanBtn: "扫描面相", scanPalmBtn: "扫描手掌", uploadBtn: "上传照片", cancelBtn: "取消", backBtn: "返回",
+    analyzeBtn: "开始算命", analyzingTitle: "沟通天地...", analyzingDesc: "正在推演周易卦象并进行面相分析",
     resultTitle: "命运批注", readAloud: "朗读", stop: "停止", translating: "翻译中...", analyzeAnother: "再测一次",
-    howItWorks: "如何使用", step1Title: "1. 拍摄", step1Desc: "拍摄一张清晰的面部照片或上传现有照片。", step2Title: "2. AI 分析", step2Desc: "我们的 Gemini 引擎将定位 108 个面部特征点。", step3Title: "3. 揭示命运", step3Desc: "获取关于财富、健康和家庭的综合报告。",
+    howItWorks: "测试原理", step1Title: "1. 采集", step1Desc: "面部或手掌的生物特征扫描。", step2Title: "2. 推演", step2Desc: "将108个特征点与古籍进行比对。", step3Title: "3. 揭示", step3Desc: "获取您的财富、健康和情感运势。",
     paywallTitle: "需要贡金", paywallDesc: "您的3天免费试用期已结束。", paySingle: "解锁一次", paySub: "查看套餐",
     footerRight: "版权所有。", footerDisclaimer: "本网站仅供娱乐。",
     pricingTitle: "选择您的方案", planSingle: "单次算命", planSinglePrice: "$1.99", planSingleDesc: "一次详细的面相报告，包含财运、事业与姻缘分析。",
@@ -127,9 +130,10 @@ export const TRANSLATIONS: any = {
     zoneBrowsTitle: "兄弟宮", zoneBrowsDesc: "眉毛浓淡", zoneEyesTitle: "田宅宮", zoneEyesDesc: "眼眸神采", zoneSpouseTitle: "夫妻宫", zoneSpouseDesc: "奸门",
     zoneChildrenTitle: "子女宫", zoneChildrenDesc: "泪堂", zoneNoseTitle: "财帛宫", zoneNoseDesc: "鼻准丰隆", zoneMouthTitle: "出纳官", zoneMouthDesc: "口唇", zoneChinTitle: "奴仆宫", zoneChinDesc: "地閣方圆",
     dobLabel: "出生日期", timeLabel: "出生时间", dateYear: "年", dateMonth: "月", dateDay: "日", timeHour: "时", timeMinute: "分", timeSecond: "秒",
-    ageLabel: "年龄", profileTitle: "个人命盘", genderLabel: "性别", genderMale: "男", genderFemale: "女", genderOther: "其他", nameLabel: "姓名 (测算姓名五行)",
+    ageLabel: "年龄", profileTitle: "主体档案", genderLabel: "性别", genderMale: "男", genderFemale: "女", genderOther: "其他", nameLabel: "姓名 (测算姓名五行)",
+    combineAnalysis: "结合名字和出生年月日分析",
     zodiacTitle: "命理乾坤", chineseZodiac: "生肖", westernZodiac: "星座", recommendedProducts: "开运好物推荐",
-    buyNow: "立即购买", addToCart: "加入购物车", cart: "购物车", shopTitle: "灵宝阁", shopDesc: "精选开光法物，补全五行，增强气运。",
+    buyNow: "立即购买", addToCart: "加入购物车", cart: "购物车", shopTitle: "灵宝阁", shopDesc: "精选法物，补全五行，增强气运。",
     shopCategoryChinese: "十二生肖系列", shopCategoryWestern: "十二星座系列", productDetails: "宝物详情", luckyElement: "五行喜用",
     zodiacRat: "鼠", zodiacOx: "牛", zodiacTiger: "虎", zodiacRabbit: "兔", zodiacDragon: "龙", zodiacSnake: "蛇", zodiacHorse: "马", zodiacGoat: "羊", zodiacMonkey: "猴", zodiacRooster: "鸡", zodiacDog: "狗", zodiacPig: "猪",
     starAries: "白羊座", starTaurus: "金牛座", starGemini: "双子座", starCancer: "巨蟹座", starLeo: "狮子座", starVirgo: "处女座", starLibra: "天秤座", starScorpio: "天蝎座", starSagittarius: "射手座", starCapricorn: "摩羯座", starAquarius: "水瓶座", starPisces: "双鱼座",
@@ -143,6 +147,7 @@ export const TRANSLATIONS: any = {
     luckyColors: "幸运色", luckyDirection: "吉利方位", luckyHabit: "改运习惯", recommendedCures: "推荐补运法物",
     namingAdvice: "改名/起名建议", philosophy: "人生哲学",
     reportHeaderAura: "整体气场", reportHeaderElements: "五行分析", reportHeaderName: "姓名吉凶分析", reportHeaderStar: "星座运势分析", reportHeaderFortune: "流年流月运势", reportHeaderWealth: "财运与事业", reportHeaderFamily: "家庭与情感", reportHeaderParents: "父母与祖荫", reportHeaderAdvice: "大师建议",
+    reportHeaderHealth: "健康分析", reportHeaderLove: "情感/姻缘分析", reportHeaderDailyLuck: "今日运势",
     networkTimeout: "网络超时！", scanQRCode: "请扫描二维码支付",
     
     // Master Advice
@@ -151,6 +156,7 @@ export const TRANSLATIONS: any = {
     adviceCategoryHome: "家庭摆放建议",
     adviceCategoryJewelry: "开运首饰佩戴建议",
     adviceCategoryFiveElements: "五行建议",
+    backToShop: "返回灵宝阁",
 
     adviceMetalColor: '金、银、白', adviceMetalDirection: '西方', adviceMetalHabit: '条理、规划', adviceMetalDesc: '您的五行缺金。需要增强决断力和条理性。',
     adviceMetalName: '建议名字中带有金字旁（钅）的字，如：锋、铭、钟、鑫。', adviceMetalPhilosophy: '“真金不怕火炼”，在磨砺中成就自我。',
@@ -158,7 +164,7 @@ export const TRANSLATIONS: any = {
     adviceMetalHome: '在家中西方摆放金属饰品或风铃。使用白色或金属色调的装饰。',
 
     adviceWoodColor: '绿、青', adviceWoodDirection: '东方', adviceWoodHabit: '学习、养植', adviceWoodDesc: '您的五行缺木。需要培养仁爱之心和生发之气。',
-    adviceWoodName: '建议名字中带有木字旁（木）或草字头（艹）的字，如：林、森、艺、苏。', adviceWoodPhilosophy: '“木秀于林，风必摧之”，但根深方能叶茂。',
+    adviceWoodName: '建议名字中带有木字旁（木）或草字头（艹）的字，如：林、森、藝、苏。', adviceWoodPhilosophy: '“木秀于林，风必摧之”，但根深方能叶茂。',
     adviceWoodDiet: '多吃绿色蔬菜和酸味食物（柠檬、青苹果）。避免过量辛辣。',
     adviceWoodHome: '在东方摆放生机勃勃的植物或木质家具。使用绿色调。',
 
@@ -202,11 +208,11 @@ export const TRANSLATIONS: any = {
   },
   'zh-TW': {
      title: "玄機面相", subtitle: "AI 算命", home: "首頁", pricing: "訂閱", shop: "靈寶閣", about: "關於", privacy: "隱私", terms: "條款", history: "歷史記錄",
-    heroTitle: "玄機面相", heroDesc: "解讀面相中的秘密。結合古法與AI，分析您的財運、姻緣與命運。",
-    startBtn: "開始測試", chooseMethod: "個人信息與方式", scanBtn: "掃描面相", uploadBtn: "上傳照片", cancelBtn: "取消", backBtn: "返回",
-    analyzeBtn: "開始算命", analyzingTitle: "推演天機...", analyzingDesc: "正在諮詢易經並分析面相",
+    heroTitle: "玄機天命", heroDesc: "透過古老智慧與現代科技，解碼您的命運。",
+    startBtn: "面相測試", palmBtn: "掌紋測試", chooseMethod: "個人信息與方式", scanBtn: "掃描面相", scanPalmBtn: "掃描手掌", uploadBtn: "上傳照片", cancelBtn: "取消", backBtn: "返回",
+    analyzeBtn: "開始算命", analyzingTitle: "溝通天地...", analyzingDesc: "正在推演周易卦象並進行面相分析",
     resultTitle: "命運批註", readAloud: "朗讀", stop: "停止", translating: "翻譯中...", analyzeAnother: "再測一次",
-    howItWorks: "如何使用", step1Title: "1. 拍攝", step1Desc: "拍攝一張清晰的面部照片或上傳現有照片。", step2Title: "2. AI 分析", step2Desc: "我們的 Gemini 引擎將定位 108 個面部特徵點。", step3Title: "3. 揭示命運", step3Desc: "獲取關於財富、健康和家庭的綜合報告。",
+    howItWorks: "測試原理", step1Title: "1. 採集", step1Desc: "面部或手掌的生物特徵掃描。", step2Title: "2. 推演", step2Desc: "將108個特徵點與古籍進行比對。", step3Title: "3. 揭示", step3Desc: "獲取您的財富、健康和情感運勢。",
     paywallTitle: "需要貢金", paywallDesc: "您的3天免費試用期已結束。", paySingle: "解鎖一次", paySub: "查看套餐",
     footerRight: "版權所有。", footerDisclaimer: "本網站僅供娛樂。",
     pricingTitle: "選擇您的方案", planSingle: "單次算命", planSinglePrice: "$1.99", planSingleDesc: "一次詳細的面相報告，包含財運、事業與姻緣分析。",
@@ -219,9 +225,10 @@ export const TRANSLATIONS: any = {
     zoneBrowsTitle: "兄弟宮", zoneBrowsDesc: "眉毛濃淡", zoneEyesTitle: "田宅宮", zoneEyesDesc: "眼眸神采", zoneSpouseTitle: "夫妻宮", zoneSpouseDesc: "奸門",
     zoneChildrenTitle: "子女宮", zoneChildrenDesc: "淚堂", zoneNoseTitle: "財帛宮", zoneNoseDesc: "鼻準豐隆", zoneMouthTitle: "出納官", zoneMouthDesc: "口唇", zoneChinTitle: "奴仆宮", zoneChinDesc: "地閣方圓",
     dobLabel: "出生日期", timeLabel: "出生時間", dateYear: "年", dateMonth: "月", dateDay: "日", timeHour: "時", timeMinute: "分", timeSecond: "秒",
-    ageLabel: "年齡", profileTitle: "個人命盤", genderLabel: "性別", genderMale: "男", genderFemale: "女", genderOther: "其他", nameLabel: "姓名 (測算姓名五行)",
+    ageLabel: "年齡", profileTitle: "主體檔案", genderLabel: "性別", genderMale: "男", genderFemale: "女", genderOther: "其他", nameLabel: "姓名 (測算姓名五行)",
+    combineAnalysis: "結合名字和出生年月日分析",
     zodiacTitle: "命理乾坤", chineseZodiac: "生肖", westernZodiac: "星座", recommendedProducts: "開運好物推薦",
-    buyNow: "立即購買", addToCart: "加入購物車", cart: "購物車", shopTitle: "靈寶閣", shopDesc: "精選開光法物，補全五行，增強氣運。",
+    buyNow: "立即購買", addToCart: "加入購物車", cart: "購物車", shopTitle: "靈寶閣", shopDesc: "精選法物，補全五行，增強氣運。",
     shopCategoryChinese: "十二生肖系列", shopCategoryWestern: "十二星座系列", productDetails: "寶物詳情", luckyElement: "五行喜用",
     zodiacRat: "鼠", zodiacOx: "牛", zodiacTiger: "虎", zodiacRabbit: "兔", zodiacDragon: "龍", zodiacSnake: "蛇", zodiacHorse: "馬", zodiacGoat: "羊", zodiacMonkey: "猴", zodiacRooster: "雞", zodiacDog: "狗", zodiacPig: "豬",
     starAries: "白羊座", starTaurus: "金牛座", starGemini: "雙子座", starCancer: "巨蟹座", starLeo: "獅子座", starVirgo: "處女座", starLibra: "天秤座", starScorpio: "天蠍座", starSagittarius: "射手座", starCapricorn: "摩羯座", starAquarius: "水瓶座", starPisces: "雙魚座",
@@ -235,6 +242,7 @@ export const TRANSLATIONS: any = {
     luckyColors: "幸運色", luckyDirection: "吉利方位", luckyHabit: "改運習慣", recommendedCures: "推薦補運法物",
     namingAdvice: "改名/起名建議", philosophy: "人生哲學",
     reportHeaderAura: "整體氣場", reportHeaderElements: "五行分析", reportHeaderName: "姓名吉凶分析", reportHeaderStar: "星座運勢分析", reportHeaderFortune: "流年流月運勢", reportHeaderWealth: "財運與事業", reportHeaderFamily: "家庭與情感", reportHeaderParents: "父母與祖荫", reportHeaderAdvice: "大師建議",
+    reportHeaderHealth: "健康分析", reportHeaderLove: "情感/姻緣分析", reportHeaderDailyLuck: "今日運勢",
     networkTimeout: "網絡超時！", scanQRCode: "請掃描二維碼支付",
     
     // Master Advice
@@ -243,6 +251,7 @@ export const TRANSLATIONS: any = {
     adviceCategoryHome: "家庭擺放建議",
     adviceCategoryJewelry: "開運首飾佩戴建議",
     adviceCategoryFiveElements: "五行建議",
+    backToShop: "返回靈寶閣",
 
     adviceMetalColor: '金、銀、白', adviceMetalDirection: '西方', adviceMetalHabit: '條理、規劃', adviceMetalDesc: '您的五行缺金。需要增強決斷力和條理性。',
     adviceMetalName: '建議名字中帶有金字旁（金）的字，如：鋒、銘、鐘、鑫。', adviceMetalPhilosophy: '“真金不怕火煉”，在磨礪中成就自我。',
@@ -255,7 +264,7 @@ export const TRANSLATIONS: any = {
     adviceWoodHome: '在東方擺放生機勃勃的植物或木質家具。使用綠色調。',
 
     adviceWaterColor: '黑、藍', adviceWaterDirection: '北方', adviceWaterHabit: '思考、智慧', adviceWaterDesc: '您的五行缺水。需要增強智慧和適應能力，如水般流動。',
-    adviceWaterName: '建議名字中帶有三點水（氵）的字，如：沐、清、海、洋。', adviceWaterPhilosophy: '“上善若水”，利萬物而不爭，適應萬變。',
+    adviceWaterName: '建議名字中帶有三點水（氵）的字，如：沐、清、海、洋。', adviceWaterPhilosophy: '“上善若水”，利万物而不爭，適應萬變。',
     adviceWaterDiet: '多吃黑色/深色食物（黑豆、海帶、黑芝麻）和鹹味。注意補水。',
     adviceWaterHome: '在北方擺放水景（魚缸、流水擺件）或鏡子。使用藍色或黑色裝飾。',
 
@@ -302,52 +311,24 @@ otherLangs.forEach(lang => {
     
     // Customize specific labels where possible (simplified)
     if (lang === 'ja') {
-        TRANSLATIONS[lang].title = "神秘的な顔";
-        TRANSLATIONS[lang].masterOptimizationBtn = "マスターの最適化アドバイス";
-        TRANSLATIONS[lang].adviceCategoryDiet = "食事のアドバイス";
-        TRANSLATIONS[lang].adviceCategoryHome = "家の風水";
-        TRANSLATIONS[lang].adviceCategoryJewelry = "幸運のジュエリー";
-        TRANSLATIONS[lang].adviceCategoryFiveElements = "五行のアドバイス";
-        TRANSLATIONS[lang].yourWeakest = "あなたの不足している要素";
-        TRANSLATIONS[lang].luckyColors = "ラッキーカラー";
-        TRANSLATIONS[lang].luckyDirection = "吉方位";
-        TRANSLATIONS[lang].luckyHabit = "習慣";
-        TRANSLATIONS[lang].buyNow = "今すぐ購入";
+        TRANSLATIONS[lang].title = "人相占い";
+        TRANSLATIONS[lang].heroTitle = "運命の解読";
+        TRANSLATIONS[lang].startBtn = "人相占い";
+        TRANSLATIONS[lang].palmBtn = "手相占い";
     } else if (lang === 'ko') {
-        TRANSLATIONS[lang].title = "신비한 관상";
-        TRANSLATIONS[lang].masterOptimizationBtn = "마스터 최적화 조언";
-        TRANSLATIONS[lang].adviceCategoryDiet = "식이 요법 조언";
-        TRANSLATIONS[lang].adviceCategoryHome = "가정 풍수";
-        TRANSLATIONS[lang].adviceCategoryJewelry = "행운의 보석";
-        TRANSLATIONS[lang].adviceCategoryFiveElements = "오행 조언";
-        TRANSLATIONS[lang].yourWeakest = "부족한 요소";
-        TRANSLATIONS[lang].luckyColors = "행운의 색상";
-        TRANSLATIONS[lang].luckyDirection = "행운의 방향";
-        TRANSLATIONS[lang].luckyHabit = "습관";
-        TRANSLATIONS[lang].buyNow = "지금 구매";
+        TRANSLATIONS[lang].title = "관상";
+        TRANSLATIONS[lang].heroTitle = "운명의 해석";
+        TRANSLATIONS[lang].startBtn = "관상 보기";
+        TRANSLATIONS[lang].palmBtn = "손금 보기";
     } else if (lang === 'th') {
-        TRANSLATIONS[lang].title = "โหงวเฮ้งลึกลับ";
-        TRANSLATIONS[lang].masterOptimizationBtn = "คำแนะนำจากอาจารย์";
-        TRANSLATIONS[lang].adviceCategoryDiet = "คำแนะนำด้านอาหาร";
-        TRANSLATIONS[lang].adviceCategoryHome = "ฮวงจุ้ยบ้าน";
-        TRANSLATIONS[lang].adviceCategoryJewelry = "เครื่องประดับนำโชค";
-        TRANSLATIONS[lang].adviceCategoryFiveElements = "คำแนะนำธาตุทั้ง 5";
-        TRANSLATIONS[lang].yourWeakest = "ธาตุที่คุณขาด";
-        TRANSLATIONS[lang].luckyColors = "สีนำโชค";
-        TRANSLATIONS[lang].luckyDirection = "ทิศมงคล";
-        TRANSLATIONS[lang].luckyHabit = "นิสัยที่ควรทำ";
-        TRANSLATIONS[lang].buyNow = "ซื้อเลย";
+        TRANSLATIONS[lang].title = "โหงวเฮ้ง";
+        TRANSLATIONS[lang].heroTitle = "โชคชะตา";
+        TRANSLATIONS[lang].startBtn = "อ่านใบหน้า";
+        TRANSLATIONS[lang].palmBtn = "อ่านลายมือ";
     } else if (lang === 'vi') {
-        TRANSLATIONS[lang].title = "Tướng Số Huyền Bí";
-        TRANSLATIONS[lang].masterOptimizationBtn = "Lời Khuyên Từ Thầy";
-        TRANSLATIONS[lang].adviceCategoryDiet = "Lời Khuyên Ăn Uống";
-        TRANSLATIONS[lang].adviceCategoryHome = "Phong Thủy Nhà Ở";
-        TRANSLATIONS[lang].adviceCategoryJewelry = "Trang Sức May Mắn";
-        TRANSLATIONS[lang].adviceCategoryFiveElements = "Lời Khuyên Ngũ Hành";
-        TRANSLATIONS[lang].yourWeakest = "Ngũ Hành Khuyết Thiếu";
-        TRANSLATIONS[lang].luckyColors = "Màu May Mắn";
-        TRANSLATIONS[lang].luckyDirection = "Hướng Tốt";
-        TRANSLATIONS[lang].luckyHabit = "Thói Quen";
-        TRANSLATIONS[lang].buyNow = "Mua Ngay";
+        TRANSLATIONS[lang].title = "Tướng Số";
+        TRANSLATIONS[lang].heroTitle = "Giải Mã Vận Mệnh";
+        TRANSLATIONS[lang].startBtn = "Xem Tướng Mặt";
+        TRANSLATIONS[lang].palmBtn = "Xem Chỉ Tay";
     }
 });

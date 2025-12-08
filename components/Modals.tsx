@@ -1,10 +1,54 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { theme, styles } from '../theme';
 import { Product, Plan } from '../types';
 import { PayPalButton, StripePaymentForm, QRCodePayment } from './PaymentIntegration';
 import { SHOP_PRODUCTS } from '../products';
-import { hashCode, ELEMENT_ADVICE } from '../utils';
+import { hashCode, ELEMENT_ADVICE, ImagePersistence } from '../utils';
+
+// Helper component for small product items to handle cached images
+const CachedProductItem = ({ product, t, onClick, isLarge = false }: { product: Product, t: any, onClick: () => void, isLarge?: boolean }) => {
+    const [imgUrl, setImgUrl] = useState<string | null>(null);
+
+    const zodiacLocal = t[`zodiac${product.zodiac}`] || t[`star${product.zodiac}`] || product.zodiac;
+    const name = t[product.nameKey] ? t[product.nameKey].replace('{zodiac}', zodiacLocal) : product.defaultName;
+
+    useEffect(() => {
+        // Load smaller image for list items, larger for modal display if needed
+        const size = isLarge ? 512 : 150; 
+        ImagePersistence.loadImage(product.id, product.imagePrompt, size).then(setImgUrl);
+    }, [product.id]);
+
+    if (isLarge) return null; // Used for lists mostly
+
+    return (
+         <div 
+            onClick={onClick}
+            style={{
+                width: '120px', 
+                cursor: 'pointer', 
+                border: '1px solid transparent',
+                borderRadius: '6px',
+                padding: '5px',
+                background: 'rgba(0,0,0,0.3)',
+                transition: 'all 0.2s',
+                textAlign: 'center'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.borderColor = theme.gold}
+            onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
+         >
+             <div style={{width: '100%', height: '100px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                 {imgUrl ? (
+                     <img src={imgUrl} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px'}} />
+                 ) : (
+                     <i className="fas fa-circle-notch fa-spin" style={{color: theme.darkGold}}></i>
+                 )}
+             </div>
+             <div style={{fontSize: '0.7rem', color: '#ccc', marginTop: '5px', height: '30px', overflow: 'hidden'}}>{name}</div>
+             {!isLarge && <div style={{fontWeight: 'bold', fontSize: '0.8rem', color: theme.gold}}>{product.price}</div>}
+         </div>
+    );
+};
 
 export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose, onBuyProduct }: { t: any, missingElement: string, aiAdvice?: string, onClose: () => void, onBuyProduct: (p: Product) => void }) => {
     const elKey = missingElement || 'Metal';
@@ -16,7 +60,6 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
     const habitAdvice = t[`advice${elKey}Habit`] || adviceData.habit;
     const descAdvice = t[`advice${elKey}Desc`] || adviceData.desc;
     const nameAdvice = t[`advice${elKey}Name`] || "Consult a master.";
-    // Fetch Diet and Home advice from translations if available, else fallback to utils
     const dietAdvice = t[`advice${elKey}Diet`] || adviceData.diet || "Eat balanced meals.";
     const homeAdvice = t[`advice${elKey}Home`] || adviceData.home || "Keep your home clean.";
 
@@ -28,7 +71,7 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
             borderBottom: `1px solid ${theme.darkGold}`, 
             paddingBottom: '10px', 
             marginTop: '30px', 
-            marginBottom: '15px',
+            marginBottom: '15px', 
             fontFamily: 'Cinzel, serif',
             display: 'flex',
             alignItems: 'center',
@@ -46,7 +89,7 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
             lineHeight: '1.8',
             color: '#e0e0e0',
             borderLeft: `3px solid ${theme.gold}`,
-            whiteSpace: 'pre-wrap', // Preserve newlines
+            whiteSpace: 'pre-wrap', 
             textAlign: 'justify'
         }}>
             {content}
@@ -82,7 +125,7 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
                         </div>
                     </div>
                     
-                    {/* Specific AI Advice integration - IMPROVED TYPOGRAPHY */}
+                    {/* Specific AI Advice integration */}
                     {aiAdvice && (
                         <div style={{
                             marginTop: '25px', 
@@ -93,7 +136,7 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
                             border: `1px solid ${theme.darkGold}`,
                             lineHeight: '1.9',
                             fontSize: '1.05rem',
-                            whiteSpace: 'pre-wrap', // Crucial for paragraph separation
+                            whiteSpace: 'pre-wrap',
                             fontFamily: 'Noto Serif, serif',
                             textAlign: 'justify'
                         }}>
@@ -117,29 +160,14 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
                     <SectionHeader icon="fa-utensils" title={t.adviceCategoryDiet || "Dietary Advice"} />
                     <AdviceBox content={dietAdvice} />
 
-                    {/* 5. Lucky Jewelry / Accessories */}
+                    {/* 5. Lucky Jewelry */}
                     <SectionHeader icon="fa-gem" title={t.adviceCategoryJewelry || "Lucky Jewelry"} />
                     <div style={{display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px'}}>
-                        {matchingProducts.map(prod => {
-                            const zodiacLocal = t[`zodiac${prod.zodiac}`] || t[`star${prod.zodiac}`] || prod.zodiac;
-                            const name = t[prod.nameKey] ? t[prod.nameKey].replace('{zodiac}', zodiacLocal) : prod.defaultName;
-                            // Seed cache matching ShopPage
-                            const seed = hashCode(prod.id);
-                            const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prod.imagePrompt)}?width=512&height=512&nologo=true&seed=${seed}`;
-                            return (
-                                <div key={prod.id} style={{minWidth: '140px', background: 'rgba(0,0,0,0.5)', border: `1px solid ${theme.darkGold}`, borderRadius: '8px', padding: '10px', textAlign: 'center'}}>
-                                    <img 
-                                        src={imgUrl} 
-                                        style={{width: '100px', height: '100px', borderRadius: '4px'}} 
-                                        loading="lazy"
-                                        onError={(e: any) => e.target.src = "https://placehold.co/100x100/000000/d4af37?text=Item"} 
-                                    />
-                                    <div style={{fontSize: '0.8rem', color: theme.gold, margin: '5px 0', height: '35px', overflow: 'hidden'}}>{name}</div>
-                                    <div style={{fontWeight: 'bold', fontSize: '0.9rem'}}>{prod.price}</div>
-                                    <button style={{...styles.button, padding: '5px 10px', fontSize: '0.7rem', marginTop: '5px', minWidth: 'auto'}} onClick={() => onBuyProduct(prod)}>{t.buyNow}</button>
-                                </div>
-                            );
-                        })}
+                        {matchingProducts.map(prod => (
+                            <div key={prod.id} style={{minWidth: '140px'}}>
+                                <CachedProductItem product={prod} t={t} onClick={() => onBuyProduct(prod)} />
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -148,22 +176,27 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
 };
 
 export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow, onSwitchProduct, isPageMode = false }: { t: any, product: Product, onClose: () => void, onAddToCart: () => void, onBuyNow: () => void, onSwitchProduct?: (p: Product) => void, isPageMode?: boolean }) => {
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [imgLoaded, setImgLoaded] = useState(false);
-    const [imgError, setImgError] = useState(false);
     const [isAdded, setIsAdded] = useState(false);
 
     const zodiacLocal = t[`zodiac${product.zodiac}`] || t[`star${product.zodiac}`] || product.zodiac;
     const name = t[product.nameKey] ? t[product.nameKey].replace('{zodiac}', zodiacLocal) : product.defaultName;
     const desc = t[product.descKey] ? t[product.descKey].replace('{zodiac}', zodiacLocal) : "Mystical Item";
     
-    // Sync with ShopPage: Use seed and 512 size to leverage browser cache for instant loading
-    const seed = hashCode(product.id);
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(product.imagePrompt)}?width=512&height=512&nologo=true&seed=${seed}`;
+    // Load Image via Persistence on mount
+    useEffect(() => {
+        setImgLoaded(false);
+        setImageUrl(null);
+        ImagePersistence.loadImage(product.id, product.imagePrompt, 512).then((url) => {
+            setImageUrl(url);
+            setImgLoaded(true);
+        });
+    }, [product.id, product.imagePrompt]);
 
     const handleAddToCartClick = () => {
         onAddToCart();
         setIsAdded(true);
-        // Alert feedback logic is handled here via button state and toast in parent
         setTimeout(() => setIsAdded(false), 2000);
     };
 
@@ -238,8 +271,6 @@ export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow,
                             justifyContent: 'center',
                             transition: 'all 0.2s'
                         }}
-                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(212, 175, 55, 0.2)'}
-                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
                     >
                         &times;
                     </button>
@@ -247,24 +278,14 @@ export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow,
                 
                 <div style={{display: 'flex', flexDirection: 'row', gap: '30px', padding: '20px', marginTop: isPageMode ? '40px' : '0'}} className="product-modal-mobile">
                     <div style={{flex: 1, position: 'relative', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050511', borderRadius: '8px', border: `1px solid ${theme.gold}`}}>
-                        {!imgLoaded && !imgError && (
+                        {!imgLoaded ? (
                             <div style={{position: 'absolute', zIndex: 0}}>
                                 <i className="fas fa-circle-notch fa-spin" style={{fontSize: '3rem', color: theme.darkGold}}></i>
                             </div>
-                        )}
-                        
-                        {imgError ? (
-                            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#666', zIndex: 2}}>
-                                <i className="fas fa-image" style={{fontSize: '3rem', marginBottom: '10px'}}></i>
-                                <span>Image Unavailable</span>
-                                <button onClick={() => { setImgError(false); setImgLoaded(false); }} style={{...styles.secondaryButton, marginTop: '10px', fontSize: '0.8rem'}}>Retry</button>
-                            </div>
                         ) : (
                             <img 
-                                src={imageUrl} 
+                                src={imageUrl || ""} 
                                 style={{width: '100%', borderRadius: '8px', zIndex: 1, display: 'block'}} 
-                                onLoad={() => setImgLoaded(true)}
-                                onError={() => { setImgLoaded(true); setImgError(true); }}
                                 alt={name}
                             />
                         )}
@@ -299,47 +320,13 @@ export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow,
                     </div>
                 </div>
 
-                {/* More Products / Shop List at Bottom */}
-                <div style={{marginTop: '40px', paddingTop: '20px', borderTop: `1px solid ${theme.darkGold}`}}>
-                    <h3 style={{color: theme.gold, textAlign: 'center', fontFamily: 'Cinzel, serif', marginBottom: '20px'}}>{t.moreProducts || "Complete Collection"}</h3>
-                    <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', paddingBottom: '20px'}}>
-                        {SHOP_PRODUCTS.map((p) => {
-                             const pName = t[p.nameKey] ? t[p.nameKey].replace('{zodiac}', t[`zodiac${p.zodiac}`] || p.zodiac) : p.defaultName;
-                             // Use small thumbnail for list
-                             const pSeed = hashCode(p.id);
-                             const pImg = `https://image.pollinations.ai/prompt/${encodeURIComponent(p.imagePrompt)}?width=150&height=150&nologo=true&seed=${pSeed}`;
-                             const isCurrent = p.id === product.id;
-                             
-                             return (
-                                 <div 
-                                    key={p.id} 
-                                    onClick={() => onSwitchProduct && onSwitchProduct(p)}
-                                    style={{
-                                        width: '120px', 
-                                        cursor: 'pointer', 
-                                        opacity: isCurrent ? 0.5 : 1, 
-                                        border: isCurrent ? `1px solid ${theme.gold}` : '1px solid transparent',
-                                        borderRadius: '6px',
-                                        padding: '5px',
-                                        background: 'rgba(0,0,0,0.3)',
-                                        transition: 'all 0.2s'
-                                    }}
-                                 >
-                                     <img src={pImg} style={{width: '100%', height: '100px', objectFit: 'cover', borderRadius: '4px'}} loading="lazy" />
-                                     <div style={{fontSize: '0.7rem', color: '#ccc', marginTop: '5px', height: '30px', overflow: 'hidden', textAlign: 'center'}}>{pName}</div>
-                                 </div>
-                             )
-                        })}
-                    </div>
-                </div>
-
             </div>
         </div>
     );
 };
 
 export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: (details: any) => void }) => {
-    // Detect if we should offer Chinese Payment Methods / Contact Rules
+    // Detect if we should offer Chinese Payment Methods
     const isChinese = t.title === "玄机面相" || t.title === "玄機面相";
 
     const [method, setMethod] = useState<'card' | 'paypal' | 'wechat' | 'alipay'>(isChinese ? 'wechat' : 'card');
@@ -364,18 +351,15 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
     const isPhysicalProduct = 'category' in plan;
     const needsShipping = isPhysicalProduct || plan.id === 'cart_checkout';
     
-    // Validation Logic
     const isPhoneRequired = isChinese;
     const isEmailRequired = !isChinese; 
 
-    // Basic Validation Check
     const hasShipping = !needsShipping || (name && address && city && zip && country);
     const hasContact = (!isPhoneRequired || phone) && (!isEmailRequired || email);
     const canProceedToPay = hasShipping && hasContact;
 
     const handleSuccess = (details?: any) => {
         setSuccessState(true);
-        // Include shipping info in the success callback
         const paymentDetails = {
             ...details,
             shipping: needsShipping ? { name, address, city, zip, country } : null,
@@ -399,7 +383,6 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
                 <button onClick={onClose} style={{background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer'}}>&times;</button>
             </div>
             
-            {/* Order Summary */}
             <div style={{marginBottom: '20px', padding: '15px', border: `1px solid ${theme.darkGold}`, borderRadius: '4px', background: 'rgba(212, 175, 55, 0.1)'}}>
                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                      <span style={{fontWeight: 'bold'}}>{title}</span>
@@ -408,7 +391,6 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
                  {!needsShipping && <div style={{fontSize: '0.8rem', color: '#aaa', marginTop: '5px'}}>* Digital Service (Instant Access)</div>}
             </div>
             
-            {/* Contact Information */}
             <div style={{marginBottom: '20px'}}>
                 <h3 style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '10px', textTransform: 'uppercase'}}>Contact Info</h3>
                 <div style={{marginBottom: '10px'}}>
