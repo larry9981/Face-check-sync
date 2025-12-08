@@ -296,19 +296,22 @@ export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow,
                         <div style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '20px'}}>{product.price}</div>
                         <div style={{borderTop: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '20px 0', marginBottom: '30px', lineHeight: '1.6', color: '#ccc'}}><p>{desc}</p></div>
                         <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap'}}>
-                            <button style={{...styles.button, marginTop: 0, flex: 1}} onClick={onBuyNow}>{t.buyNow}</button>
+                            <button style={{...styles.button, marginTop: 0, flex: 1, minWidth: '150px'}} onClick={onBuyNow}>{t.buyNow}</button>
                             <button 
                                 style={{
                                     ...styles.secondaryButton, 
                                     marginTop: 0, 
                                     flex: 1, 
+                                    minWidth: '150px',
+                                    padding: '14px 28px', // Match primary button padding
+                                    fontSize: '1rem',     // Match primary button font size
                                     display: 'flex', 
                                     alignItems: 'center', 
                                     justifyContent: 'center', 
                                     gap: '10px',
-                                    background: isAdded ? '#27ae60' : 'transparent',
-                                    borderColor: isAdded ? '#27ae60' : theme.darkGold,
-                                    color: isAdded ? '#fff' : theme.darkGold,
+                                    background: isAdded ? '#27ae60' : '#3498db',
+                                    borderColor: isAdded ? '#27ae60' : '#3498db',
+                                    color: '#fff',
                                     transition: 'all 0.3s'
                                 }} 
                                 onClick={handleAddToCartClick}
