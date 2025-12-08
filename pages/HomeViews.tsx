@@ -150,7 +150,29 @@ export const RenderSelectionView = ({ t, readingType, gender, dobYear, dobMonth,
     const isPalm = readingType === 'palm';
 
     return (
-      <div style={{...styles.glassPanel, border: `1px solid ${theme.gold}`}} className="glass-panel-mobile">
+      <div style={{...styles.glassPanel, border: `1px solid ${theme.gold}`, position: 'relative'}} className="glass-panel-mobile">
+          {/* Top Right Close Button */}
+          <button 
+              onClick={onBack} 
+              style={{
+                  position: 'absolute', 
+                  top: '15px', 
+                  right: '15px', 
+                  background: 'transparent', 
+                  border: 'none', 
+                  color: '#888', 
+                  fontSize: '1.8rem', 
+                  cursor: 'pointer',
+                  zIndex: 10,
+                  padding: 0,
+                  lineHeight: 1
+              }}
+              onMouseOver={(e) => e.currentTarget.style.color = theme.gold}
+              onMouseOut={(e) => e.currentTarget.style.color = '#888'}
+          >
+              &times;
+          </button>
+
           <h2 style={{color: theme.gold, marginBottom: '20px', fontFamily: 'Cinzel, serif'}}>{t.chooseMethod}</h2>
           <div style={{textAlign: 'left', marginBottom: '20px'}}>
               <h3 style={{color: theme.darkGold, fontSize: '1rem', borderBottom: '1px solid rgba(138, 110, 47, 0.3)', paddingBottom: '5px', marginBottom: '15px'}}>{t.profileTitle}</h3>
@@ -256,9 +278,7 @@ export const RenderSelectionView = ({ t, readingType, gender, dobYear, dobMonth,
                   </div>
               )}
           </div>
-          <button style={{...styles.secondaryButton, border: 'none', color: '#666', marginTop: '20px', fontSize: '0.8rem'}} onClick={onBack}>
-              {t.backBtn}
-          </button>
+          {/* Back Button Removed from Bottom */}
       </div>
     );
 };
