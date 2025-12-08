@@ -184,8 +184,14 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, 
         // Extract status/code. Handle both number (429) and string ("RESOURCE_EXHAUSTED")
         const code = errorObj?.code;
         const status = errorObj?.status;
-        // Construct a full string dump to search for keywords
         const message = (errorObj?.message || "") + JSON.stringify(errorObj);
+        
+        // --- CRITICAL ERROR CHECKS (NO RETRY) ---
+        // 1. Location Block (FAILED_PRECONDITION)
+        if (code === 400 || status === 'FAILED_PRECONDITION' || message.includes('location is not supported')) {
+            // Throw specific error to be caught by UI without noise
+            throw new Error("API_LOCATION_BLOCKED"); 
+        }
         
         // Parse "retry in X seconds" if available
         let waitTime = delay;
@@ -194,14 +200,13 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, 
             waitTime = Math.ceil(parseFloat(retryMatch[1])) * 1000 + 2000; // Add 2s buffer
         }
 
-        // Abort if wait time is absurdly long (> 180 seconds) - Increased cap for safety
+        // Abort if wait time is absurdly long (> 180 seconds)
         if (waitTime > 180000) {
             console.warn(`Retry time ${waitTime}ms too long. Aborting.`);
             throw err;
         }
 
         // Check for 429 / Resource Exhausted / 5xx Server Errors
-        // Use loose equality (==) for code to catch "429" string vs 429 number
         const isRateLimit = 
             code == 429 || 
             status == 429 ||
@@ -222,10 +227,7 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, 
              
              await new Promise(resolve => setTimeout(resolve, waitTime));
              
-             // If we had a specific wait time from the API, stick closer to it for the next loop rather than exploding exponentially
-             // But if we fail again immediately, backing off slightly more is safe.
              const nextDelay = retryMatch ? waitTime + 2000 : waitTime * 1.5;
-             
              return callWithRetry(fn, retries - 1, nextDelay, onRetry); 
         }
         throw err;
@@ -371,8 +373,6 @@ const App = () => {
           setIsTranslating(true);
           try {
               // Use Google for quick translation, wrap in Retry for quota management
-              // Note: We use 'Google' explicitly for translation to ensure speed and low cost, 
-              // regardless of CURRENT_PROVIDER
               const response = await callWithRetry(() => callUniversalAI('Google', {
                   prompt: `Translate markdown to ${newLang}. Preserve format. Text:\n\n${resultText}`
               }), 3, 2000, (retryMsg) => {
@@ -383,13 +383,16 @@ const App = () => {
                   setResultText(response.text);
               }
           } catch (e: any) {
-              console.error("Translation failed", e);
-              // Handle quota error specifically for UI feedback
-              const errorObj = e?.error || e;
-              const msg = errorObj?.message || JSON.stringify(errorObj);
-              
-              if (errorObj?.status === 429 || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
-                  alert("Translation unavailable due to high system traffic. Showing original text.");
+              if (e.message === 'API_LOCATION_BLOCKED') {
+                   // Silently fail or warn
+                   alert("Translation unavailable: API region blocked.");
+              } else {
+                   console.error("Translation failed", e);
+                   const errorObj = e?.error || e;
+                   const msg = errorObj?.message || JSON.stringify(errorObj);
+                   if (errorObj?.status === 429 || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+                       alert("Translation unavailable due to high system traffic. Showing original text.");
+                   }
               }
           } finally {
               setIsTranslating(false);
@@ -439,9 +442,6 @@ const App = () => {
           ctx.scale(-1, 1); 
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
           
-          // Image Validation removed as requested by user
-          // Proceed directly to capture
-
           const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality 
           setImage(dataUrl); 
           stopCamera(); 
@@ -484,6 +484,34 @@ const App = () => {
     }
   };
 
+  // --- DEMO / MOCK GENERATOR FOR ERROR FALLBACK ---
+  const getMockResult = (headers: any) => {
+      return `
+## 🔮 ${headers.aura}
+(DEMO RESULT - API LOCATION BLOCKED)
+Your aura radiates with a calm, stable golden energy, suggesting you are currently in a period of steady growth. The alignment of your features indicates strong resilience.
+
+## ⚖️ ${headers.elements}
+*   🪙 **${t.elementMetal}:** 40%
+*   🌲 **${t.elementWood}:** 15%
+*   💧 **${t.elementWater}:** 25%
+*   🔥 **${t.elementFire}:** 10%
+*   ⛰️ **${t.elementEarth}:** 10%
+
+## 🌌 ${headers.star}
+The stars are currently aligned in your favor, bringing clarity to recent confusion.
+
+## 💰 ${headers.wealth}
+Your wealth palace shows promise for the coming month. Avoid risky investments.
+
+## 🌿 ${headers.health}
+Pay attention to hydration and rest. Your energy reserves are stable but need replenishing.
+
+## 📜 ${headers.advice}
+To balance your missing Fire element, wear red or purple colors. \n\nPlace a lamp in the South corner of your room to activate your fame sector. \n\nAdopt a habit of morning exercise to boost your internal fire.
+      `;
+  };
+
   const processImage = async (base64Image: string) => {
     const now = new Date();
     // 3-Day Free Trial Logic
@@ -523,16 +551,11 @@ const App = () => {
         setAnalysisProgress(prev => Math.min(prev + (prev < 60 ? 8 : prev < 85 ? 4 : 1), 95));
     }, 200);
 
-    try {
-      // Clean base64 string
-      const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
+    // Prepare Headers and Prompt (same as before)
+    const langConfig = LANGUAGES.find(l => l.code === language);
+    const targetLangName = langConfig?.label || 'English';
       
-      const langConfig = LANGUAGES.find(l => l.code === language);
-      const targetLangName = langConfig?.label || 'English';
-      
-      let prompt = '';
-
-      const headers = {
+    const headers = {
         aura: t.reportHeaderAura || "General Aura",
         elements: t.reportHeaderElements || "Five Elements (Wu Xing)",
         name: t.reportHeaderName || "Name Analysis",
@@ -544,8 +567,20 @@ const App = () => {
         advice: t.reportHeaderAdvice || "Master's Advice",
         health: t.reportHeaderHealth || "Health Analysis",
         love: t.reportHeaderLove || "Emotional Analysis",
-        dailyLuck: t.reportHeaderDailyLuck || "Today's Luck"
-      };
+        dailyLuck: t.reportHeaderDailyLuck || "Today's Luck",
+        
+        // Palmistry Headers
+        palmLifeLine: t.palmLifeLine || "Life Line",
+        palmHeadLine: t.palmHeadLine || "Wisdom Line",
+        palmHeartLine: t.palmHeartLine || "Heart Line",
+        palmFateLine: t.palmFateLine || "Fate Line"
+    };
+
+    try {
+      // Clean base64 string
+      const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
+      
+      let prompt = '';
 
       if (readingType === 'palm') {
            // --- PALMISTRY PROMPT ---
@@ -554,17 +589,23 @@ const App = () => {
             The user is ${gender}.
             **Current Date/Time of Reading:** ${currentDateStr}
             
-            Analyze the palm image provided. Identify the Life Line, Head Line, Heart Line, and Fate Line.
+            Analyze the palm image provided. Identify the Life Line, Head Line (Wisdom), Heart Line (Emotion), and Fate Line.
             
             Structure your response EXACTLY as follows in Markdown:
             ## 🔮 ${headers.dailyLuck}
             [Analyze today's fortune based on the palm color and energy readings.]
             
-            ## 🌿 ${headers.health}
-            [Analyze the Life Line and general hand shape for vitality and physical well-being advice.]
-            
-            ## ❤️ ${headers.love}
-            [Analyze the Heart Line for emotional stability, relationships, and love life predictions.]
+            ## 🧬 ${headers.palmLifeLine}
+            [Analyze the Life Line. Discuss vitality, physical well-being, and life energy flow. Be specific about length and depth.]
+
+            ## 🧠 ${headers.palmHeadLine}
+            [Analyze the Head/Wisdom Line. Discuss intellect, mindset, and decision making style.]
+
+            ## ❤️ ${headers.palmHeartLine}
+            [Analyze the Heart/Emotion Line. Discuss emotional stability, relationships, and love life predictions.]
+
+            ## 🛤️ ${headers.palmFateLine}
+            [Analyze the Fate Line (if visible). Discuss career path, destiny, and major life changes.]
             `;
             
             if (useAdvancedAnalysis && wuXingResult) {
@@ -713,7 +754,31 @@ const App = () => {
         clearInterval(progressInterval);
         setAnalysisProgress(0);
         setLoadingMessage("");
-        console.error(error); 
+        
+        // Handle Location Blocked Error with a Graceful Fallback
+        if (error.message === 'API_LOCATION_BLOCKED') {
+             // Suppress console.error here to avoid confusing the user/logs
+             alert("Google AI is not available in your region (Location Blocked). Switching to Demo Mode for testing.");
+             
+             // Generate Mock Result
+             const mockText = getMockResult(headers);
+             setResultText(mockText);
+             
+             // Ensure elements exist for chart (mock if null)
+             if (!calculatedElements) {
+                 setCalculatedElements({
+                     scores: { Metal: 40, Wood: 15, Water: 25, Fire: 10, Earth: 10 },
+                     missingElement: 'Fire'
+                 });
+             }
+             
+             setView('result');
+             return; // Exit success path for demo
+        }
+
+        // Only log unanticipated errors
+        console.error("Processing Error:", error); 
+
         let msg = "Analysis failed. Please try again.";
         const errObj = error?.error || error;
         const errMsg = errObj?.message || JSON.stringify(errObj);
@@ -911,7 +976,16 @@ const App = () => {
         
         {showPaywall && <PaymentModal t={t} plan={{id: 'single', title: t.planSingle, price: t.planSinglePrice, desc: t.planSingleDesc, isSub: false}} onClose={() => setShowPaywall(false)} onSuccess={(d) => { handlePaymentSuccess(d); if (view === 'start') setView('selection'); }} />}
         {showPaymentModal && selectedPlan && <PaymentModal t={t} plan={selectedPlan} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />}
-        {showBalanceModal && calculatedElements && <FiveElementsBalanceModal t={t} missingElement={calculatedElements.missingElement} aiAdvice={balanceAiAdvice} onClose={() => setShowBalanceModal(false)} onBuyProduct={handleBuyProduct} />}
+        {showBalanceModal && (
+            // Pass missingElement safely
+            <FiveElementsBalanceModal 
+                t={t} 
+                missingElement={calculatedElements ? calculatedElements.missingElement : 'Metal'} 
+                aiAdvice={balanceAiAdvice} 
+                onClose={() => setShowBalanceModal(false)} 
+                onBuyProduct={handleBuyProduct} 
+            />
+        )}
         
         {/* Render ProductDetailModal as a standalone page section if currentPage is 'product-detail' */}
         {currentPage === 'product-detail' && selectedProduct && (

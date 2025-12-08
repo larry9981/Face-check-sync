@@ -54,6 +54,12 @@ const EN_TRANS = {
     reportHeaderHealth: "Health Analysis", reportHeaderLove: "Emotional Analysis", reportHeaderDailyLuck: "Today's Luck",
     networkTimeout: "Network Timeout!", scanQRCode: "Please scan to pay",
     
+    // Palmistry Specifics
+    palmLifeLine: "Life Line Analysis",
+    palmHeadLine: "Wisdom Line Analysis",
+    palmHeartLine: "Heart Line Analysis",
+    palmFateLine: "Fate Line Analysis",
+
     // Master Advice
     adviceCategoryDiet: "Dietary Advice",
     adviceCategoryHome: "Home Feng Shui",
@@ -152,6 +158,12 @@ export const TRANSLATIONS: any = {
     reportHeaderHealth: "健康分析", reportHeaderLove: "情感/姻缘分析", reportHeaderDailyLuck: "今日运势",
     networkTimeout: "网络超时！", scanQRCode: "请扫描二维码支付",
     
+    // Palmistry Specifics
+    palmLifeLine: "生命线分析",
+    palmHeadLine: "智慧线分析",
+    palmHeartLine: "感情线分析",
+    palmFateLine: "命运线分析",
+
     // Master Advice
     masterOptimizationBtn: "大师优化建议",
     adviceCategoryDiet: "饮食建议",
@@ -209,6 +221,7 @@ export const TRANSLATIONS: any = {
     termsDisclaimerDesc: "建议基于传统面相学模拟，不应取代专业的医疗、法律或财务建议。"
   },
   'zh-TW': {
+     ...EN_TRANS,
      title: "玄機面相", subtitle: "AI 算命", home: "首頁", pricing: "訂閱", shop: "靈寶閣", about: "關於", privacy: "隱私", terms: "條款", history: "歷史記錄",
     heroTitle: "玄機天命", heroDesc: "透過古老智慧與現代科技，解碼您的命運。",
     startBtn: "面相測試", palmBtn: "掌紋測試", chooseMethod: "個人信息與方式", scanBtn: "掃描面相", scanPalmBtn: "掃描手掌", uploadBtn: "上傳照片", cancelBtn: "取消", backBtn: "返回",
@@ -247,6 +260,12 @@ export const TRANSLATIONS: any = {
     reportHeaderHealth: "健康分析", reportHeaderLove: "情感/姻緣分析", reportHeaderDailyLuck: "今日運勢",
     networkTimeout: "網絡超時！", scanQRCode: "請掃描二維碼支付",
     
+    // Palmistry Specifics
+    palmLifeLine: "生命線分析",
+    palmHeadLine: "智慧線分析",
+    palmHeartLine: "感情線分析",
+    palmFateLine: "命運線分析",
+
     // Master Advice
     masterOptimizationBtn: "大師優化建議",
     adviceCategoryDiet: "飲食建議",
@@ -332,7 +351,11 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "あなたの五行は「土」が不足しています。安定感と包容力を養う必要があります。",
       adviceEarthColor: "黄、茶、ベージュ", adviceEarthDirection: "中央・北東", adviceEarthHabit: "誠実、グラウンディング",
       adviceEarthDiet: "黄色い根菜類（カボチャ、サツマイモ）を多く摂りましょう。",
-      adviceEarthHome: "家の中央や北東に陶器やクリスタルを置いてください。"
+      adviceEarthHome: "家の中央や北東に陶器やクリスタルを置いてください。",
+      palmLifeLine: "生命線分析",
+      palmHeadLine: "知能線分析",
+      palmHeartLine: "感情線分析",
+      palmFateLine: "運命線分析"
   },
   'ko': {
       ...EN_TRANS,
@@ -363,7 +386,11 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "오행 중 '토(土)' 기운이 부족합니다. 안정감과 포용력을 길러야 합니다.",
       adviceEarthColor: "노랑, 갈색, 베이지", adviceEarthDirection: "중앙/북동", adviceEarthHabit: "성실, 명상",
       adviceEarthDiet: "노란색 뿌리채소(호박, 고구마)를 많이 섭취하세요.",
-      adviceEarthHome: "집의 중앙이나 북동쪽에 도자기나 수정을 두세요."
+      adviceEarthHome: "집의 중앙이나 북동쪽에 도자기나 수정을 두세요.",
+      palmLifeLine: "생명선 분석",
+      palmHeadLine: "지능선 분석",
+      palmHeartLine: "감정선 분석",
+      palmFateLine: "운명선 분석"
   },
   'th': {
       ...EN_TRANS,
@@ -394,7 +421,11 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "คุณขาดธาตุ 'ดิน' จำเป็นต้องเสริมความมั่นคงและความหนักแน่น",
       adviceEarthColor: "เหลือง, น้ำตาล", adviceEarthDirection: "ทิศตะวันออกเฉียงเหนือ/กลางบ้าน", adviceEarthHabit: "ความซื่อสัตย์",
       adviceEarthDiet: "ทานผักหัวสีเหลือง (ฟักทอง, มันเทศ) ให้มากขึ้น",
-      adviceEarthHome: "วางเครื่องปั้นดินเผาหรือหินคริสตัลในทิศตะวันออกเฉียงเหนือ"
+      adviceEarthHome: "วางเครื่องปั้นดินเผาหรือหินคริสตัลในทิศตะวันออกเฉียงเหนือ",
+      palmLifeLine: "เส้นชีวิต",
+      palmHeadLine: "เส้นสมอง",
+      palmHeartLine: "เส้นจิตใจ",
+      palmFateLine: "เส้นวาสนา"
   },
   'vi': {
       ...EN_TRANS,
@@ -425,7 +456,11 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "Ngũ hành của bạn khuyết Thổ. Cần tăng cường sự ổn định và bao dung.",
       adviceEarthColor: "Vàng, Nâu", adviceEarthDirection: "Trung tâm/Đông Bắc", adviceEarthHabit: "Thành tín",
       adviceEarthDiet: "Ăn nhiều củ quả màu vàng (bí ngô, khoai lang).",
-      adviceEarthHome: "Đặt gốm sứ hoặc đá pha lê ở hướng Đông Bắc hoặc trung tâm nhà."
+      adviceEarthHome: "Đặt gốm sứ hoặc đá pha lê ở hướng Đông Bắc hoặc trung tâm nhà.",
+      palmLifeLine: "Phân Tích Đường Sinh Đạo",
+      palmHeadLine: "Phân Tích Đường Trí Đạo",
+      palmHeartLine: "Phân Tích Đường Tâm Đạo",
+      palmFateLine: "Phân Tích Đường Định Mệnh"
   },
   'ms': {
       ...EN_TRANS,
@@ -456,7 +491,11 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "Tenaga Tanah anda lemah. Anda memerlukan kestabilan.",
       adviceEarthColor: "Kuning, Coklat", adviceEarthDirection: "Pusat", adviceEarthHabit: "Kestabilan",
       adviceEarthDiet: "Makan lebih banyak makanan kuning/oren.",
-      adviceEarthHome: "Letakkan seramik atau kristal di sektor Timur Laut."
+      adviceEarthHome: "Letakkan seramik atau kristal di sektor Timur Laut.",
+      palmLifeLine: "Analisis Garisan Hayat",
+      palmHeadLine: "Analisis Garisan Kepala",
+      palmHeartLine: "Analisis Garisan Hati",
+      palmFateLine: "Analisis Garisan Nasib"
   },
   'de': {
       ...EN_TRANS,
@@ -487,7 +526,11 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "Ihre Erdenergie ist schwach. Sie brauchen Stabilität.",
       adviceEarthColor: "Gelb, Braun", adviceEarthDirection: "Zentrum", adviceEarthHabit: "Erdung",
       adviceEarthDiet: "Essen Sie mehr gelbe/orange Lebensmittel.",
-      adviceEarthHome: "Platzieren Sie Keramik oder Kristalle im Nordostsektor."
+      adviceEarthHome: "Platzieren Sie Keramik oder Kristalle im Nordostsektor.",
+      palmLifeLine: "Lebenslinie",
+      palmHeadLine: "Kopflinie",
+      palmHeartLine: "Herzlinie",
+      palmFateLine: "Schicksalslinie"
   },
   'fr': {
       ...EN_TRANS,
@@ -518,7 +561,11 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "Votre énergie Terre est faible. Vous avez besoin de stabilité.",
       adviceEarthColor: "Jaune, Brun", adviceEarthDirection: "Centre", adviceEarthHabit: "Ancrage",
       adviceEarthDiet: "Mangez plus d'aliments jaunes/oranges.",
-      adviceEarthHome: "Placez des céramiques ou des cristaux dans le secteur Nord-Est."
+      adviceEarthHome: "Placez des céramiques ou des cristaux dans le secteur Nord-Est.",
+      palmLifeLine: "Ligne de Vie",
+      palmHeadLine: "Ligne de Tête",
+      palmHeartLine: "Ligne de Cœur",
+      palmFateLine: "Ligne de Destinée"
   },
   'es': {
       ...EN_TRANS,
@@ -549,7 +596,11 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "Tu energía de Tierra es débil. Necesitas estabilidad.",
       adviceEarthColor: "Amarillo, Marrón", adviceEarthDirection: "Centro", adviceEarthHabit: "Enraizamiento",
       adviceEarthDiet: "Come más alimentos amarillos/naranjas.",
-      adviceEarthHome: "Coloca cerámica o cristales en el sector Noreste."
+      adviceEarthHome: "Coloca cerámica o cristales en el sector Noreste.",
+      palmLifeLine: "Línea de la Vida",
+      palmHeadLine: "Línea de la Cabeza",
+      palmHeartLine: "Línea del Corazón",
+      palmFateLine: "Línea del Destino"
   },
   'pt': {
       ...EN_TRANS,
@@ -580,7 +631,11 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "Sua energia de Terra é fraca. Você precisa de estabilidade.",
       adviceEarthColor: "Amarelo, Marrom", adviceEarthDirection: "Centro", adviceEarthHabit: "Aterramento",
       adviceEarthDiet: "Coma mais alimentos amarelos/laranjas.",
-      adviceEarthHome: "Coloque cerâmica ou cristais no setor Nordeste."
+      adviceEarthHome: "Coloque cerâmica ou cristais no setor Nordeste.",
+      palmLifeLine: "Linha da Vida",
+      palmHeadLine: "Linha da Cabeça",
+      palmHeartLine: "Linha do Coração",
+      palmFateLine: "Linha do Destino"
   },
   'it': {
       ...EN_TRANS,
@@ -611,6 +666,10 @@ export const TRANSLATIONS: any = {
       adviceEarthDesc: "La tua energia Terra è debole. Hai bisogno di stabilità.",
       adviceEarthColor: "Giallo, Marrone", adviceEarthDirection: "Centro", adviceEarthHabit: "Radicamento",
       adviceEarthDiet: "Mangia più cibi gialli/arancioni.",
-      adviceEarthHome: "Posiziona ceramiche o cristalli nel settore Nord-Est."
+      adviceEarthHome: "Posiziona ceramiche o cristalli nel settore Nord-Est.",
+      palmLifeLine: "Linea della Vita",
+      palmHeadLine: "Linea della Testa",
+      palmHeartLine: "Linea del Cuore",
+      palmFateLine: "Linea del Destino"
   }
 };

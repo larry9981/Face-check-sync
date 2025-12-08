@@ -463,6 +463,25 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
         onOpenBalance(textToPass);
     };
 
+    // --- REORDERING LOGIC FOR AURA -> CHART -> ELEMENTS TEXT ---
+    // The "Five Elements" header is the split point.
+    const elementsHeaderSearch = `## ⚖️ ${t.reportHeaderElements}`;
+    
+    let auraSection = mainContent;
+    let elementsAndRest = "";
+    let splitSuccess = false;
+
+    if (calculatedElements && mainContent.includes(elementsHeaderSearch)) {
+        const parts = mainContent.split(elementsHeaderSearch);
+        if (parts.length > 1) {
+            auraSection = parts[0];
+            // We removed the header with split, so we add the text content after it.
+            // We will render the Header manually, then Chart, then the rest.
+            elementsAndRest = parts.slice(1).join(elementsHeaderSearch); 
+            splitSuccess = true;
+        }
+    }
+
     return (
         <div style={{width: '95%', maxWidth: '800px', margin: '0 auto', paddingBottom: '3rem'}}>
             <div style={{background: 'rgba(0,0,0,0.6)', padding: '15px', borderRadius: '8px', border: `1px solid ${theme.gold}`, marginBottom: '20px', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '10px'}}>
@@ -526,18 +545,46 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                     </div>
                 ) : (
                    <>
-                        {/* Five Elements Chart - Only if calculated */}
-                        {calculatedElements && (
+                        {/* 
+                           CUSTOM LAYOUT LOGIC:
+                           1. Aura (First Section)
+                           2. Five Elements Header
+                           3. Pie Chart
+                           4. Five Elements Text & Rest
+                        */}
+                        
+                        {splitSuccess ? (
                             <>
-                                <h3 style={{color: '#8a6e2f', borderBottom:'1px solid #ddd', paddingBottom:'5px', marginTop:'20px', fontFamily: 'Cinzel, serif'}}>
-                                     ⚖️ {t.reportHeaderElements || "Five Elements (Wu Xing)"}
-                                </h3>
-                                <FiveElementsChart elements={calculatedElements} t={t} />
+                                {/* 1. Aura Section */}
+                                <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(auraSection) }} />
+                                
+                                {/* 2. Header & 3. Chart */}
+                                {calculatedElements && (
+                                    <>
+                                        <h3 style={{color:'#8a6e2f', borderBottom:'1px solid #d4af37', paddingBottom:'5px', marginTop:'20px', fontFamily:'Cinzel, serif'}}>
+                                             ⚖️ {t.reportHeaderElements}
+                                        </h3>
+                                        <FiveElementsChart elements={calculatedElements} t={t} />
+                                    </>
+                                )}
+
+                                {/* 4. Elements Text & Rest */}
+                                <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(elementsAndRest) }} />
+                            </>
+                        ) : (
+                            /* Fallback if split failed (e.g. prompt text mismatch) */
+                            <>
+                                {calculatedElements && (
+                                    <>
+                                        <h3 style={{color:'#8a6e2f', borderBottom:'1px solid #d4af37', paddingBottom:'5px', marginTop:'20px', fontFamily:'Cinzel, serif'}}>
+                                             ⚖️ {t.reportHeaderElements}
+                                        </h3>
+                                        <FiveElementsChart elements={calculatedElements} t={t} />
+                                    </>
+                                )}
+                                <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(mainContent) }} />
                             </>
                         )}
-
-                        {/* Main Content (minus Master's Advice) */}
-                        <div className="fade-in" dangerouslySetInnerHTML={{ __html: formatMarkdown(mainContent) }} />
                         
                         {/* Master Optimization Button (Replaces content) */}
                         <div style={{textAlign: 'center', marginTop: '30px', marginBottom: '20px', borderTop: '1px solid #ddd', paddingTop: '20px'}}>
