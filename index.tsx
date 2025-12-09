@@ -1,5 +1,7 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+// RESTORED: Needed for Client-Side Fallback if Server is offline
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 import { theme, styles } from './theme';
@@ -16,225 +18,201 @@ import { PricingPage } from './pages/PricingPage';
 import { RenderStartView, RenderSelectionView, RenderCameraView, RenderResultView, LoadingSpinner, RenderHistoryView } from './pages/HomeViews';
 
 // =========================================================
-// ⚙️ AI PROVIDER CONFIGURATION (SWITCH HERE / 在此处切换模型)
+// 🌐 FRONTEND CONFIGURATION
 // =========================================================
 
-// 1. Choose your provider: 'Google' | 'OpenAI' | 'DeepSeek'
-// 1. 选择您的提供商: 'Google' (Gemini) | 'OpenAI' (ChatGPT) | 'DeepSeek' (深度求索)
-type AIProvider = 'Google' | 'OpenAI' | 'DeepSeek';
-const CURRENT_PROVIDER: AIProvider = 'Google'; 
-// const CURRENT_PROVIDER: AIProvider = 'DeepSeek'; 
+// Point this to your backend server URL
+const API_BASE_URL = "http://localhost:3000/api"; 
 
-// 2. Configure Keys and Models
-// 2. 配置密钥和模型
-
-// --- GOOGLE GEMINI CONFIG ---
-const GOOGLE_API_KEY = process.env.API_KEY; // Loaded from environment
-const GOOGLE_MODEL = 'gemini-2.5-flash';
-
-// --- OPENAI (CHATGPT) CONFIG ---
-// Add your key here or use process.env.OPENAI_API_KEY
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "YOUR_OPENAI_KEY_HERE"; 
-const OPENAI_MODEL = 'gpt-4o'; // Recommended for Image Analysis
-
-// --- DEEPSEEK CONFIG ---
-// Add your key here or use process.env.DEEPSEEK_API_KEY
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || "YOUR_DEEPSEEK_KEY_HERE"; 
-const DEEPSEEK_BASE_URL = "https://api.deepseek.com/chat/completions";
-const DEEPSEEK_MODEL = 'deepseek-reasoner'; // Or 'deepseek-chat'
-
-// =========================================================
+// --- AI PROVIDER CONFIGURATION (CLIENT SIDE FALLBACK) ---
+// If you want to use DeepSeek/OpenAI directly in browser when server is down
+// fill these in. Otherwise, it defaults to Google via process.env.API_KEY
+let CURRENT_PROVIDER = 'Google'; // 'Google' | 'OpenAI' | 'DeepSeek'
+const OPENAI_API_KEY = ""; // Optional: For Client-Side Fallback
+const DEEPSEEK_API_KEY = ""; // Optional: For Client-Side Fallback
 
 // Music
 const AMBIENT_MUSIC_URL = "https://cdn.pixabay.com/audio/2022/02/07/audio_1919830500.mp3";
 
-// --- AI SERVICE ABSTRACTION ---
-
-// Helper: Call OpenAI-Compatible APIs (OpenAI & DeepSeek)
-async function callOpenAICompatible(
-    baseUrl: string,
-    apiKey: string,
-    model: string,
-    prompt: string,
-    base64Image?: string
-) {
-    const messages: any[] = [
-        {
-            role: "user",
-            content: [
-                { type: "text", text: prompt }
-            ]
-        }
-    ];
-
-    // Add Image if present (Vision API format)
-    if (base64Image) {
-        // Ensure data URI format
-        const imageUrl = base64Image.startsWith('data:') 
-            ? base64Image 
-            : `data:image/jpeg;base64,${base64Image}`;
-
-        messages[0].content.push({
-            type: "image_url",
-            image_url: {
-                url: imageUrl
-            }
-        });
-    }
-
-    try {
-        const response = await fetch(baseUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model: model,
-                messages: messages,
-                max_tokens: 4000
-            })
-        });
-
-        if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`AI Provider Error (${response.status}): ${errText}`);
-        }
-
-        const data = await response.json();
-        return { text: data.choices[0].message.content };
-    } catch (error: any) {
-        if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-            throw new Error("Network Error: Could not connect to AI Provider. This may be due to CORS restrictions (browser blocking) or network connectivity. Please use the 'Google' provider for best compatibility in this environment.");
-        }
-        throw error;
-    }
-}
-
-// Main Universal AI Function
-async function callUniversalAI(
-    provider: AIProvider, 
-    params: { prompt: string, base64Image?: string }
-) {
-    console.log(`[System] Calling AI Provider: ${provider}`);
-
-    switch (provider) {
-        case 'Google':
-            // Always use Google (Gemini) SDK
-            const ai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY || "" });
-            
-            // Safety Settings
+// =========================================================
+// 🛠️ LOCAL BACKEND SERVICE (FALLBACK)
+// =========================================================
+// This mimics the server.ts logic but runs in the browser
+// if the actual backend is unreachable.
+const LocalBackend = {
+    // Mimic DB
+    getOrders: () => {
+        const stored = localStorage.getItem('mystic_all_orders');
+        return stored ? JSON.parse(stored) : [];
+    },
+    saveOrder: (order: any) => {
+        const orders = LocalBackend.getOrders();
+        order.id = `ORD-${Date.now().toString().slice(-6)}`;
+        order.date = new Date().toLocaleDateString();
+        order.status = 'paid';
+        orders.unshift(order);
+        localStorage.setItem('mystic_all_orders', JSON.stringify(orders));
+        return { success: true, orderId: order.id };
+    },
+    getHistory: (userId: string) => {
+        const allHistory = JSON.parse(localStorage.getItem('mystic_user_history_db') || '{}');
+        return allHistory[userId] || [];
+    },
+    saveHistory: (userId: string, record: any) => {
+        const allHistory = JSON.parse(localStorage.getItem('mystic_user_history_db') || '{}');
+        if (!allHistory[userId]) allHistory[userId] = [];
+        allHistory[userId].unshift(record);
+        // Limit to 5
+        allHistory[userId] = allHistory[userId].slice(0, 5);
+        localStorage.setItem('mystic_user_history_db', JSON.stringify(allHistory));
+    },
+    
+    // Mimic AI
+    callAI: async (prompt: string, base64Image?: string) => {
+        console.log(`[LocalBackend] Using ${CURRENT_PROVIDER} (Fallback)...`);
+        
+        if (CURRENT_PROVIDER === 'Google') {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const safetySettings = [
                 { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                 { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
                 { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY, threshold: HarmBlockThreshold.BLOCK_NONE }
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
             ];
 
-            return await ai.models.generateContent({
-                model: GOOGLE_MODEL,
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
                 contents: {
                     parts: [
-                        params.base64Image ? { inlineData: { mimeType: 'image/jpeg', data: params.base64Image } } : null,
-                        { text: params.prompt }
+                        base64Image ? { inlineData: { mimeType: 'image/jpeg', data: base64Image } } : null,
+                        { text: prompt }
                     ].filter(Boolean) as any
                 },
-                config: {
-                    safetySettings: safetySettings
-                }
+                config: { safetySettings }
             });
+            return response.text;
+        } else {
+             // Generic OpenAI/DeepSeek Handler
+             const apiKey = CURRENT_PROVIDER === 'DeepSeek' ? DEEPSEEK_API_KEY : OPENAI_API_KEY;
+             const apiUrl = CURRENT_PROVIDER === 'DeepSeek' ? 'https://api.deepseek.com/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+             const model = CURRENT_PROVIDER === 'DeepSeek' ? 'deepseek-chat' : 'gpt-4o';
+             
+             if (!apiKey) throw new Error(`${CURRENT_PROVIDER} API Key missing for local fallback.`);
 
-        case 'OpenAI':
-            // Call OpenAI API
-            if (!OPENAI_API_KEY || OPENAI_API_KEY.includes("YOUR_")) throw new Error("OpenAI API Key not configured.");
-            return await callOpenAICompatible(
-                "https://api.openai.com/v1/chat/completions",
-                OPENAI_API_KEY,
-                OPENAI_MODEL,
-                params.prompt,
-                params.base64Image
-            );
+             // Construct payload (Vision supported?)
+             const messages: any[] = [{ role: "user", content: [] }];
+             if (prompt) messages[0].content.push({ type: "text", text: prompt });
+             if (base64Image) messages[0].content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } });
 
-        case 'DeepSeek':
-            // Call DeepSeek API
-            if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY.includes("YOUR_")) throw new Error("DeepSeek API Key not configured.");
-            // Note: Check if the specific DeepSeek model supports image input. If not, this might fail or ignore the image.
-            return await callOpenAICompatible(
-                DEEPSEEK_BASE_URL,
-                DEEPSEEK_API_KEY,
-                DEEPSEEK_MODEL,
-                params.prompt,
-                params.base64Image
-            );
+             const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                body: JSON.stringify({ model: model, messages: messages })
+             });
 
-        default:
-            throw new Error(`Unknown AI Provider: ${provider}`);
+             if (!response.ok) {
+                 const err = await response.json();
+                 throw new Error(err.error?.message || "AI API Error");
+             }
+             const data = await response.json();
+             return data.choices[0].message.content;
+        }
     }
-}
+};
+
+// --- API CLIENT HELPERS ---
+
+const callBackendAPI = async (endpoint: string, body: any = {}, method = 'POST') => {
+    try {
+        // 1. Try Real Backend
+        const options: RequestInit = {
+            method: method,
+            headers: { 'Content-Type': 'application/json' }
+        };
+        if (method === 'POST') options.body = JSON.stringify(body);
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || `Server Error: ${response.status}`);
+        }
+        return await response.json();
+
+    } catch (error: any) {
+        // 2. Fallback to LocalBackend if connection fails
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('Connection refused')) {
+            console.warn(`Backend unreachable. Using LocalBackend fallback for ${endpoint}`);
+            
+            // Route to local logic
+            if (endpoint === '/analyze') {
+                 const text = await LocalBackend.callAI(body.prompt, body.image);
+                 if (body.userId) LocalBackend.saveHistory(body.userId, {
+                     id: Date.now(), date: new Date().toLocaleDateString(), resultText: text
+                 });
+                 return { text };
+            }
+            if (endpoint === '/translate') {
+                const prompt = `Translate to ${body.targetLang}. Preserve formatting:\n\n${body.text}`;
+                const text = await LocalBackend.callAI(prompt);
+                return { text };
+            }
+            if (endpoint === '/orders' && method === 'POST') {
+                return LocalBackend.saveOrder(body);
+            }
+            if (endpoint === '/admin/orders' && method === 'GET') {
+                return LocalBackend.getOrders();
+            }
+            if (endpoint.startsWith('/history/') && method === 'GET') {
+                const userId = endpoint.split('/').pop() || '';
+                return LocalBackend.getHistory(userId);
+            }
+        }
+        throw error;
+    }
+};
 
 // Helper for Retry with Error Parsing
 const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, onRetry?: (msg: string) => void): Promise<any> => {
     try {
         return await fn();
     } catch (err: any) {
-        // Deep parse the error object for status codes or specific messages
-        const errorObj = err.error || err;
-        
-        // Extract status/code. Handle both number (429) and string ("RESOURCE_EXHAUSTED")
-        const code = errorObj?.code;
-        const status = errorObj?.status;
-        const message = (errorObj?.message || "") + JSON.stringify(errorObj);
-        
-        // --- CRITICAL ERROR CHECKS (NO RETRY) ---
-        // 1. Location Block (FAILED_PRECONDITION)
-        if (code === 400 || status === 'FAILED_PRECONDITION' || message.includes('location is not supported')) {
-            // Throw specific error to be caught by UI without noise
-            throw new Error("API_LOCATION_BLOCKED"); 
-        }
-        
-        // Parse "retry in X seconds" if available
+        const msg = err.message || "";
+        const isRateLimit = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota');
+
+        // Extract wait time if backend passes it through
         let waitTime = delay;
-        const retryMatch = message.match(/retry in ([0-9.]+)s/);
-        if (retryMatch) {
-            waitTime = Math.ceil(parseFloat(retryMatch[1])) * 1000 + 2000; // Add 2s buffer
+        
+        // 1. Check Google RetryInfo struct (if available)
+        if (err.details) {
+            const retryInfo = err.details.find((d: any) => d['@type']?.includes('RetryInfo'));
+            if (retryInfo && retryInfo.retryDelay) {
+                const seconds = parseFloat(retryInfo.retryDelay.replace('s', ''));
+                if (!isNaN(seconds)) waitTime = Math.ceil(seconds * 1000) + 1000;
+            }
         }
-
-        // Abort if wait time is absurdly long (> 180 seconds)
-        if (waitTime > 180000) {
-            console.warn(`Retry time ${waitTime}ms too long. Aborting.`);
-            throw err;
-        }
-
-        // Check for 429 / Resource Exhausted / 5xx Server Errors
-        const isRateLimit = 
-            code == 429 || 
-            status == 429 ||
-            status === 'RESOURCE_EXHAUSTED' || 
-            message.includes('429') || 
-            message.includes('RESOURCE_EXHAUSTED') ||
-            message.includes('quota');
-            
-        const isServerError = (typeof code === 'number' && code >= 500) || (typeof status === 'number' && status >= 500);
-
-        if (retries > 0 && (isRateLimit || isServerError)) {
-             const seconds = Math.ceil(waitTime / 1000);
-             console.warn(`API Error (${status || code}). Retrying in ${waitTime}ms... (Retries left: ${retries})`);
-             
-             if (onRetry) {
-                 onRetry(`High traffic. Retrying in ${seconds}s...`);
+        
+        // 2. Check Text Match
+        if (waitTime === delay) {
+             const retryMatch = msg.match(/retry in ([0-9.]+)s/);
+             if (retryMatch) {
+                 waitTime = Math.ceil(parseFloat(retryMatch[1])) * 1000 + 2000;
              }
-             
+        }
+
+        if (waitTime > 180000) throw err; // Cap wait time
+
+        if (retries > 0 && isRateLimit) {
+             const seconds = Math.ceil(waitTime / 1000);
+             if (onRetry) onRetry(`High traffic. Retrying in ${seconds}s...`);
              await new Promise(resolve => setTimeout(resolve, waitTime));
-             
-             const nextDelay = retryMatch ? waitTime + 2000 : waitTime * 1.5;
-             return callWithRetry(fn, retries - 1, nextDelay, onRetry); 
+             return callWithRetry(fn, retries - 1, waitTime, onRetry); 
         }
         throw err;
     }
 };
 
-// Client-side Image Resizing Helper to speed up upload/inference
+// Client-side Image Resizing Helper
 const resizeImage = (base64Str: string, maxWidth = 1024, maxHeight = 1024): Promise<string> => {
   return new Promise((resolve) => {
     let img = new Image();
@@ -243,44 +221,30 @@ const resizeImage = (base64Str: string, maxWidth = 1024, maxHeight = 1024): Prom
       let canvas = document.createElement('canvas');
       let width = img.width;
       let height = img.height;
-
-      if (width > height) {
-        if (width > maxWidth) {
-          height *= maxWidth / width;
-          width = maxWidth;
-        }
-      } else {
-        if (height > maxHeight) {
-          width *= maxHeight / height;
-          height = maxHeight;
-        }
-      }
+      if (width > height) { if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; } } 
+      else { if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; } }
       canvas.width = width;
       canvas.height = height;
       let ctx = canvas.getContext('2d');
       ctx?.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', 0.7)); // Reduced to 70% quality for faster upload
+      resolve(canvas.toDataURL('image/jpeg', 0.7)); 
     };
     img.onerror = () => resolve(base64Str);
   });
 };
 
 const App = () => {
-  // Determine if we are in Admin Mode based on URL hash
   const [isAdminMode, setIsAdminMode] = useState(window.location.hash === '#admin');
 
-  // Listen for hash changes to toggle admin mode dynamically
   useEffect(() => {
-    const handleHashChange = () => {
-        setIsAdminMode(window.location.hash === '#admin');
-    };
+    const handleHashChange = () => { setIsAdminMode(window.location.hash === '#admin'); };
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'shop' | 'product-detail' | 'about' | 'privacy' | 'terms' | 'history' | 'cart'>('home');
   
-  // Detect Language & Region
+  // Language Logic
   const detectLanguage = () => {
      try {
          const browserLang = navigator.language.split('-')[0];
@@ -294,29 +258,55 @@ const App = () => {
   };
 
   const [language, setLanguage] = useState(detectLanguage());
-  
   const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
   
+  // App State
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
-  const [userState, setUserState] = useState<UserState>({ trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [] });
+  const [userState, setUserState] = useState<UserState>({ 
+      trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [], userId: '' 
+  });
+  
+  // Generate a random User ID if not present (Simple Auth)
+  useEffect(() => {
+      let saved = localStorage.getItem('fortune_user_state_v3');
+      let parsed = saved ? JSON.parse(saved) : null;
+      
+      if (!parsed) {
+          parsed = { 
+              trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [],
+              userId: `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+          };
+      } else if (!parsed.userId) {
+          parsed.userId = `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      }
+      setUserState(parsed);
+  }, []);
+
+  // Save basic state locally (subscription status)
+  useEffect(() => { 
+      if (userState.userId) {
+          localStorage.setItem('fortune_user_state_v3', JSON.stringify(userState)); 
+      }
+  }, [userState]);
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [view, setView] = useState<'start' | 'selection' | 'camera' | 'analyzing' | 'result'>('start');
-  const [readingType, setReadingType] = useState<'face' | 'palm'>('face'); // New state to toggle between face and palm reading
+  const [readingType, setReadingType] = useState<'face' | 'palm'>('face'); 
   const [image, setImage] = useState<string | null>(null);
   const [resultText, setResultText] = useState<string>("");
   const [showPaywall, setShowPaywall] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
-  const [balanceAiAdvice, setBalanceAiAdvice] = useState<string | undefined>(undefined); // New state for AI Advice passed to Modal
+  const [balanceAiAdvice, setBalanceAiAdvice] = useState<string | undefined>(undefined); 
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | Product | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [calculatedElements, setCalculatedElements] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analysisProgress, setAnalysisProgress] = useState(0);
-  const [loadingMessage, setLoadingMessage] = useState<string>(""); // Custom loading message state
+  const [loadingMessage, setLoadingMessage] = useState<string>(""); 
   const [birthDate, setBirthDate] = useState('');
   const [dobYear, setDobYear] = useState('');
   const [dobMonth, setDobMonth] = useState('');
@@ -325,43 +315,46 @@ const App = () => {
   const [dobMinute, setDobMinute] = useState('00');
   const [dobSecond, setDobSecond] = useState('00');
   const [gender, setGender] = useState('male');
-  const [userName, setUserName] = useState(''); // New state for Name input
-  const [useAdvancedAnalysis, setUseAdvancedAnalysis] = useState(false); // State for advanced checkbox
+  const [userName, setUserName] = useState('');
+  const [useAdvancedAnalysis, setUseAdvancedAnalysis] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  useEffect(() => { const saved = localStorage.getItem('fortune_user_state_v3'); if (saved) setUserState(JSON.parse(saved)); }, []);
-  useEffect(() => { localStorage.setItem('fortune_user_state_v3', JSON.stringify(userState)); }, [userState]);
   useEffect(() => {
     if (!audioRef.current) { 
         audioRef.current = new Audio(AMBIENT_MUSIC_URL); 
         audioRef.current.loop = true; 
         audioRef.current.volume = 0.3; 
-        audioRef.current.onerror = (e) => console.warn("Audio Error:", e);
     }
-    if (isPlayingMusic) {
-        audioRef.current.play().catch(e => console.warn("Audio autoplay blocked:", e));
-    } else {
-        audioRef.current.pause();
-    }
+    if (isPlayingMusic) audioRef.current.play().catch(e => console.warn(e));
+    else audioRef.current.pause();
   }, [isPlayingMusic]);
+
   useEffect(() => { if (dobYear && dobMonth && dobDay) { const m = dobMonth.padStart(2, '0'); const d = dobDay.padStart(2, '0'); setBirthDate(`${dobYear}-${m}-${d}`); } else { setBirthDate(''); } }, [dobYear, dobMonth, dobDay]);
-  
-  // Scroll to top when changing pages
+  useEffect(() => { window.scrollTo(0, 0); }, [currentPage, selectedProduct]);
+
+  // Retrieve History
   useEffect(() => {
-      window.scrollTo(0, 0);
-  }, [currentPage, selectedProduct]);
+      const fetchHistory = async () => {
+          if (!userState.userId) return;
+          try {
+              // Try backend, fallback to local via callBackendAPI logic
+              const historyData = await callBackendAPI(`/history/${userState.userId}`, {}, 'GET');
+              setUserState(prev => ({ ...prev, history: historyData }));
+          } catch (e) { console.warn("Could not fetch history", e); }
+      };
+      if (currentPage === 'history') fetchHistory();
+  }, [currentPage, userState.userId]);
 
   const getDaysRemaining = () => {
       if (!userState.trialStartDate) return 3; 
       const start = new Date(userState.trialStartDate);
       const now = new Date();
       const diffMs = now.getTime() - start.getTime();
-      const diffDays = diffMs / (1000 * 60 * 60 * 24);
-      return Math.max(0, Math.ceil(3 - diffDays));
+      return Math.max(0, Math.ceil(3 - (diffMs / (1000 * 60 * 60 * 24))));
   };
 
   const switchLanguage = async (newLang: string) => {
@@ -372,28 +365,15 @@ const App = () => {
       if (view === 'result' && resultText) {
           setIsTranslating(true);
           try {
-              // Use Google for quick translation, wrap in Retry for quota management
-              const response = await callWithRetry(() => callUniversalAI('Google', {
-                  prompt: `Translate markdown to ${newLang}. Preserve format. Text:\n\n${resultText}`
-              }), 3, 2000, (retryMsg) => {
-                  console.log("Translation waiting for quota: " + retryMsg);
-              });
+              const response = await callWithRetry(() => callBackendAPI('/translate', {
+                  text: resultText,
+                  targetLang: newLang
+              }), 5, 2000, (retryMsg) => console.log("Translating wait: " + retryMsg));
               
-              if (response.text) {
-                  setResultText(response.text);
-              }
+              if (response.text) setResultText(response.text);
           } catch (e: any) {
-              if (e.message === 'API_LOCATION_BLOCKED') {
-                   // Silently fail or warn
-                   alert("Translation unavailable: API region blocked.");
-              } else {
-                   console.error("Translation failed", e);
-                   const errorObj = e?.error || e;
-                   const msg = errorObj?.message || JSON.stringify(errorObj);
-                   if (errorObj?.status === 429 || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
-                       alert("Translation unavailable due to high system traffic. Showing original text.");
-                   }
-              }
+               // Silent fail for translation
+               console.warn("Translation failed:", e.message);
           } finally {
               setIsTranslating(false);
           }
@@ -402,21 +382,14 @@ const App = () => {
 
   const startCamera = async (type: 'face' | 'palm') => {
     setReadingType(type);
-    // Only enforce birth date if advanced analysis is requested
     if (useAdvancedAnalysis && !birthDate) { alert("Please complete your birth date."); return; }
-    
     setView('camera'); 
     if (!isPlayingMusic) setIsPlayingMusic(true);
     try { 
         const stream = await navigator.mediaDevices.getUserMedia({ video: true }); 
-        if (videoRef.current) { 
-            videoRef.current.srcObject = stream; 
-            videoRef.current.play().catch(e => console.error("Video play error:", e)); 
-        } 
+        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); } 
     } catch (err) { 
-        console.error(err);
-        alert("Unable to access camera. Please allow permissions."); 
-        setView('selection'); 
+        alert("Unable to access camera."); setView('selection'); 
     }
   };
   const stopCamera = () => { if (videoRef.current && videoRef.current.srcObject) { (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop()); videoRef.current.srcObject = null; } };
@@ -424,28 +397,14 @@ const App = () => {
   const capturePhoto = async (): Promise<boolean> => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
-      
-      // Ensure video is ready
-      if (video.readyState !== 4) {
-          console.warn("Video not ready yet");
-          return false;
-      }
-
+      if (video.readyState !== 4) return false;
       const canvas = canvasRef.current; 
-      // Set to 1024 to resize capture
-      canvas.width = 1024; 
-      canvas.height = (video.videoHeight / video.videoWidth) * 1024;
-      
+      canvas.width = 1024; canvas.height = (video.videoHeight / video.videoWidth) * 1024;
       const ctx = canvas.getContext('2d'); 
       if (ctx) { 
-          ctx.translate(canvas.width, 0); 
-          ctx.scale(-1, 1); 
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
-          
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7); // 70% quality 
-          setImage(dataUrl); 
-          stopCamera(); 
-          processImage(dataUrl);
+          ctx.translate(canvas.width, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
+          setImage(dataUrl); stopCamera(); processImage(dataUrl);
           return true;
       }
     }
@@ -453,32 +412,19 @@ const App = () => {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Only enforce birth date if advanced analysis is requested
     if (useAdvancedAnalysis && !birthDate) { alert("Please complete your birth date."); e.target.value = ''; return; }
-    
     if (!isPlayingMusic) setIsPlayingMusic(true);
     const file = e.target.files?.[0];
     if (file) {
       setUploadProgress(0); 
       const reader = new FileReader(); 
       let progress = 0;
-      const interval = setInterval(() => { 
-          progress += 10; // Faster simulation
-          setUploadProgress(Math.min(progress, 99)); 
-      }, 30);
+      const interval = setInterval(() => { progress += 10; setUploadProgress(Math.min(progress, 99)); }, 30);
       reader.onloadend = async () => { 
-          clearInterval(interval); 
-          setUploadProgress(100); 
+          clearInterval(interval); setUploadProgress(100); 
           let dataUrl = reader.result as string; 
-          
-          // RESIZE IMAGE BEFORE PROCESSING
           dataUrl = await resizeImage(dataUrl);
-
-          setTimeout(() => { 
-              setImage(dataUrl); 
-              setUploadProgress(0); 
-              processImage(dataUrl); 
-          }, 300);
+          setTimeout(() => { setImage(dataUrl); setUploadProgress(0); processImage(dataUrl); }, 300);
       };
       reader.readAsDataURL(file);
     }
@@ -488,8 +434,8 @@ const App = () => {
   const getMockResult = (headers: any) => {
       return `
 ## 🔮 ${headers.aura}
-(DEMO RESULT - API LOCATION BLOCKED)
-Your aura radiates with a calm, stable golden energy, suggesting you are currently in a period of steady growth. The alignment of your features indicates strong resilience.
+(DEMO MODE - LOCATION BLOCKED)
+Your aura radiates with a calm, stable golden energy.
 
 ## ⚖️ ${headers.elements}
 *   🪙 **${t.elementMetal}:** 40%
@@ -498,17 +444,9 @@ Your aura radiates with a calm, stable golden energy, suggesting you are current
 *   🔥 **${t.elementFire}:** 10%
 *   ⛰️ **${t.elementEarth}:** 10%
 
-## 🌌 ${headers.star}
-The stars are currently aligned in your favor, bringing clarity to recent confusion.
-
-## 💰 ${headers.wealth}
-Your wealth palace shows promise for the coming month. Avoid risky investments.
-
-## 🌿 ${headers.health}
-Pay attention to hydration and rest. Your energy reserves are stable but need replenishing.
-
 ## 📜 ${headers.advice}
-To balance your missing Fire element, wear red or purple colors. \n\nPlace a lamp in the South corner of your room to activate your fame sector. \n\nAdopt a habit of morning exercise to boost your internal fire.
+Google AI services are currently unavailable in your region.
+This is a demonstration of the result layout.
       `;
   };
 
@@ -520,210 +458,84 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
             setUserState(prev => ({ ...prev, trialStartDate: now.toISOString() }));
         } else {
             const start = new Date(userState.trialStartDate);
-            const diffMs = now.getTime() - start.getTime();
-            const daysPassed = diffMs / (1000 * 60 * 60 * 24);
+            const daysPassed = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
             if (daysPassed > 3) { setShowPaywall(true); setView('start'); return; }
         }
     }
     if (userState.hasPaidSingle) { setUserState(prev => ({ ...prev, hasPaidSingle: false })); }
 
-    // Conditional Calculations based on Advanced Mode
+    // Conditional Calculations
     let wuXingResult: any = null;
     let starSign: string | null = null;
     let age = 0;
-
     if (useAdvancedAnalysis && birthDate) {
         wuXingResult = calculateWuXing(dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond);
         starSign = getWesternZodiac(birthDate);
         setCalculatedElements(wuXingResult);
         age = calculateAge(birthDate);
     } else {
-        setCalculatedElements(null); // Reset if not using advanced mode
+        setCalculatedElements(null); 
     }
-
-    const currentDateStr = now.toLocaleDateString();
     
     setView('analyzing');
-    setLoadingMessage(""); // Reset message
+    setLoadingMessage(""); 
     setAnalysisProgress(0);
-    const progressInterval = setInterval(() => {
-        // Faster Analysis Simulation
-        setAnalysisProgress(prev => Math.min(prev + (prev < 60 ? 8 : prev < 85 ? 4 : 1), 95));
-    }, 200);
+    const progressInterval = setInterval(() => { setAnalysisProgress(prev => Math.min(prev + 1, 95)); }, 200);
 
-    // Prepare Headers and Prompt (same as before)
     const langConfig = LANGUAGES.find(l => l.code === language);
     const targetLangName = langConfig?.label || 'English';
-      
     const headers = {
-        aura: t.reportHeaderAura || "General Aura",
-        elements: t.reportHeaderElements || "Five Elements (Wu Xing)",
-        name: t.reportHeaderName || "Name Analysis",
-        star: t.reportHeaderStar || "Western Zodiac Analysis",
-        fortune: t.reportHeaderFortune || "Temporal Fortune",
-        wealth: t.reportHeaderWealth || "Wealth & Fortune",
-        family: t.reportHeaderFamily || "Family & Relationships",
-        parents: t.reportHeaderParents || "Parents & Ancestors",
-        advice: t.reportHeaderAdvice || "Master's Advice",
-        health: t.reportHeaderHealth || "Health Analysis",
-        love: t.reportHeaderLove || "Emotional Analysis",
-        dailyLuck: t.reportHeaderDailyLuck || "Today's Luck",
-        
-        // Palmistry Headers
-        palmLifeLine: t.palmLifeLine || "Life Line",
-        palmHeadLine: t.palmHeadLine || "Wisdom Line",
-        palmHeartLine: t.palmHeartLine || "Heart Line",
-        palmFateLine: t.palmFateLine || "Fate Line"
+        aura: t.reportHeaderAura, elements: t.reportHeaderElements, name: t.reportHeaderName, star: t.reportHeaderStar,
+        fortune: t.reportHeaderFortune, wealth: t.reportHeaderWealth, family: t.reportHeaderFamily, parents: t.reportHeaderParents,
+        advice: t.reportHeaderAdvice, health: t.reportHeaderHealth, love: t.reportHeaderLove, dailyLuck: t.reportHeaderDailyLuck,
+        palmLifeLine: t.palmLifeLine, palmHeadLine: t.palmHeadLine, palmHeartLine: t.palmHeartLine, palmFateLine: t.palmFateLine
     };
 
     try {
-      // Clean base64 string
+      const currentDateStr = now.toLocaleDateString();
       const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
       
       let prompt = '';
-
       if (readingType === 'palm') {
-           // --- PALMISTRY PROMPT ---
            prompt = `
-            You are a grandmaster of Palmistry (Chiromancy).
-            The user is ${gender}.
-            **Current Date/Time of Reading:** ${currentDateStr}
-            
-            Analyze the palm image provided. Identify the Life Line, Head Line (Wisdom), Heart Line (Emotion), and Fate Line.
-            
-            Structure your response EXACTLY as follows in Markdown:
-            ## 🔮 ${headers.dailyLuck}
-            [Analyze today's fortune based on the palm color and energy readings.]
-            
-            ## 🧬 ${headers.palmLifeLine}
-            [Analyze the Life Line. Discuss vitality, physical well-being, and life energy flow. Be specific about length and depth.]
-
-            ## 🧠 ${headers.palmHeadLine}
-            [Analyze the Head/Wisdom Line. Discuss intellect, mindset, and decision making style.]
-
-            ## ❤️ ${headers.palmHeartLine}
-            [Analyze the Heart/Emotion Line. Discuss emotional stability, relationships, and love life predictions.]
-
-            ## 🛤️ ${headers.palmFateLine}
-            [Analyze the Fate Line (if visible). Discuss career path, destiny, and major life changes.]
-            `;
-            
-            if (useAdvancedAnalysis && wuXingResult) {
-                prompt += `
-            ## ⚖️ ${headers.elements}
-            *   🪙 **${t.elementMetal}:** [Brief analysis based on hand shape and Birth Element: Metal Strength ${wuXingResult.scores.Metal}%]
-            *   🌲 **${t.elementWood}:** [Brief analysis based on hand shape and Birth Element: Wood Strength ${wuXingResult.scores.Wood}%]
-            *   💧 **${t.elementWater}:** [Brief analysis based on hand shape and Birth Element: Water Strength ${wuXingResult.scores.Water}%]
-            *   🔥 **${t.elementFire}:** [Brief analysis based on hand shape and Birth Element: Fire Strength ${wuXingResult.scores.Fire}%]
-            *   ⛰️ **${t.elementEarth}:** [Brief analysis based on hand shape and Birth Element: Earth Strength ${wuXingResult.scores.Earth}%]
-                `;
-            } else {
-                 prompt += `
-            ## ⚖️ ${headers.elements}
-            *   🪙 **${t.elementMetal}:** [Brief analysis based on hand shape]
-            *   🌲 **${t.elementWood}:** [Brief analysis based on hand shape]
-            *   💧 **${t.elementWater}:** [Brief analysis based on hand shape]
-            *   🔥 **${t.elementFire}:** [Brief analysis based on hand shape]
-            *   ⛰️ **${t.elementEarth}:** [Brief analysis based on hand shape]
-                 `;
-            }
-
-            prompt += `
-            ## 📜 ${headers.advice}
-            [Provide specific practical advice based on the reading. Suggest specific colors to wear, jewelry, and lifestyle habits. Be very specific. Use double line breaks between paragraphs for clarity.]
-            
-            IMPORTANT: Output the response DIRECTLY in ${targetLangName}.
+            You are a grandmaster of Palmistry. User: ${gender}. Date: ${currentDateStr}.
+            Analyze Life Line, Head Line, Heart Line, Fate Line.
+            Structure:
+            ## 🔮 ${headers.dailyLuck} ...
+            ## 🧬 ${headers.palmLifeLine} ...
+            ## 🧠 ${headers.palmHeadLine} ...
+            ## ❤️ ${headers.palmHeartLine} ...
+            ## 🛤️ ${headers.palmFateLine} ...
+            ## ⚖️ ${headers.elements} ...
+            ## 📜 ${headers.advice} ...
+            Output in ${targetLangName}.
            `;
       } else {
-          // --- FACE READING PROMPT ---
           prompt = `
-            You are a grandmaster of traditional Chinese physiognomy (Mianxiang).
-            The user is ${gender}.
-            **Current Date/Time of Reading:** ${currentDateStr}
+            You are a grandmaster of Mianxiang (Face Reading). User: ${gender}. Date: ${currentDateStr}.
+            Analyze face.
+            Structure:
+            ## 🔮 ${headers.aura} ...
+            ## ⚖️ ${headers.elements} ... (Include emojis 🪙, 🌲, 💧, 🔥, ⛰️)
+            ## 📅 ${headers.fortune} ...
+            ## 💰 ${headers.wealth} ...
+            ## 🏠 ${headers.family} ...
+            ## 👴 ${headers.parents} ...
+            ## 📜 ${headers.advice} ...
+            Output in ${targetLangName}.
           `;
-
           if (useAdvancedAnalysis && wuXingResult) {
-              prompt += `
-            The user was born on ${birthDate} at ${dobHour}:${dobMinute}:${dobSecond}. (Age: ${age}).
-            Calculated Birth Five Elements (Wu Xing) Strength: Metal: ${wuXingResult.scores.Metal}%, Wood: ${wuXingResult.scores.Wood}%, Water: ${wuXingResult.scores.Water}%, Fire: ${wuXingResult.scores.Fire}%, Earth: ${wuXingResult.scores.Earth}%.
-            Weakest Element in Birth Chart: ${wuXingResult.missingElement}.
-            Western Zodiac Sign: ${starSign}.
-            
-            **CRITICAL TASK**: Compare their Birth Date (Bazi) against the Current Date (${currentDateStr}). Determine if there are any clashes or harmonies today and for this current month.
-            
-            If User Name is provided ("${userName}"), analyze if this name balances their missing element (${wuXingResult.missingElement}).
-              `;
-          } else {
-              prompt += `
-            Analyze this person's face purely based on visual physiognomy features. Estimate their approximate age range and vitality.
-              `;
+              prompt += ` Context: Born ${birthDate}. WuXing: Metal:${wuXingResult.scores.Metal}%, Wood:${wuXingResult.scores.Wood}%, Water:${wuXingResult.scores.Water}%, Fire:${wuXingResult.scores.Fire}%, Earth:${wuXingResult.scores.Earth}%. Weak: ${wuXingResult.missingElement}. Zodiac: ${starSign}. Name: ${userName}. Add analysis for these.`;
           }
-
-          prompt += `
-            Analyze this person's face with a respectful, ancient, and insightful tone.
-            
-            Structure your response EXACTLY as follows in Markdown (Use the EXACT translated headers provided):
-            ## 🔮 ${headers.aura}
-            [Analysis of overall face shape, eyes, and energy]
-          `;
-
-          if (useAdvancedAnalysis && wuXingResult) {
-             prompt += `
-            ## ⚖️ ${headers.elements}
-            *   🪙 **${t.elementMetal}:** [Analysis combined with birth chart]
-            *   🌲 **${t.elementWood}:** [Analysis combined with birth chart]
-            *   💧 **${t.elementWater}:** [Analysis combined with birth chart]
-            *   🔥 **${t.elementFire}:** [Analysis combined with birth chart]
-            *   ⛰️ **${t.elementEarth}:** [Analysis combined with birth chart]
-            ## 🌌 ${headers.star}
-            [Analyze their Western Zodiac sign (${starSign}). Discuss personality traits and current cosmic planetary influences.]
-             `;
-             if (userName) {
-                prompt += `
-            ## ✍️ ${headers.name}
-            [Analyze the name "${userName}" in relation to their Five Elements. Does it help balance the missing ${wuXingResult.missingElement}? Suggest improvements if needed.]
-                `;
-             }
-          } else {
-               prompt += `
-            ## ⚖️ ${headers.elements}
-            *   🪙 **${t.elementMetal}:** [Visual analysis of face shape]
-            *   🌲 **${t.elementWood}:** [Visual analysis of face shape]
-            *   💧 **${t.elementWater}:** [Visual analysis of face shape]
-            *   🔥 **${t.elementFire}:** [Visual analysis of face shape]
-            *   ⛰️ **${t.elementEarth}:** [Visual analysis of face shape]
-               `;
-          }
-
-          prompt += `
-            ## 📅 ${headers.fortune} (Date: ${currentDateStr})
-            *   **Today's Luck:** [Analyze today's luck based on facial glow/energy]
-            *   **Monthly Forecast:** [Analyze this month's luck]
-            ## 💰 ${headers.wealth}
-            [Analysis of nose/wealth palace]
-            ## 🏠 ${headers.family}
-            [Analysis of eyes/relationships]
-            ## 👴 ${headers.parents}
-            [Analysis of forehead/parents palace]
-            ## 📜 ${headers.advice}
-            [Provide specific practical advice here on how they can improve their energy. Suggest specific colors to wear, types of jewelry (e.g. gold, wood, crystal), and lifestyle habits. Be very specific. Use double line breaks between paragraphs for clarity.]
-            
-            IMPORTANT: Output the response DIRECTLY in ${targetLangName}. 
-            ENSURE "Five Elements" header is EXACTLY: ## ⚖️ ${headers.elements}
-            Ensure the emojis (🪙, 🌲, 💧, 🔥, ⛰️) are used at the start of each Five Elements line.
-          `;
       }
-      
-      // Execute Call via Universal AI Handler
-      // Increased retries to 5 to tolerate long waits
-      const apiCall = callWithRetry(() => callUniversalAI(CURRENT_PROVIDER, {
-          prompt,
-          base64Image: base64Data
-      }), 5, 4000, (retryMsg) => {
-          setLoadingMessage(retryMsg);
-      });
 
-      // No Timeout Limit for Analysis (User Requested)
+      // CALL BACKEND API (or FALLBACK)
+      const apiCall = callWithRetry(() => callBackendAPI('/analyze', {
+          prompt,
+          image: base64Data,
+          userId: userState.userId
+      }), 5, 4000, (retryMsg) => setLoadingMessage(retryMsg));
+
       const response: any = await apiCall;
       
       clearInterval(progressInterval);
@@ -731,23 +543,21 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
       setLoadingMessage("");
       await new Promise(resolve => setTimeout(resolve, 600));
       
-      const newResultText = response.text || "Destiny is unclear. Please try again.";
+      const newResultText = response.text || "Destiny unclear.";
       setResultText(newResultText);
       
-      // Save to History (Max 5)
+      // History is already updated via LocalBackend/Server, but we update UI state here
       const newHistoryItem: HistoryRecord = {
           id: Date.now(),
           date: now.toLocaleDateString(),
           resultText: newResultText,
-          elements: wuXingResult, // Might be null if not advanced
+          elements: wuXingResult,
           name: userName,
           gender: gender,
           birthDate: birthDate || "Not Provided"
       };
-      setUserState(prev => {
-          const updatedHistory = [newHistoryItem, ...(prev.history || [])].slice(0, 5);
-          return { ...prev, history: updatedHistory };
-      });
+      // Optimistic Update
+      setUserState(prev => ({ ...prev, history: [newHistoryItem, ...(prev.history || [])].slice(0, 5) }));
       
       setView('result');
     } catch (error: any) { 
@@ -755,49 +565,17 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
         setAnalysisProgress(0);
         setLoadingMessage("");
         
-        // Handle Location Blocked Error with a Graceful Fallback
-        if (error.message === 'API_LOCATION_BLOCKED') {
-             // Suppress console.error here to avoid confusing the user/logs
-             alert("Google AI is not available in your region (Location Blocked). Switching to Demo Mode for testing.");
-             
-             // Generate Mock Result
-             const mockText = getMockResult(headers);
-             setResultText(mockText);
-             
-             // Ensure elements exist for chart (mock if null)
-             if (!calculatedElements) {
-                 setCalculatedElements({
-                     scores: { Metal: 40, Wood: 15, Water: 25, Fire: 10, Earth: 10 },
-                     missingElement: 'Fire'
-                 });
-             }
-             
-             setView('result');
-             return; // Exit success path for demo
+        // Handle Location Block specifically
+        if (error.message.includes('FAILED_PRECONDITION') || error.message.includes('location')) {
+            const mockText = getMockResult(headers);
+            setResultText(mockText);
+            if (!calculatedElements) setCalculatedElements({ scores: { Metal: 20, Wood: 20, Water: 20, Fire: 20, Earth: 20 }, missingElement: 'Fire' });
+            setView('result');
+            alert("Google AI is not available in your region. Switching to Demo Mode.");
+        } else {
+             console.error("Analysis Error:", error);
+             alert("Connection failed. Please check your network.");
         }
-
-        // Only log unanticipated errors
-        console.error("Processing Error:", error); 
-
-        let msg = "Analysis failed. Please try again.";
-        const errObj = error?.error || error;
-        const errMsg = errObj?.message || JSON.stringify(errObj);
-        
-        // Extract wait time if present in final error
-        const retryMatch = errMsg.match(/retry in ([0-9.]+)s/);
-        
-        if (errObj?.status === 'RESOURCE_EXHAUSTED' || errObj?.code === 429 || errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) { 
-            msg = "High System Traffic.";
-            if (retryMatch) {
-                msg += ` Please wait ${Math.ceil(parseFloat(retryMatch[1]))} seconds before trying again.`;
-            } else {
-                msg += " Please try again in a minute.";
-            }
-        } else if (error instanceof Error) { 
-            msg = `Analysis failed: ${error.message}`; 
-        }
-        alert(msg);
-        setView('selection');
     }
   };
 
@@ -807,10 +585,7 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
     const utterance = new SpeechSynthesisUtterance(resultText.replace(/[#*]/g, ''));
     const langConfig = LANGUAGES.find(l => l.code === language);
     utterance.lang = langConfig?.voiceCode || 'en-US';
-    const voices = window.speechSynthesis.getVoices();
-    const voice = voices.find(v => v.lang === utterance.lang && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('david')));
-    if (voice) utterance.voice = voice;
-    utterance.rate = 0.9; utterance.pitch = 0.8; utterance.onend = () => setIsSpeaking(false); speechRef.current = utterance; window.speechSynthesis.speak(utterance); setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false); speechRef.current = utterance; window.speechSynthesis.speak(utterance); setIsSpeaking(true);
   };
   
   const handleLoadHistory = (record: HistoryRecord) => {
@@ -824,11 +599,9 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
   };
 
   const handleOpenBalance = (aiAdvice?: string) => {
-      // Gatekeeping: Check 3-day trial or payment
       const daysRemaining = getDaysRemaining();
       if (daysRemaining > 0 || userState.isSubscribed) { 
-          setBalanceAiAdvice(aiAdvice); // Store the passed AI advice
-          setShowBalanceModal(true); 
+          setBalanceAiAdvice(aiAdvice); setShowBalanceModal(true); 
       } else { 
           setShowPaywall(true); 
       }
@@ -838,39 +611,20 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
   const handleRemoveFromCart = (productId: string) => { setCart(prev => prev.filter(item => item.product.id !== productId)); };
   
   const handleCartCheckout = (total: number) => {
-      // Create a dummy plan for checkout
-      const cartPlan: any = {
-          id: 'cart_checkout',
-          title: 'Cart Checkout',
-          price: `$${total.toFixed(2)}`,
-          desc: 'Items from Spiritual Shop',
-          isSub: false,
-          category: 'cart_mixed' // Treat as physical product for shipping address requirement
-      };
-      setSelectedPlan(cartPlan);
-      setShowPaymentModal(true);
+      const cartPlan: any = { id: 'cart_checkout', title: 'Cart Checkout', price: `$${total.toFixed(2)}`, desc: 'Items from Spiritual Shop', isSub: false, category: 'cart_mixed' };
+      setSelectedPlan(cartPlan); setShowPaymentModal(true);
   };
 
   const handleBuyProduct = (product: Product) => { setShowBalanceModal(false); setSelectedProduct(null); setSelectedPlan(product); setShowPaymentModal(true); };
   
-  // New handler for clicking a product in the shop
-  const handleViewProduct = (product: Product) => {
-      setSelectedProduct(product);
-      setCurrentPage('product-detail');
-      setView('start'); // Reset internal home states if necessary
-  };
+  const handleViewProduct = (product: Product) => { setSelectedProduct(product); setCurrentPage('product-detail'); setView('start'); };
 
-  const handlePaymentSuccess = (paymentDetails?: any) => { 
+  const handlePaymentSuccess = async (paymentDetails?: any) => { 
       if (!selectedPlan) return; 
       
-      // Save Order to "Mock Server" (localStorage)
-      const saveOrderToServer = () => {
-          const storedOrders = localStorage.getItem('mystic_all_orders');
-          const allOrders: Order[] = storedOrders ? JSON.parse(storedOrders) : [];
-          
+      try {
           let orderItems = "";
           let total = 0;
-          
           if (selectedPlan.id === 'cart_checkout') {
               orderItems = cart.map(c => `${c.product.defaultName} x${c.quantity}`).join(', ');
               total = cart.reduce((acc, c) => acc + (c.product.numericPrice * c.quantity), 0);
@@ -882,36 +636,26 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
           const shipping = paymentDetails?.shipping || {};
           const contact = paymentDetails?.contact || {};
           
-          const fullAddress = shipping.address 
-            ? `${shipping.address}, ${shipping.city} ${shipping.zip}, ${shipping.country}`
-            : 'Digital Delivery';
-          const customerName = shipping.name || 'Guest User';
-
-          const newOrder: Order = {
-              id: `ORD-${Date.now().toString().slice(-6)}`,
-              date: new Date().toLocaleDateString(),
-              customerName: customerName,
+          const newOrder: Partial<Order> = {
+              customerName: shipping.name || 'Guest User',
               items: orderItems,
               total: total,
-              status: 'paid',
-              shippingAddress: fullAddress,
+              shippingAddress: shipping.address ? `${shipping.address}, ${shipping.city}` : 'Digital',
               paymentMethod: paymentDetails?.method || 'unknown',
               email: contact.email,
               phone: contact.phone
           };
           
-          allOrders.unshift(newOrder); // Add to top
-          localStorage.setItem('mystic_all_orders', JSON.stringify(allOrders));
-      };
-      
-      saveOrderToServer();
+          // Call Backend OR Fallback
+          await callBackendAPI('/orders', newOrder);
 
-      if (selectedPlan.id === 'cart_checkout') {
-          // Clear Cart on successful checkout
-          setCart([]);
-          setCurrentPage('home');
-          setView('start');
-      } else if ('isSub' in selectedPlan) { 
+      } catch (e) {
+          console.error("Failed to save order", e);
+      }
+
+      // Update Client State
+      if (selectedPlan.id === 'cart_checkout') { setCart([]); setCurrentPage('home'); setView('start'); } 
+      else if ('isSub' in selectedPlan) { 
           if (selectedPlan.id === 'single') setUserState(prev => ({ ...prev, hasPaidSingle: true })); 
           else setUserState(prev => ({ ...prev, isSubscribed: true })); 
       }
@@ -926,7 +670,6 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
 
   const triggerPayment = (plan: Plan) => { setSelectedPlan(plan); setShowPaymentModal(true); };
 
-  // --- ADMIN VIEW ---
   if (isAdminMode) {
       return (
           <div style={styles.appContainer}>
@@ -940,7 +683,6 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
       );
   }
 
-  // --- MAIN APP VIEW ---
   return (
     <div style={styles.appContainer}>
       <nav style={styles.navbar}>
@@ -954,14 +696,11 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
              <span style={getNavLinkStyle('pricing')} onClick={() => { setCurrentPage('pricing'); setView('start'); }}>{t.pricing}</span>
              <span style={getNavLinkStyle('shop')} onClick={() => { setCurrentPage('shop'); setView('start'); }}>{t.shop}</span>
              <span style={getNavLinkStyle('about')} onClick={() => { setCurrentPage('about'); setView('start'); }}>{t.about}</span>
-             
-             {/* History Link */}
              <span style={getNavLinkStyle('history')} onClick={() => { setCurrentPage('history'); setView('start'); }}>
                  <i className="fas fa-history" style={{marginRight: '5px'}}></i>{t.history}
              </span>
-
              <div style={{position: 'relative', cursor: 'pointer', marginLeft: '10px', marginRight: '15px'}} onClick={() => { setCurrentPage('cart'); setView('start'); }}>
-                 <i className="fas fa-shopping-cart" style={{color: currentPage === 'cart' ? theme.gold : theme.gold}}></i>
+                 <i className="fas fa-shopping-cart" style={{color: theme.gold}}></i>
                  {cart.length > 0 && <span style={{position: 'absolute', top: '-8px', right: '-8px', background: '#c0392b', color: '#fff', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{cart.reduce((a,c) => a + c.quantity, 0)}</span>}
              </div>
              <select style={{background: 'rgba(0,0,0,0.5)', color: theme.gold, border: '1px solid #555', borderRadius: '4px', padding: '2px', marginLeft: '10px'}} value={language} onChange={(e) => switchLanguage(e.target.value)}>
@@ -972,34 +711,15 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
       </nav>
 
       <div style={styles.main}>
-        {showToast && <div style={{position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)', background: '#2ecc71', color: '#fff', padding: '15px 30px', borderRadius: '30px', zIndex: 3005, boxShadow: '0 5px 15px rgba(0,0,0,0.3)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px'}} className="fade-in"><i className="fas fa-check-circle"></i> {t.addToCart} - Success</div>}
+        {showToast && <div style={{position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)', background: '#2ecc71', color: '#fff', padding: '15px 30px', borderRadius: '30px', zIndex: 3005, boxShadow: '0 5px 15px rgba(0,0,0,0.3)', fontWeight: 'bold'}} className="fade-in"><i className="fas fa-check-circle"></i> {t.addToCart} - Success</div>}
         
         {showPaywall && <PaymentModal t={t} plan={{id: 'single', title: t.planSingle, price: t.planSinglePrice, desc: t.planSingleDesc, isSub: false}} onClose={() => setShowPaywall(false)} onSuccess={(d) => { handlePaymentSuccess(d); if (view === 'start') setView('selection'); }} />}
         {showPaymentModal && selectedPlan && <PaymentModal t={t} plan={selectedPlan} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />}
-        {showBalanceModal && (
-            // Pass missingElement safely
-            <FiveElementsBalanceModal 
-                t={t} 
-                missingElement={calculatedElements ? calculatedElements.missingElement : 'Metal'} 
-                aiAdvice={balanceAiAdvice} 
-                onClose={() => setShowBalanceModal(false)} 
-                onBuyProduct={handleBuyProduct} 
-            />
-        )}
+        {showBalanceModal && (<FiveElementsBalanceModal t={t} missingElement={calculatedElements ? calculatedElements.missingElement : 'Metal'} aiAdvice={balanceAiAdvice} onClose={() => setShowBalanceModal(false)} onBuyProduct={handleBuyProduct} />)}
         
-        {/* Render ProductDetailModal as a standalone page section if currentPage is 'product-detail' */}
         {currentPage === 'product-detail' && selectedProduct && (
             <div style={{...styles.heroSection, justifyContent: 'flex-start', paddingTop: '100px'}}>
-                <ProductDetailModal 
-                    key={selectedProduct.id} // Forces fresh mount when switching products (regenerate page)
-                    isPageMode={true} 
-                    t={t} 
-                    product={selectedProduct} 
-                    onClose={() => setCurrentPage('shop')} // Close returns to shop
-                    onAddToCart={() => handleAddToCart(selectedProduct)} 
-                    onBuyNow={() => handleBuyProduct(selectedProduct)} 
-                    onSwitchProduct={(p) => setSelectedProduct(p)} 
-                />
+                <ProductDetailModal key={selectedProduct.id} isPageMode={true} t={t} product={selectedProduct} onClose={() => setCurrentPage('shop')} onAddToCart={() => handleAddToCart(selectedProduct)} onBuyNow={() => handleBuyProduct(selectedProduct)} onSwitchProduct={(p) => setSelectedProduct(p)} />
             </div>
         )}
 
@@ -1007,44 +727,26 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
              <div style={{...styles.heroSection, paddingTop: '1rem'}}>
                 {view === 'start' && <RenderStartView t={t} freeTrials={getDaysRemaining()} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
                 {view === 'selection' && <RenderSelectionView 
-                    t={t} 
-                    readingType={readingType}
-                    gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
-                    uploadProgress={uploadProgress}
-                    userName={userName} onSetUserName={setUserName} 
-                    onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
+                    t={t} readingType={readingType} gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
+                    uploadProgress={uploadProgress} userName={userName} onSetUserName={setUserName} onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
                     onStartCamera={() => startCamera(readingType)} onUpload={handleFileUpload} onBack={() => setView('start')}
-                    language={language}
-                    useAdvancedAnalysis={useAdvancedAnalysis} onToggleAdvanced={() => setUseAdvancedAnalysis(!useAdvancedAnalysis)}
+                    language={language} useAdvancedAnalysis={useAdvancedAnalysis} onToggleAdvanced={() => setUseAdvancedAnalysis(!useAdvancedAnalysis)}
                 />}
                 {view === 'camera' && <RenderCameraView t={t} readingType={readingType} videoRef={videoRef} canvasRef={canvasRef} onStopCamera={() => { stopCamera(); setView('selection'); }} onCapture={capturePhoto} />}
                 {view === 'analyzing' && <LoadingSpinner t={t} progress={analysisProgress} message={loadingMessage} />}
                 {view === 'result' && <RenderResultView 
                     t={t} readingType={readingType} birthDate={birthDate} gender={gender} calculatedElements={calculatedElements} resultText={resultText} 
                     language={language} isSpeaking={isSpeaking} isTranslating={isTranslating} LANGUAGES={LANGUAGES}
-                    onLanguageChange={(e: any) => switchLanguage(e.target.value)}
-                    onToggleSpeech={toggleSpeech} onAnalyzeAnother={() => { setView('selection'); setImage(null); setResultText(""); }}
+                    onLanguageChange={(e: any) => switchLanguage(e.target.value)} onToggleSpeech={toggleSpeech} onAnalyzeAnother={() => { setView('selection'); setImage(null); setResultText(""); }}
                     onBuyProduct={handleBuyProduct} onOpenBalance={handleOpenBalance}
                 />}
                 {view === 'start' && (
                     <div style={{marginTop: '4rem', maxWidth: '1000px', width: '100%'}} className="desktop-only">
                        <h2 style={{color: theme.gold, marginBottom: '2rem'}}>{t.howItWorks}</h2>
                        <div className="feature-grid">
-                          <div style={{flex: 1, minWidth: '200px', background: 'rgba(0,0,0,0.4)', padding:'20px', borderRadius:'8px', border:'1px solid rgba(212, 175, 55, 0.2)'}}>
-                              <i className="fas fa-fingerprint" style={{fontSize: '2rem', color: theme.gold, marginBottom: '1rem'}}></i>
-                              <h3 style={{color: theme.gold}}>{t.step1Title}</h3>
-                              <p style={{color: '#aaa'}}>{t.step1Desc}</p>
-                          </div>
-                          <div style={{flex: 1, minWidth: '200px', background: 'rgba(0,0,0,0.4)', padding:'20px', borderRadius:'8px', border:'1px solid rgba(212, 175, 55, 0.2)'}}>
-                              <i className="fas fa-microchip" style={{fontSize: '2rem', color: theme.gold, marginBottom: '1rem'}}></i>
-                              <h3 style={{color: theme.gold}}>{t.step2Title}</h3>
-                              <p style={{color: '#aaa'}}>{t.step2Desc}</p>
-                          </div>
-                          <div style={{flex: 1, minWidth: '200px', background: 'rgba(0,0,0,0.4)', padding:'20px', borderRadius:'8px', border:'1px solid rgba(212, 175, 55, 0.2)'}}>
-                              <i className="fas fa-file-invoice-dollar" style={{fontSize: '2rem', color: theme.gold, marginBottom: '1rem'}}></i>
-                              <h3 style={{color: theme.gold}}>{t.step3Title}</h3>
-                              <p style={{color: '#aaa'}}>{t.step3Desc}</p>
-                          </div>
+                          <div style={{flex: 1, minWidth: '200px', background: 'rgba(0,0,0,0.4)', padding:'20px', borderRadius:'8px', border:'1px solid rgba(212, 175, 55, 0.2)'}}><i className="fas fa-fingerprint" style={{fontSize: '2rem', color: theme.gold, marginBottom: '1rem'}}></i><h3 style={{color: theme.gold}}>{t.step1Title}</h3><p style={{color: '#aaa'}}>{t.step1Desc}</p></div>
+                          <div style={{flex: 1, minWidth: '200px', background: 'rgba(0,0,0,0.4)', padding:'20px', borderRadius:'8px', border:'1px solid rgba(212, 175, 55, 0.2)'}}><i className="fas fa-microchip" style={{fontSize: '2rem', color: theme.gold, marginBottom: '1rem'}}></i><h3 style={{color: theme.gold}}>{t.step2Title}</h3><p style={{color: '#aaa'}}>{t.step2Desc}</p></div>
+                          <div style={{flex: 1, minWidth: '200px', background: 'rgba(0,0,0,0.4)', padding:'20px', borderRadius:'8px', border:'1px solid rgba(212, 175, 55, 0.2)'}}><i className="fas fa-file-invoice-dollar" style={{fontSize: '2rem', color: theme.gold, marginBottom: '1rem'}}></i><h3 style={{color: theme.gold}}>{t.step3Title}</h3><p style={{color: '#aaa'}}>{t.step3Desc}</p></div>
                        </div>
                     </div>
                 )}
@@ -1053,7 +755,6 @@ To balance your missing Fire element, wear red or purple colors. \n\nPlace a lam
         {currentPage === 'pricing' && <div style={styles.heroSection}><PricingPage t={t} onSelectPlan={triggerPayment} /></div>}
         {currentPage === 'shop' && <div style={styles.heroSection}><ShopPage t={t} onViewProduct={handleViewProduct} /></div>}
         {currentPage === 'cart' && <div style={styles.heroSection}><CartPage t={t} cart={cart} onRemove={handleRemoveFromCart} onCheckout={handleCartCheckout} /></div>}
-        {/* AdminPage removed from main flow */}
         {currentPage === 'about' && <div style={styles.heroSection}><AboutPage t={t} /></div>}
         {currentPage === 'privacy' && <div style={styles.heroSection}><PrivacyPolicy t={t} /></div>}
         {currentPage === 'terms' && <div style={styles.heroSection}><TermsOfService t={t} /></div>}

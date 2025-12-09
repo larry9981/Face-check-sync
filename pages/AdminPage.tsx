@@ -10,16 +10,22 @@ export const AdminPage = ({ t }: { t: any }) => {
     const [orders, setOrders] = useState<Order[]>([]);
 
     useEffect(() => {
-        // Load orders from "Server" (simulated by localStorage)
+        // Fetch from Backend API instead of localStorage
         if (isAuthenticated) {
-            const storedOrders = localStorage.getItem('mystic_all_orders');
-            if (storedOrders) {
-                try {
-                    setOrders(JSON.parse(storedOrders));
-                } catch (e) {
-                    console.error("Failed to parse orders", e);
-                }
-            }
+            // Assume API proxy is set up or relative path works
+            const API_BASE_URL = "http://localhost:3000/api"; 
+            
+            fetch(`${API_BASE_URL}/admin/orders`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) setOrders(data);
+                })
+                .catch(err => {
+                    console.error("Failed to fetch orders:", err);
+                    // Fallback to local storage for demo continuity if server missing
+                    const stored = localStorage.getItem('mystic_all_orders');
+                    if (stored) setOrders(JSON.parse(stored));
+                });
         }
     }, [isAuthenticated]);
 
@@ -35,7 +41,6 @@ export const AdminPage = ({ t }: { t: any }) => {
 
     const handleLogout = () => {
         setIsAuthenticated(false);
-        // Redirect to main site
         window.location.href = '/'; 
     };
 

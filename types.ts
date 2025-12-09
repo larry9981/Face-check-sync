@@ -4,6 +4,7 @@ export interface UserState {
   isSubscribed: boolean;
   hasPaidSingle: boolean;
   history: HistoryRecord[]; // Added history array
+  userId: string;
 }
 
 export interface HistoryRecord {
