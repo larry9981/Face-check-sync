@@ -6,7 +6,7 @@ import { SHOP_PRODUCTS } from '../products';
 import { ImagePersistence } from '../utils';
 
 // Sub-component for individual product cards to handle async image loading
-const ProductCard = ({ product, t, onViewProduct }: { product: Product, t: any, onViewProduct: (p: Product) => void }) => {
+const ProductCard: React.FC<{ product: Product, t: any, onViewProduct: (p: Product) => void }> = ({ product, t, onViewProduct }) => {
     const [imageUrl, setImageUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 

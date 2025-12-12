@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
@@ -29,11 +30,14 @@ const DB = {
 // =========================================================
 // 🧠 AI LOGIC
 // =========================================================
-async function callAI(prompt: string, base64Image?: string) {
-    console.log(`[Backend] Processing AI Request via ${CURRENT_PROVIDER}...`);
+async function callAI(prompt: string, base64Image?: string, config?: any) {
+    // If client sends config, prioritize it (Demo Mode)
+    const provider = config?.textProvider || CURRENT_PROVIDER;
+    console.log(`[Backend] Processing AI Request via ${provider}...`);
 
-    if (CURRENT_PROVIDER === 'Google') {
-        const ai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY });
+    if (provider === 'Google') {
+        const apiKey = config?.googleKey || GOOGLE_API_KEY;
+        const ai = new GoogleGenAI({ apiKey });
         const safetySettings = [
             { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
             { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -66,8 +70,8 @@ async function callAI(prompt: string, base64Image?: string) {
 // 1. AI Analysis Endpoint
 app.post('/api/analyze', async (req, res) => {
     try {
-        const { prompt, image, userId } = req.body;
-        const resultText = await callAI(prompt, image);
+        const { prompt, image, userId, config } = req.body;
+        const resultText = await callAI(prompt, image, config);
         
         // Save to History DB if userId is provided
         if (userId) {
@@ -97,9 +101,9 @@ app.post('/api/analyze', async (req, res) => {
 // 2. Translation Endpoint
 app.post('/api/translate', async (req, res) => {
     try {
-        const { text, targetLang } = req.body;
+        const { text, targetLang, config } = req.body;
         const prompt = `Translate the following markdown text to ${targetLang}. Preserve all formatting, emojis, and headers exactly. Text:\n\n${text}`;
-        const translatedText = await callAI(prompt);
+        const translatedText = await callAI(prompt, undefined, config);
         res.json({ text: translatedText });
     } catch (error: any) {
         res.status(500).json({ error: error.message });

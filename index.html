@@ -99,8 +99,51 @@
           z-index: 10;
       }
 
-      /* --- Responsive Utilities --- */
+      /* --- Product Detail Responsive Layout (New) --- */
+      .product-detail-container {
+          display: flex;
+          flex-direction: row;
+          gap: 40px;
+          align-items: center;
+          justify-content: center;
+          padding: 40px;
+          width: 100%;
+          box-sizing: border-box;
+      }
+      .product-detail-image {
+          flex: 1;
+          width: 50%;
+          max-width: 500px;
+          display: flex;
+          justify-content: center;
+      }
+      .product-detail-content {
+          flex: 1;
+          width: 50%;
+          text-align: left;
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+      }
+      .product-detail-buttons {
+          display: flex; 
+          gap: 20px; 
+          justify-content: flex-start;
+          margin-top: 30px; 
+          flex-wrap: wrap;
+      }
       
+      /* --- Home Page Cards Layout --- */
+      .home-cards-container {
+          display: flex;
+          gap: 30px;
+          flex-wrap: wrap;
+          justify-content: center;
+          margin-top: 20px;
+          width: 100%;
+      }
+
+      /* --- Responsive Utilities --- */
       .desktop-only { display: block; }
       .mobile-only { display: none; }
 
@@ -127,7 +170,7 @@
       }
 
       /* Mobile Adjustments */
-      @media (max-width: 768px) {
+      @media (max-width: 900px) {
         .nav-container {
           flex-direction: column;
           padding: 1rem;
@@ -163,24 +206,20 @@
         .desktop-only { display: none !important; }
         .mobile-only { display: block !important; }
         
-        /* Product Modal Mobile Layout Fix */
-        .product-modal-mobile {
+        /* Product Modal Mobile Layout Switch */
+        .product-detail-container {
             flex-direction: column !important;
-            padding: 1.5rem !important;
-            align-items: center;
+            padding: 20px !important;
             gap: 20px !important;
         }
-        /* Targets the flex children (Image Container and Text Container) */
-        .product-modal-mobile > div {
-            min-width: 0 !important; 
+        .product-detail-image, .product-detail-content {
             width: 100% !important;
-            flex: none !important;
-            margin-bottom: 0px;
+            max-width: 100% !important;
+            text-align: center !important;
+            align-items: center !important;
         }
-        /* Ensure the close button (1st child) is not affected by width:100% if it's position absolute */
-        .product-modal-mobile > button {
-            width: 40px !important; /* Restore button width */
-            flex: none;
+        .product-detail-buttons {
+            justify-content: center !important;
         }
     }
       

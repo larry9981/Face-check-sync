@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 // RESTORED: Needed for Client-Side Fallback if Server is offline
@@ -7,7 +6,7 @@ import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { theme, styles } from './theme';
 import { LANGUAGES, TRANSLATIONS } from './translations';
 import { calculateAge, calculateWuXing, getWesternZodiac } from './utils';
-import { UserState, Plan, CartItem, Product, HistoryRecord, Order } from './types';
+import { UserState, Plan, CartItem, Product, HistoryRecord, Order, AppConfig } from './types';
 import { BaguaSVG } from './components/Icons';
 import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './components/Modals';
 import { PrivacyPolicy, TermsOfService, AboutPage } from './pages/StaticPages';
@@ -24,21 +23,13 @@ import { RenderStartView, RenderSelectionView, RenderCameraView, RenderResultVie
 // Point this to your backend server URL
 const API_BASE_URL = "http://localhost:3000/api"; 
 
-// --- AI PROVIDER CONFIGURATION (CLIENT SIDE FALLBACK) ---
-// If you want to use DeepSeek/OpenAI directly in browser when server is down
-// fill these in. Otherwise, it defaults to Google via process.env.API_KEY
-let CURRENT_PROVIDER = 'Google'; // 'Google' | 'OpenAI' | 'DeepSeek'
-const OPENAI_API_KEY = ""; // Optional: For Client-Side Fallback
-const DEEPSEEK_API_KEY = ""; // Optional: For Client-Side Fallback
-
 // Music
 const AMBIENT_MUSIC_URL = "https://cdn.pixabay.com/audio/2022/02/07/audio_1919830500.mp3";
 
 // =========================================================
-// 🛠️ LOCAL BACKEND SERVICE (FALLBACK)
+// 🛠️ LOCAL BACKEND SERVICE (FALLBACK & DYNAMIC CONFIG)
 // =========================================================
-// This mimics the server.ts logic but runs in the browser
-// if the actual backend is unreachable.
+
 const LocalBackend = {
     // Mimic DB
     getOrders: () => {
@@ -67,12 +58,25 @@ const LocalBackend = {
         localStorage.setItem('mystic_user_history_db', JSON.stringify(allHistory));
     },
     
-    // Mimic AI
-    callAI: async (prompt: string, base64Image?: string) => {
-        console.log(`[LocalBackend] Using ${CURRENT_PROVIDER} (Fallback)...`);
+    // Mimic AI with Dynamic Configuration
+    callAI: async (prompt: string, base64Image?: string, config?: AppConfig) => {
+        // Default to Google if no config passed or keys missing
+        let provider = config?.textProvider || 'Google';
         
-        if (CURRENT_PROVIDER === 'Google') {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        // AUTO-ADAPT: If image is present and provider is DeepSeek (which is text-only usually), force Google or OpenAI
+        if (base64Image && provider === 'DeepSeek') {
+            console.warn("DeepSeek does not support Vision. Falling back to Google for image analysis.");
+            provider = 'Google';
+        }
+
+        console.log(`[LocalBackend] Using ${provider}...`);
+
+        if (provider === 'Google') {
+            // Use User Key if available, else process.env
+            const apiKey = config?.googleKey || process.env.API_KEY;
+            if (!apiKey) throw new Error("Google API Key missing.");
+
+            const ai = new GoogleGenAI({ apiKey });
             const safetySettings = [
                 { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                 { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -93,26 +97,34 @@ const LocalBackend = {
             return response.text;
         } else {
              // Generic OpenAI/DeepSeek Handler
-             const apiKey = CURRENT_PROVIDER === 'DeepSeek' ? DEEPSEEK_API_KEY : OPENAI_API_KEY;
-             const apiUrl = CURRENT_PROVIDER === 'DeepSeek' ? 'https://api.deepseek.com/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions';
-             const model = CURRENT_PROVIDER === 'DeepSeek' ? 'deepseek-chat' : 'gpt-4o';
+             const isDeepSeek = provider === 'DeepSeek';
+             const apiKey = isDeepSeek ? config?.deepseekKey : config?.openaiKey;
+             const apiUrl = isDeepSeek ? 'https://api.deepseek.com/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+             const model = isDeepSeek ? 'deepseek-chat' : 'gpt-4o';
              
-             if (!apiKey) throw new Error(`${CURRENT_PROVIDER} API Key missing for local fallback.`);
+             if (!apiKey) throw new Error(`${provider} API Key missing.`);
 
-             // Construct payload (Vision supported?)
+             // Construct payload 
              const messages: any[] = [{ role: "user", content: [] }];
-             if (prompt) messages[0].content.push({ type: "text", text: prompt });
-             if (base64Image) messages[0].content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } });
+             
+             if (base64Image && !isDeepSeek) {
+                 messages[0].content.push({ type: "text", text: prompt });
+                 messages[0].content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } });
+             } else {
+                 // Text Only (DeepSeek or just text prompt)
+                 messages[0].content = prompt;
+             }
 
              const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                body: JSON.stringify({ model: model, messages: messages })
+                body: JSON.stringify({ model: model, messages: messages, stream: false })
              });
 
              if (!response.ok) {
                  const err = await response.json();
-                 throw new Error(err.error?.message || "AI API Error");
+                 if (err.error?.message?.includes('Failed to fetch')) throw new Error("CORS/Network Error: Check API Key or Proxy.");
+                 throw new Error(err.error?.message || `${provider} API Error`);
              }
              const data = await response.json();
              return data.choices[0].message.content;
@@ -122,14 +134,14 @@ const LocalBackend = {
 
 // --- API CLIENT HELPERS ---
 
-const callBackendAPI = async (endpoint: string, body: any = {}, method = 'POST') => {
+const callBackendAPI = async (endpoint: string, body: any = {}, method = 'POST', config?: AppConfig) => {
     try {
         // 1. Try Real Backend
         const options: RequestInit = {
             method: method,
             headers: { 'Content-Type': 'application/json' }
         };
-        if (method === 'POST') options.body = JSON.stringify(body);
+        if (method === 'POST') options.body = JSON.stringify({ ...body, config }); // Pass config to backend if needed
 
         const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
@@ -142,19 +154,23 @@ const callBackendAPI = async (endpoint: string, body: any = {}, method = 'POST')
     } catch (error: any) {
         // 2. Fallback to LocalBackend if connection fails
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('Connection refused')) {
-            console.warn(`Backend unreachable. Using LocalBackend fallback for ${endpoint}`);
+            // console.warn(`Backend unreachable. Using LocalBackend fallback for ${endpoint}`);
             
-            // Route to local logic
+            // Route to local logic with Dynamic Config
             if (endpoint === '/analyze') {
-                 const text = await LocalBackend.callAI(body.prompt, body.image);
+                 const text = await LocalBackend.callAI(body.prompt, body.image, config);
                  if (body.userId) LocalBackend.saveHistory(body.userId, {
-                     id: Date.now(), date: new Date().toLocaleDateString(), resultText: text
+                     id: Date.now(), 
+                     date: new Date().toLocaleDateString(), 
+                     resultText: text,
+                     elements: body.elements,
+                     readingType: body.readingType
                  });
                  return { text };
             }
             if (endpoint === '/translate') {
                 const prompt = `Translate to ${body.targetLang}. Preserve formatting:\n\n${body.text}`;
-                const text = await LocalBackend.callAI(prompt);
+                const text = await LocalBackend.callAI(prompt, undefined, config); // No image for translation
                 return { text };
             }
             if (endpoint === '/orders' && method === 'POST') {
@@ -178,6 +194,9 @@ const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, 
         return await fn();
     } catch (err: any) {
         const msg = err.message || "";
+        // Don't retry auth errors or location blocks
+        if (msg.includes('Key missing') || msg.includes('FAILED_PRECONDITION')) throw err;
+
         const isRateLimit = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota');
 
         // Extract wait time if backend passes it through
@@ -233,6 +252,68 @@ const resizeImage = (base64Str: string, maxWidth = 1024, maxHeight = 1024): Prom
   });
 };
 
+// --- SETTINGS MODAL COMPONENT ---
+const SettingsModal = ({ t, config, onSave, onClose }: { t: any, config: AppConfig, onSave: (c: AppConfig) => void, onClose: () => void }) => {
+    const [localConfig, setLocalConfig] = useState<AppConfig>(config);
+    const [msg, setMsg] = useState('');
+
+    const handleSave = () => {
+        onSave(localConfig);
+        setMsg(t.configSaved);
+        setTimeout(() => { setMsg(''); onClose(); }, 1000);
+    };
+
+    return (
+        <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)'}}>
+            <div style={{...styles.glassPanel, maxWidth: '500px', width: '90%'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+                    <h2 style={{color: theme.gold, margin: 0, fontFamily: 'Cinzel, serif'}}>{t.settingsTitle}</h2>
+                    <button onClick={onClose} style={{background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer'}}>&times;</button>
+                </div>
+                <p style={{color: '#ccc', marginBottom: '20px', fontSize: '0.9rem'}}>{t.settingsDesc}</p>
+
+                <div style={{marginBottom: '20px'}}>
+                    <label style={{display: 'block', color: theme.gold, marginBottom: '5px'}}>{t.textProvider}</label>
+                    <div style={{display: 'flex', gap: '10px', marginBottom: '10px'}}>
+                        {['Google', 'OpenAI', 'DeepSeek'].map(p => (
+                            <button key={p} 
+                                onClick={() => setLocalConfig({...localConfig, textProvider: p as any})}
+                                style={{
+                                    flex: 1, padding: '8px', 
+                                    background: localConfig.textProvider === p ? theme.gold : 'transparent',
+                                    color: localConfig.textProvider === p ? '#000' : theme.gold,
+                                    border: `1px solid ${theme.gold}`, cursor: 'pointer', borderRadius: '4px'
+                                }}>
+                                {p}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div style={{marginBottom: '20px'}}>
+                     <label style={{display: 'block', color: theme.gold, marginBottom: '5px'}}>API Keys</label>
+                     <input type="password" placeholder={t.googleKeyPlaceholder} style={styles.formInput} value={localConfig.googleKey} onChange={e => setLocalConfig({...localConfig, googleKey: e.target.value})} />
+                     <input type="password" placeholder={t.openaiKeyPlaceholder} style={styles.formInput} value={localConfig.openaiKey} onChange={e => setLocalConfig({...localConfig, openaiKey: e.target.value})} />
+                     <input type="password" placeholder={t.deepseekKeyPlaceholder} style={styles.formInput} value={localConfig.deepseekKey} onChange={e => setLocalConfig({...localConfig, deepseekKey: e.target.value})} />
+                </div>
+
+                <div style={{marginBottom: '20px'}}>
+                    <label style={{display: 'block', color: theme.gold, marginBottom: '5px'}}>{t.imageProvider}</label>
+                    <select style={styles.formInput} value={localConfig.imageProvider} onChange={e => setLocalConfig({...localConfig, imageProvider: e.target.value as any})}>
+                        <option value="Pollinations">Pollinations AI (Default)</option>
+                        <option value="DALL-E">DALL-E 3 (OpenAI)</option>
+                        <option value="Sora2">Sora 2 (Video/Image Model)</option>
+                    </select>
+                </div>
+
+                {msg && <div style={{color: '#2ecc71', textAlign: 'center', marginBottom: '10px'}}>{msg}</div>}
+
+                <button style={{...styles.button, width: '100%'}} onClick={handleSave}>{t.saveConfig}</button>
+            </div>
+        </div>
+    );
+};
+
 const App = () => {
   const [isAdminMode, setIsAdminMode] = useState(window.location.hash === '#admin');
 
@@ -244,6 +325,29 @@ const App = () => {
 
   const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'shop' | 'product-detail' | 'about' | 'privacy' | 'terms' | 'history' | 'cart'>('home');
   
+  // Configuration State
+  const [appConfig, setAppConfig] = useState<AppConfig>({
+      textProvider: 'Google',
+      imageProvider: 'Pollinations',
+      googleKey: process.env.API_KEY || '',
+      openaiKey: '',
+      deepseekKey: ''
+  });
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Load Config from LocalStorage
+  useEffect(() => {
+      const savedConfig = localStorage.getItem('mystic_app_config');
+      if (savedConfig) {
+          setAppConfig(JSON.parse(savedConfig));
+      }
+  }, []);
+
+  const saveConfig = (newConfig: AppConfig) => {
+      setAppConfig(newConfig);
+      localStorage.setItem('mystic_app_config', JSON.stringify(newConfig));
+  };
+
   // Language Logic
   const detectLanguage = () => {
      try {
@@ -258,6 +362,7 @@ const App = () => {
   };
 
   const [language, setLanguage] = useState(detectLanguage());
+  // IMPORTANT: Ensure t updates correctly. If translations are missing, this fallback prevents crashes.
   const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
   
   // App State
@@ -365,14 +470,15 @@ const App = () => {
       if (view === 'result' && resultText) {
           setIsTranslating(true);
           try {
+              // Note: We use callWithRetry wrapping callBackendAPI. 
+              // We pass appConfig so LocalBackend knows which provider to use for translation.
               const response = await callWithRetry(() => callBackendAPI('/translate', {
                   text: resultText,
                   targetLang: newLang
-              }), 5, 2000, (retryMsg) => console.log("Translating wait: " + retryMsg));
+              }, 'POST', appConfig), 5, 2000, (retryMsg) => console.log("Translating wait: " + retryMsg));
               
               if (response.text) setResultText(response.text);
           } catch (e: any) {
-               // Silent fail for translation
                console.warn("Translation failed:", e.message);
           } finally {
               setIsTranslating(false);
@@ -386,10 +492,24 @@ const App = () => {
     setView('camera'); 
     if (!isPlayingMusic) setIsPlayingMusic(true);
     try { 
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true }); 
+        // Force User Camera for Face, Environment for Palm (if available)
+        const constraints = {
+            video: {
+                facingMode: type === 'face' ? 'user' : 'environment'
+            }
+        };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints); 
         if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); } 
     } catch (err) { 
-        alert("Unable to access camera."); setView('selection'); 
+        console.warn("Camera Init Error, trying fallback", err);
+        try {
+             // Fallback to basic constraint if facingMode fails
+             const stream = await navigator.mediaDevices.getUserMedia({ video: true }); 
+             if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); } 
+        } catch (e) {
+            alert("Unable to access camera. Please check permissions."); 
+            setView('selection');
+        }
     }
   };
   const stopCamera = () => { if (videoRef.current && videoRef.current.srcObject) { (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop()); videoRef.current.srcObject = null; } };
@@ -399,11 +519,27 @@ const App = () => {
       const video = videoRef.current;
       if (video.readyState !== 4) return false;
       const canvas = canvasRef.current; 
-      canvas.width = 1024; canvas.height = (video.videoHeight / video.videoWidth) * 1024;
+      // Handle orientation changes or simple aspect ratio
+      const videoWidth = video.videoWidth;
+      const videoHeight = video.videoHeight;
+      
+      // Set reasonable size but keep aspect ratio
+      const targetWidth = 1024;
+      const targetHeight = (videoHeight / videoWidth) * targetWidth;
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
       const ctx = canvas.getContext('2d'); 
       if (ctx) { 
-          ctx.translate(canvas.width, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7); 
+          // Mirror image ONLY if using front camera (face mode typically)
+          // But technically 'facingMode' isn't always reliable property to read back.
+          // Simple heuristic: Face reading usually front cam -> mirror. Palm -> back cam -> no mirror.
+          if (readingType === 'face') {
+              ctx.translate(canvas.width, 0); 
+              ctx.scale(-1, 1); 
+          }
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
           setImage(dataUrl); stopCamera(); processImage(dataUrl);
           return true;
       }
@@ -445,6 +581,9 @@ Your aura radiates with a calm, stable golden energy.
 *   ⛰️ **${t.elementEarth}:** 10%
 
 ## 📜 ${headers.advice}
+**${t.adviceCategoryDiet}**: Eat balanced meals with more root vegetables.
+**${t.adviceCategoryHome}**: Place a crystal in the center of your home.
+**${t.adviceCategoryJewelry}**: Wear Gold or Silver.
 Google AI services are currently unavailable in your region.
 This is a demonstration of the result layout.
       `;
@@ -483,7 +622,10 @@ This is a demonstration of the result layout.
     const progressInterval = setInterval(() => { setAnalysisProgress(prev => Math.min(prev + 1, 95)); }, 200);
 
     const langConfig = LANGUAGES.find(l => l.code === language);
+    // Explicitly tell AI the target language to reduce translation needs
     const targetLangName = langConfig?.label || 'English';
+    const targetLangCode = langConfig?.code || 'en';
+
     const headers = {
         aura: t.reportHeaderAura, elements: t.reportHeaderElements, name: t.reportHeaderName, star: t.reportHeaderStar,
         fortune: t.reportHeaderFortune, wealth: t.reportHeaderWealth, family: t.reportHeaderFamily, parents: t.reportHeaderParents,
@@ -507,8 +649,15 @@ This is a demonstration of the result layout.
             ## ❤️ ${headers.palmHeartLine} ...
             ## 🛤️ ${headers.palmFateLine} ...
             ## ⚖️ ${headers.elements} ...
-            ## 📜 ${headers.advice} ...
-            Output in ${targetLangName}.
+            
+            ## 📜 ${headers.advice}
+            Based on the palm analysis above, provide personalized actionable advice:
+            *   **${t.adviceCategoryDiet}**: (Specific foods)
+            *   **${t.adviceCategoryHome}**: (Feng Shui tips)
+            *   **${t.adviceCategoryJewelry}**: (Lucky items)
+            *   **${t.namingAdvice}**: (Life Philosophy)
+            
+            IMPORTANT: Output STRICTLY in ${targetLangName} (${targetLangCode}).
            `;
       } else {
           prompt = `
@@ -521,20 +670,29 @@ This is a demonstration of the result layout.
             ## 💰 ${headers.wealth} ...
             ## 🏠 ${headers.family} ...
             ## 👴 ${headers.parents} ...
-            ## 📜 ${headers.advice} ...
-            Output in ${targetLangName}.
+            
+            ## 📜 ${headers.advice}
+            Based on the face analysis above (e.g. eyes, nose, complexion), provide specific, personalized actionable advice in a list format:
+            *   **${t.adviceCategoryFiveElements}**: (Analyze the user's specific elemental balance based on face shape)
+            *   **${t.adviceCategoryDiet}**: (Specific foods to help their specific face reading weaknesses)
+            *   **${t.adviceCategoryHome}**: (Feng Shui tips for their specific situation)
+            *   **${t.adviceCategoryJewelry}**: (Specific crystals/items to wear)
+            
+            IMPORTANT: Output STRICTLY in ${targetLangName} (${targetLangCode}).
           `;
           if (useAdvancedAnalysis && wuXingResult) {
               prompt += ` Context: Born ${birthDate}. WuXing: Metal:${wuXingResult.scores.Metal}%, Wood:${wuXingResult.scores.Wood}%, Water:${wuXingResult.scores.Water}%, Fire:${wuXingResult.scores.Fire}%, Earth:${wuXingResult.scores.Earth}%. Weak: ${wuXingResult.missingElement}. Zodiac: ${starSign}. Name: ${userName}. Add analysis for these.`;
           }
       }
 
-      // CALL BACKEND API (or FALLBACK)
+      // CALL BACKEND API (or FALLBACK) - Pass appConfig!
       const apiCall = callWithRetry(() => callBackendAPI('/analyze', {
           prompt,
           image: base64Data,
-          userId: userState.userId
-      }), 5, 4000, (retryMsg) => setLoadingMessage(retryMsg));
+          userId: userState.userId,
+          elements: wuXingResult, // Save elements to backend/history
+          readingType: readingType // Save type
+      }, 'POST', appConfig), 5, 4000, (retryMsg) => setLoadingMessage(retryMsg));
 
       const response: any = await apiCall;
       
@@ -546,7 +704,7 @@ This is a demonstration of the result layout.
       const newResultText = response.text || "Destiny unclear.";
       setResultText(newResultText);
       
-      // History is already updated via LocalBackend/Server, but we update UI state here
+      // History is already updated via LocalBackend/Server, but we update UI state here for immediate feedback
       const newHistoryItem: HistoryRecord = {
           id: Date.now(),
           date: now.toLocaleDateString(),
@@ -554,7 +712,8 @@ This is a demonstration of the result layout.
           elements: wuXingResult,
           name: userName,
           gender: gender,
-          birthDate: birthDate || "Not Provided"
+          birthDate: birthDate || "Not Provided",
+          readingType: readingType
       };
       // Optimistic Update
       setUserState(prev => ({ ...prev, history: [newHistoryItem, ...(prev.history || [])].slice(0, 5) }));
@@ -574,7 +733,7 @@ This is a demonstration of the result layout.
             alert("Google AI is not available in your region. Switching to Demo Mode.");
         } else {
              console.error("Analysis Error:", error);
-             alert("Connection failed. Please check your network.");
+             alert("Connection failed. " + error.message);
         }
     }
   };
@@ -588,14 +747,9 @@ This is a demonstration of the result layout.
     utterance.onend = () => setIsSpeaking(false); speechRef.current = utterance; window.speechSynthesis.speak(utterance); setIsSpeaking(true);
   };
   
+  // Updated: Only used for loading from history list now, passes record to RenderHistoryView logic internally
   const handleLoadHistory = (record: HistoryRecord) => {
-      setResultText(record.resultText);
-      setCalculatedElements(record.elements);
-      setBirthDate(record.birthDate);
-      setGender(record.gender);
-      setUserName(record.name);
-      setView('result');
-      setCurrentPage('home');
+      // Logic handled inside RenderHistoryView now, this might not be needed or just reused
   };
 
   const handleOpenBalance = (aiAdvice?: string) => {
@@ -665,7 +819,22 @@ This is a demonstration of the result layout.
       if (currentPage === 'pricing') handleGoHome(); 
   };
   
-  const handleGoHome = () => { stopCamera(); window.speechSynthesis.cancel(); setIsSpeaking(false); setShowPaywall(false); setShowBalanceModal(false); setShowPaymentModal(false); setSelectedProduct(null); setCurrentPage('home'); setView('start'); setUploadProgress(0); setAnalysisProgress(0); };
+  const handleGoHome = () => { 
+      stopCamera(); 
+      window.speechSynthesis.cancel(); 
+      setIsSpeaking(false); 
+      setShowPaywall(false); 
+      setShowBalanceModal(false); 
+      setShowPaymentModal(false); 
+      setSelectedProduct(null); 
+      setCurrentPage('home'); 
+      setView('start'); 
+      setUploadProgress(0); 
+      setAnalysisProgress(0); 
+      setImage(null);
+      setResultText("");
+  };
+
   const getNavLinkStyle = (page: string) => ({ ...styles.navLink, color: currentPage === page ? theme.gold : theme.text, borderBottom: currentPage === page ? `2px solid ${theme.gold}` : 'none' });
 
   const triggerPayment = (plan: Plan) => { setSelectedPlan(plan); setShowPaymentModal(true); };
@@ -678,6 +847,10 @@ This is a demonstration of the result layout.
                </div>
                <div style={styles.heroSection}>
                     <AdminPage t={t} />
+                    <button onClick={() => setShowSettings(true)} style={{...styles.secondaryButton, marginTop: '20px'}}>
+                        <i className="fas fa-cog"></i> Configure AI
+                    </button>
+                    {showSettings && <SettingsModal t={t} config={appConfig} onSave={saveConfig} onClose={() => setShowSettings(false)} />}
                </div>
           </div>
       );
@@ -717,6 +890,8 @@ This is a demonstration of the result layout.
         {showPaymentModal && selectedPlan && <PaymentModal t={t} plan={selectedPlan} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />}
         {showBalanceModal && (<FiveElementsBalanceModal t={t} missingElement={calculatedElements ? calculatedElements.missingElement : 'Metal'} aiAdvice={balanceAiAdvice} onClose={() => setShowBalanceModal(false)} onBuyProduct={handleBuyProduct} />)}
         
+        {showSettings && <SettingsModal t={t} config={appConfig} onSave={saveConfig} onClose={() => setShowSettings(false)} />}
+
         {currentPage === 'product-detail' && selectedProduct && (
             <div style={{...styles.heroSection, justifyContent: 'flex-start', paddingTop: '100px'}}>
                 <ProductDetailModal key={selectedProduct.id} isPageMode={true} t={t} product={selectedProduct} onClose={() => setCurrentPage('shop')} onAddToCart={() => handleAddToCart(selectedProduct)} onBuyNow={() => handleBuyProduct(selectedProduct)} onSwitchProduct={(p) => setSelectedProduct(p)} />
@@ -758,12 +933,27 @@ This is a demonstration of the result layout.
         {currentPage === 'about' && <div style={styles.heroSection}><AboutPage t={t} /></div>}
         {currentPage === 'privacy' && <div style={styles.heroSection}><PrivacyPolicy t={t} /></div>}
         {currentPage === 'terms' && <div style={styles.heroSection}><TermsOfService t={t} /></div>}
-        {currentPage === 'history' && <div style={styles.heroSection}><RenderHistoryView t={t} history={userState.history} onViewResult={handleLoadHistory} /></div>}
+        {currentPage === 'history' && <div style={styles.heroSection}>
+            <RenderHistoryView 
+                t={t} 
+                history={userState.history} 
+                onViewResult={handleLoadHistory} 
+                language={language}
+                isSpeaking={isSpeaking}
+                isTranslating={isTranslating}
+                LANGUAGES={LANGUAGES}
+                onLanguageChange={(e: any) => switchLanguage(e.target.value)}
+                onToggleSpeech={toggleSpeech}
+                onBuyProduct={handleBuyProduct}
+                onOpenBalance={handleOpenBalance}
+            />
+        </div>}
       </div>
       <footer style={styles.footer}>
         <div style={{marginBottom: '10px', display: 'flex', justifyContent: 'center', gap: '20px'}}>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('privacy'); setView('start');}}>{t.privacy}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('terms'); setView('start');}}>{t.terms}</span>
+            <span style={{cursor: 'pointer', color: '#666', fontSize: '0.8rem'}} onClick={() => setShowSettings(true)}><i className="fas fa-cog"></i></span>
         </div>
         <div>&copy; {new Date().getFullYear()} {t.title}. {t.footerRight}</div>
       </footer>

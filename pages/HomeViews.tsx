@@ -64,7 +64,7 @@ export const RenderStartView = ({ t, freeTrials, onStart }: { t: any, freeTrials
       <h1 style={{fontSize: '2.5rem', marginBottom: '1rem', color: theme.gold}}>{t.heroTitle}</h1>
       <p style={{color: '#ccc', marginBottom: '2rem', fontSize: '1.1rem'}}>{t.heroDesc}</p>
       
-      <div style={{display: 'flex', gap: '30px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '20px'}}>
+      <div className="home-cards-container">
           
           {/* FACE READING CARD */}
           <div style={{
@@ -283,7 +283,58 @@ export const RenderSelectionView = ({ t, readingType, gender, dobYear, dobMonth,
     );
 };
 
-export const RenderHistoryView = ({ t, history, onViewResult }: { t: any, history: HistoryRecord[], onViewResult: (r: HistoryRecord) => void }) => {
+export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onBuyProduct, onOpenBalance }: any) => {
+    // Local state to manage showing detail view inside history tab
+    const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
+
+    if (selectedRecord) {
+        return (
+            <div style={{width: '100%', maxWidth: '800px', position: 'relative'}}>
+                <button 
+                    onClick={() => setSelectedRecord(null)}
+                    style={{
+                        position: 'absolute',
+                        top: '-15px',
+                        left: '10px', 
+                        background: 'rgba(0,0,0,0.6)', 
+                        border: `1px solid ${theme.gold}`, 
+                        borderRadius: '4px', 
+                        color: theme.gold, 
+                        padding: '8px 15px', 
+                        cursor: 'pointer', 
+                        zIndex: 20, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px', 
+                        fontFamily: 'Cinzel, serif', 
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    <i className="fas fa-arrow-left"></i> {t.backBtn}
+                </button>
+                <div style={{marginTop: '40px'}}>
+                    <RenderResultView 
+                        t={t}
+                        readingType={selectedRecord.readingType || 'face'}
+                        birthDate={selectedRecord.birthDate}
+                        gender={selectedRecord.gender}
+                        calculatedElements={selectedRecord.elements}
+                        resultText={selectedRecord.resultText}
+                        language={language}
+                        isSpeaking={isSpeaking}
+                        isTranslating={isTranslating}
+                        LANGUAGES={LANGUAGES}
+                        onLanguageChange={onLanguageChange}
+                        onToggleSpeech={onToggleSpeech}
+                        onAnalyzeAnother={() => setSelectedRecord(null)}
+                        onBuyProduct={onBuyProduct}
+                        onOpenBalance={onOpenBalance}
+                    />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div style={{...styles.glassPanel, maxWidth: '800px', width: '95%'}}>
             <h2 style={{color: theme.gold, textAlign: 'center', fontFamily: 'Cinzel, serif', marginBottom: '2rem'}}>{t.historyTitle}</h2>
@@ -292,7 +343,7 @@ export const RenderHistoryView = ({ t, history, onViewResult }: { t: any, histor
                 <div style={{textAlign: 'center', color: '#aaa', padding: '2rem'}}>{t.noHistory}</div>
             ) : (
                 <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
-                    {history.map((record) => (
+                    {history.map((record: HistoryRecord) => (
                         <div key={record.id} style={{
                             background: 'rgba(0,0,0,0.3)', 
                             border: `1px solid ${theme.darkGold}`, 
@@ -307,12 +358,24 @@ export const RenderHistoryView = ({ t, history, onViewResult }: { t: any, histor
                             <div>
                                 <div style={{color: theme.gold, fontWeight: 'bold'}}>{record.name || (record.gender === 'male' ? t.genderMale : t.genderFemale)}</div>
                                 <div style={{fontSize: '0.8rem', color: '#888'}}>{t.dateLabel}: {record.date}</div>
-                                <div style={{fontSize: '0.8rem', color: '#aaa'}}>
-                                   {t.elementMetal}: {record.elements?.scores?.Metal ?? '?'}% | {t.elementWood}: {record.elements?.scores?.Wood ?? '?'}%
-                                </div>
+                                {record.readingType === 'palm' ? (
+                                    <div style={{fontSize: '0.8rem', color: '#aaa'}}>
+                                        <i className="fas fa-hand-sparkles"></i> {t.palmBtn}
+                                    </div>
+                                ) : (
+                                    <div style={{fontSize: '0.8rem', color: '#aaa'}}>
+                                        {record.elements ? (
+                                            <>
+                                                {t.elementMetal}: {record.elements.scores.Metal}% | {t.elementWood}: {record.elements.scores.Wood}%
+                                            </>
+                                        ) : (
+                                            <span>{t.startBtn}</span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <button 
-                                onClick={() => onViewResult(record)} 
+                                onClick={() => setSelectedRecord(record)} 
                                 style={{
                                     background: 'transparent', 
                                     border: `1px solid ${theme.gold}`, 
@@ -367,7 +430,20 @@ export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCa
             boxShadow: `0 0 20px rgba(212, 175, 55, 0.2)`
         }}>
            <div style={{flex: 1, position: 'relative', background: '#000', overflow: 'hidden'}}>
-               <video ref={videoRef} autoPlay playsInline muted style={{width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)'}}></video>
+               {/* Important: playsInline for iOS, muted for autoplay policy */}
+               <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    style={{
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover', 
+                        // Only mirror if it's Face reading (Front camera)
+                        transform: !isPalm ? 'scaleX(-1)' : 'none'
+                    }}
+                ></video>
                <canvas ref={canvasRef} style={{display: 'none'}}></canvas>
                
                {/* Traditional Mystical Overlay */}
@@ -436,7 +512,6 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
     const starSignImg = starSign ? `https://image.pollinations.ai/prompt/${encodeURIComponent(`mystical zodiac sign ${starSign} astrology symbol golden`)}?width=300&height=300&nologo=true` : "";
     const missingElement = calculatedElements?.missingElement || 'Metal';
     const recommendedProducts = SHOP_PRODUCTS.slice(0, 3); 
-    const isPalm = readingType === 'palm';
 
     const formatMarkdown = (text: string) => {
         return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -465,7 +540,9 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
 
     // --- REORDERING LOGIC FOR AURA -> CHART -> ELEMENTS TEXT ---
     // The "Five Elements" header is the split point.
-    const elementsHeaderSearch = `## ⚖️ ${t.reportHeaderElements}`;
+    // Ensure we use the translated header key for splitting if possible, 
+    // but fallback to known English structure if translation fails or text is raw.
+    const elementsHeaderSearch = `## ⚖️`; 
     
     let auraSection = mainContent;
     let elementsAndRest = "";
@@ -475,8 +552,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
         const parts = mainContent.split(elementsHeaderSearch);
         if (parts.length > 1) {
             auraSection = parts[0];
-            // We removed the header with split, so we add the text content after it.
-            // We will render the Header manually, then Chart, then the rest.
+            // Re-add the icon/header manually in render
             elementsAndRest = parts.slice(1).join(elementsHeaderSearch); 
             splitSuccess = true;
         }

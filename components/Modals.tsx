@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { theme, styles } from '../theme';
 import { Product, Plan } from '../types';
@@ -6,20 +5,52 @@ import { PayPalButton, StripePaymentForm, QRCodePayment } from './PaymentIntegra
 import { SHOP_PRODUCTS } from '../products';
 import { hashCode, ELEMENT_ADVICE, ImagePersistence } from '../utils';
 
-// Helper component for small product items to handle cached images
+// --- NEW COMPONENT: Cached Image ---
+// Handles async loading from IndexedDB to avoid re-fetching from API
+const CachedImage = ({ productId, prompt, size = 512, style, className }: { productId: string, prompt: string, size?: number, style?: React.CSSProperties, className?: string }) => {
+    // Initialize with memory cache if available for instant render
+    const uniqueId = `${productId}_${size}`;
+    const initialUrl = ImagePersistence.memoryCache.get(uniqueId) || null;
+    
+    const [url, setUrl] = useState<string | null>(initialUrl);
+    const [loading, setLoading] = useState(!initialUrl);
+
+    useEffect(() => {
+        // If we already have it from memory cache (set in initial state), do nothing
+        if (url) return;
+
+        let mounted = true;
+        setLoading(true);
+        
+        // Load from DB or Network
+        // We assume 'productId' + size is unique enough for this demo context
+        // In reality, might want to include prompt hash if prompts change dynamicall
+        ImagePersistence.loadImage(productId, prompt, size).then(blobUrl => {
+            if (mounted) {
+                setUrl(blobUrl);
+                setLoading(false);
+            }
+        });
+        return () => { mounted = false; };
+    }, [productId, prompt, size]);
+
+    if (loading) {
+        return (
+            <div style={{...style, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a'}}>
+                <i className="fas fa-circle-notch fa-spin" style={{color: theme.darkGold, fontSize: '2rem'}}></i>
+            </div>
+        );
+    }
+
+    return <img src={url || ''} style={style} className={className} alt="Product content" />;
+};
+
+// Helper component for small product items (list view)
 const CachedProductItem = ({ product, t, onClick, isLarge = false }: { product: Product, t: any, onClick: () => void, isLarge?: boolean }) => {
-    const [imgUrl, setImgUrl] = useState<string | null>(null);
+    if (isLarge) return null; 
 
     const zodiacLocal = t[`zodiac${product.zodiac}`] || t[`star${product.zodiac}`] || product.zodiac;
     const name = t[product.nameKey] ? t[product.nameKey].replace('{zodiac}', zodiacLocal) : product.defaultName;
-
-    useEffect(() => {
-        // Load smaller image for list items, larger for modal display if needed
-        const size = isLarge ? 512 : 150; 
-        ImagePersistence.loadImage(product.id, product.imagePrompt, size).then(setImgUrl);
-    }, [product.id]);
-
-    if (isLarge) return null; // Used for lists mostly
 
     return (
          <div 
@@ -38,61 +69,49 @@ const CachedProductItem = ({ product, t, onClick, isLarge = false }: { product: 
             onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
          >
              <div style={{width: '100%', height: '100px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                 {imgUrl ? (
-                     <img src={imgUrl} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px'}} />
-                 ) : (
-                     <i className="fas fa-circle-notch fa-spin" style={{color: theme.darkGold}}></i>
-                 )}
+                 <CachedImage productId={product.id} prompt={product.imagePrompt} size={150} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px'}} />
              </div>
              <div style={{fontSize: '0.7rem', color: '#ccc', marginTop: '5px', height: '30px', overflow: 'hidden'}}>{name}</div>
-             {!isLarge && <div style={{fontWeight: 'bold', fontSize: '0.8rem', color: theme.gold}}>{product.price}</div>}
+             <div style={{fontWeight: 'bold', fontSize: '0.8rem', color: theme.gold}}>{product.price}</div>
          </div>
     );
 };
 
 export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose, onBuyProduct }: { t: any, missingElement: string, aiAdvice?: string, onClose: () => void, onBuyProduct: (p: Product) => void }) => {
     const elKey = missingElement || 'Metal';
-    const adviceData = ELEMENT_ADVICE[elKey] || ELEMENT_ADVICE['Metal'];
+    const staticAdvice = ELEMENT_ADVICE[elKey] || ELEMENT_ADVICE['Metal'];
     
-    // Dynamic Advice from Translations or Utils
-    const colorAdvice = t[`advice${elKey}Color`] || adviceData.color;
-    const dirAdvice = t[`advice${elKey}Direction`] || adviceData.direction;
-    const habitAdvice = t[`advice${elKey}Habit`] || adviceData.habit;
-    const descAdvice = t[`advice${elKey}Desc`] || adviceData.desc;
-    const nameAdvice = t[`advice${elKey}Name`] || "Consult a master.";
-    const dietAdvice = t[`advice${elKey}Diet`] || adviceData.diet || "Eat balanced meals.";
-    const homeAdvice = t[`advice${elKey}Home`] || adviceData.home || "Keep your home clean.";
+    // --- DYNAMIC AI PARSING ---
+    // If AI Advice is present, try to extract specific sections to override static content
+    // We look for patterns like "**Dietary Advice**: Content..."
+    const parseSection = (key: string, fallback: string) => {
+        if (!aiAdvice) return fallback;
+        const regex = new RegExp(`\\*\\*${key}\\*\\*:?\\s*(.*?)(?=(\\n\\*\\*|$))`, 'si');
+        const match = aiAdvice.match(regex);
+        return match ? match[1].trim() : fallback;
+    };
 
+    // Use keys from translations.ts for matching
+    const dietContent = parseSection(t.adviceCategoryDiet, t[`advice${elKey}Diet`] || staticAdvice.diet);
+    const homeContent = parseSection(t.adviceCategoryHome, t[`advice${elKey}Home`] || staticAdvice.home);
+    const jewelryContent = parseSection(t.adviceCategoryJewelry, t.recommendedCures || "Consult our shop.");
+    const elementAnalysis = parseSection(t.adviceCategoryFiveElements, t[`advice${elKey}Desc`] || staticAdvice.desc);
+    const nameContent = parseSection(t.namingAdvice, t[`advice${elKey}Name`] || "Consult a master.");
+
+    // Filter "remaining" AI advice (general philosophy/intro) if parsed successfully, or just show full block
+    // For simplicity, we just show the parsed sections in the UI boxes.
+    
     const matchingProducts = SHOP_PRODUCTS.filter(p => p.element === missingElement).slice(0, 4);
 
     const SectionHeader = ({ icon, title }: { icon: string, title: string }) => (
-        <h3 style={{
-            color: theme.gold, 
-            borderBottom: `1px solid ${theme.darkGold}`, 
-            paddingBottom: '10px', 
-            marginTop: '30px', 
-            marginBottom: '15px', 
-            fontFamily: 'Cinzel, serif',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-        }}>
+        <h3 style={{color: theme.gold, borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '10px', marginTop: '30px', marginBottom: '15px', fontFamily: 'Cinzel, serif', display: 'flex', alignItems: 'center', gap: '10px'}}>
             <i className={`fas ${icon}`}></i> {title}
         </h3>
     );
 
     const AdviceBox = ({ content }: { content: string }) => (
-        <div style={{
-            background: 'rgba(255,255,255,0.05)', 
-            padding: '15px', 
-            borderRadius: '4px', 
-            lineHeight: '1.8',
-            color: '#e0e0e0',
-            borderLeft: `3px solid ${theme.gold}`,
-            whiteSpace: 'pre-wrap', 
-            textAlign: 'justify'
-        }}>
-            {content}
+        <div style={{background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '4px', lineHeight: '1.8', color: '#e0e0e0', borderLeft: `3px solid ${theme.gold}`, whiteSpace: 'pre-wrap', textAlign: 'justify'}}>
+            {content.replace(/\*\*/g, '')}
         </div>
     );
 
@@ -110,59 +129,35 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
                          <div style={{fontSize: '2.5rem', color: theme.gold, fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{t[`element${elKey}`]}</div>
                     </div>
 
-                    {/* 1. Five Elements Advice */}
-                    <SectionHeader icon="fa-balance-scale" title={t.adviceCategoryFiveElements || "Five Elements Advice"} />
-                    <p style={{color: '#ccc', marginBottom: '15px', lineHeight: '1.6'}}>{descAdvice}</p>
-                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px'}}>
-                        <div style={{background: 'rgba(212, 175, 55, 0.1)', padding: '10px', borderRadius: '4px'}}>
-                            <strong style={{color: theme.gold}}>{t.luckyColors}:</strong> {colorAdvice}
-                        </div>
-                        <div style={{background: 'rgba(212, 175, 55, 0.1)', padding: '10px', borderRadius: '4px'}}>
-                            <strong style={{color: theme.gold}}>{t.luckyDirection}:</strong> {dirAdvice}
-                        </div>
-                        <div style={{background: 'rgba(212, 175, 55, 0.1)', padding: '10px', borderRadius: '4px'}}>
-                            <strong style={{color: theme.gold}}>{t.luckyHabit}:</strong> {habitAdvice}
-                        </div>
-                    </div>
+                    <SectionHeader icon="fa-balance-scale" title={t.adviceCategoryFiveElements} />
+                    <AdviceBox content={elementAnalysis} />
                     
-                    {/* Specific AI Advice integration */}
-                    {aiAdvice && (
-                        <div style={{
-                            marginTop: '25px', 
-                            color: '#eee', 
-                            padding: '25px', 
-                            background: 'rgba(5, 5, 17, 0.6)',
-                            borderRadius: '8px',
-                            border: `1px solid ${theme.darkGold}`,
-                            lineHeight: '1.9',
-                            fontSize: '1.05rem',
-                            whiteSpace: 'pre-wrap',
-                            fontFamily: 'Noto Serif, serif',
-                            textAlign: 'justify'
-                        }}>
-                             <h4 style={{color: theme.gold, marginTop: 0, marginBottom: '15px', fontFamily: 'Cinzel, serif', fontSize: '1.1rem', borderBottom: '1px dashed rgba(138,110,47,0.3)', paddingBottom: '10px'}}>
-                                <i className="fas fa-magic" style={{marginRight: '10px'}}></i>
-                                {t.masterOptimizationBtn} (AI)
-                             </h4>
+                    {/* Fallback Display: If parsing failed completely but text exists, show raw text */}
+                    {aiAdvice && !dietContent.includes(aiAdvice.substring(0, 20)) && elementAnalysis === staticAdvice.desc && (
+                        <div style={{marginTop: '15px', padding: '15px', background: 'rgba(0,0,0,0.2)', border: '1px dashed #555'}}>
                              {aiAdvice.replace(/[#*]/g, '')}
                         </div>
                     )}
 
-                    {/* 2. Naming Advice */}
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '15px'}}>
+                        <div style={{background: 'rgba(212, 175, 55, 0.1)', padding: '10px', borderRadius: '4px'}}><strong style={{color: theme.gold}}>{t.luckyColors}:</strong> {t[`advice${elKey}Color`] || staticAdvice.color}</div>
+                        <div style={{background: 'rgba(212, 175, 55, 0.1)', padding: '10px', borderRadius: '4px'}}><strong style={{color: theme.gold}}>{t.luckyDirection}:</strong> {t[`advice${elKey}Direction`] || staticAdvice.direction}</div>
+                        <div style={{background: 'rgba(212, 175, 55, 0.1)', padding: '10px', borderRadius: '4px'}}><strong style={{color: theme.gold}}>{t.luckyHabit}:</strong> {t[`advice${elKey}Habit`] || staticAdvice.habit}</div>
+                    </div>
+
                     <SectionHeader icon="fa-signature" title={t.namingAdvice} />
-                    <AdviceBox content={nameAdvice} />
+                    <AdviceBox content={nameContent} />
+                    
+                    <SectionHeader icon="fa-home" title={t.adviceCategoryHome} />
+                    <AdviceBox content={homeContent} />
+                    
+                    <SectionHeader icon="fa-utensils" title={t.adviceCategoryDiet} />
+                    <AdviceBox content={dietContent} />
 
-                    {/* 3. Home Feng Shui Advice */}
-                    <SectionHeader icon="fa-home" title={t.adviceCategoryHome || "Home Feng Shui"} />
-                    <AdviceBox content={homeAdvice} />
-
-                    {/* 4. Dietary Advice */}
-                    <SectionHeader icon="fa-utensils" title={t.adviceCategoryDiet || "Dietary Advice"} />
-                    <AdviceBox content={dietAdvice} />
-
-                    {/* 5. Lucky Jewelry */}
-                    <SectionHeader icon="fa-gem" title={t.adviceCategoryJewelry || "Lucky Jewelry"} />
-                    <div style={{display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px'}}>
+                    <SectionHeader icon="fa-gem" title={t.adviceCategoryJewelry} />
+                    {jewelryContent !== (t.recommendedCures || "Consult our shop.") && <AdviceBox content={jewelryContent} />}
+                    
+                    <div style={{display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px', marginTop: '15px'}}>
                         {matchingProducts.map(prod => (
                             <div key={prod.id} style={{minWidth: '140px'}}>
                                 <CachedProductItem product={prod} t={t} onClick={() => onBuyProduct(prod)} />
@@ -175,24 +170,12 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
     );
 };
 
-export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow, onSwitchProduct, isPageMode = false }: { t: any, product: Product, onClose: () => void, onAddToCart: () => void, onBuyNow: () => void, onSwitchProduct?: (p: Product) => void, isPageMode?: boolean }) => {
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
-    const [imgLoaded, setImgLoaded] = useState(false);
+export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: () => void, onAddToCart: () => void, onBuyNow: () => void, onSwitchProduct?: (p: Product) => void, isPageMode?: boolean }> = ({ t, product, onClose, onAddToCart, onBuyNow, onSwitchProduct, isPageMode = false }) => {
     const [isAdded, setIsAdded] = useState(false);
 
     const zodiacLocal = t[`zodiac${product.zodiac}`] || t[`star${product.zodiac}`] || product.zodiac;
     const name = t[product.nameKey] ? t[product.nameKey].replace('{zodiac}', zodiacLocal) : product.defaultName;
     const desc = t[product.descKey] ? t[product.descKey].replace('{zodiac}', zodiacLocal) : "Mystical Item";
-    
-    // Load Image via Persistence on mount
-    useEffect(() => {
-        setImgLoaded(false);
-        setImageUrl(null);
-        ImagePersistence.loadImage(product.id, product.imagePrompt, 512).then((url) => {
-            setImageUrl(url);
-            setImgLoaded(true);
-        });
-    }, [product.id, product.imagePrompt]);
 
     const handleAddToCartClick = () => {
         onAddToCart();
@@ -201,118 +184,51 @@ export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow,
     };
 
     const containerStyle: React.CSSProperties = isPageMode ? {
-        position: 'relative',
-        width: '100%',
-        maxWidth: '1200px',
-        margin: '0 auto',
-        zIndex: 1
+        position: 'relative', width: '100%', maxWidth: '1200px', margin: '0 auto', zIndex: 1, paddingBottom: '20px'
     } : {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        background: 'rgba(0,0,0,0.85)',
-        zIndex: 3000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backdropFilter: 'blur(8px)'
+        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)'
     };
 
     return (
         <div style={containerStyle}>
-            <div style={{...styles.glassPanel, maxWidth: '900px', width: '95%', maxHeight: isPageMode ? 'none' : '90vh', overflowY: isPageMode ? 'visible' : 'auto', position: 'relative', display: 'flex', flexDirection: 'column'}}>
-                
-                {isPageMode ? (
-                    <button 
-                        onClick={onClose} 
-                        style={{
-                            position: 'absolute', 
-                            top: '20px', 
-                            left: '20px', 
-                            background: 'rgba(0,0,0,0.6)', 
-                            border: `1px solid ${theme.gold}`, 
-                            borderRadius: '4px', 
-                            color: theme.gold, 
-                            padding: '8px 15px',
-                            cursor: 'pointer', 
-                            zIndex: 20, 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '8px',
-                            fontFamily: 'Cinzel, serif',
-                            fontSize: '0.9rem',
-                            transition: 'all 0.2s'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(212, 175, 55, 0.2)'}
-                        onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0,0,0,0.6)'}
-                    >
-                        <i className="fas fa-arrow-left"></i> {t.backBtn}
-                    </button>
-                ) : (
-                    <button 
-                        onClick={onClose} 
-                        style={{
-                            position: 'absolute', 
-                            top: '15px', 
-                            right: '15px', 
-                            background: 'rgba(0,0,0,0.6)', 
-                            border: '1px solid #d4af37', 
-                            borderRadius: '50%', 
-                            width: '40px', 
-                            height: '40px', 
-                            color: '#d4af37', 
-                            fontSize: '1.5rem', 
-                            cursor: 'pointer', 
-                            zIndex: 20, 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center',
-                            transition: 'all 0.2s'
-                        }}
-                    >
-                        &times;
-                    </button>
-                )}
-                
-                <div style={{display: 'flex', flexDirection: 'row', gap: '30px', padding: '20px', marginTop: isPageMode ? '40px' : '0'}} className="product-modal-mobile">
-                    <div style={{flex: 1, position: 'relative', minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#050511', borderRadius: '8px', border: `1px solid ${theme.gold}`}}>
-                        {!imgLoaded ? (
-                            <div style={{position: 'absolute', zIndex: 0}}>
-                                <i className="fas fa-circle-notch fa-spin" style={{fontSize: '3rem', color: theme.darkGold}}></i>
-                            </div>
-                        ) : (
-                            <img 
-                                src={imageUrl || ""} 
-                                style={{width: '100%', borderRadius: '8px', zIndex: 1, display: 'block'}} 
-                                alt={name}
-                            />
-                        )}
-                    </div>
+            {/* Top Navigation */}
+             {isPageMode ? (
+                <button onClick={onClose} style={{position: 'absolute', top: '20px', left: '20px', background: 'rgba(0,0,0,0.6)', border: `1px solid ${theme.gold}`, borderRadius: '4px', color: theme.gold, padding: '8px 15px', cursor: 'pointer', zIndex: 20, display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'Cinzel, serif', fontSize: '0.9rem', transition: 'all 0.2s'}}>
+                    <i className="fas fa-arrow-left"></i> {t.backBtn}
+                </button>
+            ) : (
+                <button onClick={onClose} style={{position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', border: '1px solid #d4af37', borderRadius: '50%', width: '40px', height: '40px', color: '#d4af37', fontSize: '1.5rem', cursor: 'pointer', zIndex: 20}}>&times;</button>
+            )}
 
-                    <div style={{flex: 1, textAlign: 'left', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-                        <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2rem', marginBottom: '10px', paddingRight: '40px'}}>{name}</h2>
-                        <div style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '20px'}}>{product.price}</div>
-                        <div style={{borderTop: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '20px 0', marginBottom: '30px', lineHeight: '1.6', color: '#ccc'}}><p>{desc}</p></div>
-                        <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap'}}>
-                            <button style={{...styles.button, marginTop: 0, flex: 1, minWidth: '150px'}} onClick={onBuyNow}>{t.buyNow}</button>
+            <div style={{...styles.glassPanel, maxWidth: '1000px', width: '95%', maxHeight: isPageMode ? 'none' : '90vh', overflowY: isPageMode ? 'visible' : 'auto', position: 'relative', display: 'flex', flexDirection: 'column', padding: '0', border: 'none', background: 'transparent', boxShadow: 'none'}}>
+                
+                {/* 1. HERO SECTION (Responsive Layout: Row on PC, Column on Mobile) */}
+                <div className="glass-panel-mobile product-detail-container" style={{...styles.glassPanel, margin: '0 auto 20px', border: `1px solid ${theme.darkGold}`}}>
+                    {/* LEFT: Image */}
+                    <div className="product-detail-image">
+                        <div style={{width: '100%', height: '400px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${theme.gold}`, boxShadow: '0 0 20px rgba(0,0,0,0.5)'}}>
+                            <CachedImage productId={product.id} prompt={product.imagePrompt} size={512} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                        </div>
+                    </div>
+                    
+                    {/* RIGHT: Content */}
+                    <div className="product-detail-content">
+                        <h1 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2.5rem', margin: '0 0 10px 0', lineHeight: 1.2}}>{name}</h1>
+                        <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#fff', marginBottom: '20px'}}>{product.price}</div>
+                        <p style={{color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem'}}>{desc}</p>
+                        
+                        {/* BUTTONS INTEGRATED HERE */}
+                        <div className="product-detail-buttons">
+                            <button style={{...styles.button, marginTop: 0, minWidth: '200px'}} onClick={onBuyNow}>
+                                {t.buyNow}
+                            </button>
                             <button 
                                 style={{
-                                    ...styles.secondaryButton, 
-                                    marginTop: 0, 
-                                    flex: 1, 
-                                    minWidth: '150px',
-                                    padding: '14px 28px', // Match primary button padding
-                                    fontSize: '1rem',     // Match primary button font size
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    justifyContent: 'center', 
-                                    gap: '10px',
-                                    background: isAdded ? '#27ae60' : '#3498db',
+                                    ...styles.secondaryButton, marginTop: 0, minWidth: '200px',
+                                    background: isAdded ? '#27ae60' : '#3498db', // Blue background
                                     borderColor: isAdded ? '#27ae60' : '#3498db',
                                     color: '#fff',
-                                    transition: 'all 0.3s'
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
                                 }} 
                                 onClick={handleAddToCartClick}
                                 disabled={isAdded}
@@ -322,7 +238,6 @@ export const ProductDetailModal = ({ t, product, onClose, onAddToCart, onBuyNow,
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     );
@@ -335,22 +250,43 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
     const [method, setMethod] = useState<'card' | 'paypal' | 'wechat' | 'alipay'>(isChinese ? 'wechat' : 'card');
     const [successState, setSuccessState] = useState(false);
     
-    // Shipping Address State
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
     const [city, setCity] = useState('');
     const [zip, setZip] = useState('');
     const [country, setCountry] = useState('');
     
-    // Contact Info
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
 
-    const title = 'defaultName' in plan ? (plan as Product).defaultName : (plan as Plan).title;
+    // DYNAMIC TITLE LOOKUP FOR LANGUAGE SYNC
+    // If the plan ID matches a known translation key, use the fresh 't' value.
+    // Otherwise fallback to the object title.
+    let title = '';
+    let description = '';
+
+    if (plan.id === 'sub_monthly') {
+        title = t.planSubMonth;
+    } else if (plan.id === 'one_month') {
+        title = t.planOneMonth;
+    } else if (plan.id === 'sub_year') {
+        title = t.planSubYear;
+    } else if (plan.id === 'single') {
+        title = t.planSingle;
+    } else if ('nameKey' in plan) {
+        // Dynamic Product Name logic
+        const p = plan as Product;
+        const zodiacLocal = t[`zodiac${p.zodiac}`] || t[`star${p.zodiac}`] || p.zodiac;
+        title = t[p.nameKey] ? t[p.nameKey].replace('{zodiac}', zodiacLocal) : p.defaultName;
+    } else {
+        // Fix for Type Conversion Error: Ensure safe casting or property access
+        const p = plan as any;
+        title = p.title || p.defaultName || "Item";
+    }
+
     const priceStr = plan.price.replace(/[^0-9.]/g, '');
     const priceVal = parseFloat(priceStr);
     
-    // Physical products from Shop need shipping
     const isPhysicalProduct = 'category' in plan;
     const needsShipping = isPhysicalProduct || plan.id === 'cart_checkout';
     

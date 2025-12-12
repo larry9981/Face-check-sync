@@ -7,6 +7,14 @@ export interface UserState {
   userId: string;
 }
 
+export interface AppConfig {
+  textProvider: 'Google' | 'OpenAI' | 'DeepSeek';
+  imageProvider: 'Pollinations' | 'Sora2' | 'DALL-E';
+  googleKey: string;
+  openaiKey: string;
+  deepseekKey: string;
+}
+
 export interface HistoryRecord {
   id: number;
   date: string;
@@ -15,6 +23,7 @@ export interface HistoryRecord {
   name: string;
   gender: string;
   birthDate: string;
+  readingType?: 'face' | 'palm'; // Added field
 }
 
 export interface Plan {
@@ -35,7 +44,7 @@ export interface Product {
   descKey: string;
   category: 'bracelet' | 'pendant' | 'amulet';
   zodiac: string;
-  element?: string; // Added element property
+  element?: string;
 }
 
 export interface CartItem {
