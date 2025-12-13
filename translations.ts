@@ -1,4 +1,5 @@
 
+
 export const LANGUAGES = [
   { code: 'zh-CN', label: '简体中文 (Simplified)', voiceCode: 'zh-CN' },
   { code: 'en', label: 'English', voiceCode: 'en-US' },
@@ -43,6 +44,15 @@ const EN_TRANS = {
     reportHeaderAura: "General Aura", reportHeaderElements: "Five Elements (Wu Xing)", reportHeaderName: "Name Analysis", reportHeaderStar: "Western Zodiac Analysis", reportHeaderFortune: "Temporal Fortune", reportHeaderWealth: "Wealth & Fortune", reportHeaderFamily: "Family & Relationships", reportHeaderParents: "Parents & Ancestors", reportHeaderAdvice: "Master's Advice",
     reportHeaderHealth: "Health Analysis", reportHeaderLove: "Emotional Analysis", reportHeaderDailyLuck: "Today's Luck",
     networkTimeout: "Network Timeout!", scanQRCode: "Please scan to pay",
+    
+    // Auth
+    login: "Login", signup: "Sign Up", logout: "Logout",
+    emailPlaceholder: "Email Address", passwordPlaceholder: "Password", confirmPassword: "Confirm Password",
+    loginGoogle: "Continue with Google", forgotPassword: "Forgot Password?",
+    noAccount: "Don't have an account?", createAccount: "Create one",
+    hasAccount: "Already have an account?", loginLink: "Login here",
+    passMismatch: "Passwords do not match.", authSuccess: "Authentication Successful!",
+    resetSent: "Password reset link sent to your email.",
     
     // Palmistry Specifics
     palmLifeLine: "Life Line Analysis",
@@ -165,6 +175,15 @@ const ZH_CN_TRANS = {
     reportHeaderHealth: "健康分析", reportHeaderLove: "情感/姻缘分析", reportHeaderDailyLuck: "今日运势",
     networkTimeout: "网络超时！", scanQRCode: "请扫描二维码支付",
     
+    // Auth
+    login: "登录", signup: "注册", logout: "退出登录",
+    emailPlaceholder: "邮箱地址", passwordPlaceholder: "密码", confirmPassword: "确认密码",
+    loginGoogle: "使用 Google 登录", forgotPassword: "忘记密码？",
+    noAccount: "还没有账号？", createAccount: "立即注册",
+    hasAccount: "已有账号？", loginLink: "直接登录",
+    passMismatch: "两次密码输入不一致", authSuccess: "认证成功！",
+    resetSent: "重置密码链接已发送至您的邮箱。",
+    
     // Palmistry Specifics
     palmLifeLine: "生命线分析",
     palmHeadLine: "智慧线分析",
@@ -225,13 +244,13 @@ const ZH_CN_TRANS = {
 
     historyTitle: "历史记录", noHistory: "暂无历史记录", viewResult: "查看结果", dateLabel: "日期",
     cartTitle: "您的购物车", cartEmpty: "购物车是空的。", total: "总计", checkout: "去结账", remove: "移除", quantity: "数量",
-
+    
     emailLabel: "邮箱地址", phoneLabel: "联系电话", exportBtn: "导出订单 (Excel/WPS)", moreProducts: "更多精选",
     required: "必填", optional: "选填",
     
     adminLogin: "管理员登录", adminDashboard: "订单管理后台", username: "用户名", password: "密码", login: "登录",
     orderId: "订单号", customer: "客户", items: "商品", amount: "金额", status: "状态", date: "日期", address: "地址", noOrders: "暂无订单数据。",
-
+    
     aboutTitle: "关于玄机面相",
     aboutDesc1: "我们将古老的面相学（Mianxiang）与现代人工智能相结合，为您解读命运。",
     aboutDesc2: "我们的系统分析108个面部特征点，依据百年古籍解读您的财富、事业和情感前景。",
@@ -265,7 +284,7 @@ const ZH_TW_TRANS = {
     cardName: "持卡人姓名", cardNumber: "卡號", expiry: "有效期 (MM/YY)", cvc: "安全碼", payNow: "立即支付", processing: "支付處理中...", success: "支付成功！", secureStripe: "Stripe 安全支付",
     faceMapTitle: "面相十二宮", zoneForeheadTitle: "官祿宮", zoneForeheadDesc: "天庭飽滿", zoneParentsTitle: "父母宮", zoneParentsDesc: "日月角",
     zoneBrowsTitle: "兄弟宮", zoneBrowsDesc: "眉毛濃淡", zoneEyesTitle: "田宅宮", zoneEyesDesc: "眼眸神采", zoneSpouseTitle: "夫妻宮", zoneSpouseDesc: "奸門",
-    zoneChildrenTitle: "子女宮", zoneChildrenDesc: "淚堂", zoneNoseTitle: "財帛宮", zoneNoseDesc: "鼻準豐隆", zoneMouthTitle: "出納官", zoneMouthDesc: "口唇", zoneChinTitle: "奴僕宮", zoneChinDesc: "地閣方圓",
+    zoneChildrenTitle: "子女宮", zoneChildrenDesc: "淚堂", zoneNoseTitle: "財帛宮", zoneNoseDesc: "鼻準豐隆", zoneMouthTitle: "出納官", zoneMouthDesc: "口唇", zoneChinTitle: "奴仆宫", zoneChinDesc: "地閣方圓",
     dobLabel: "出生日期", timeLabel: "出生時間", dateYear: "年", dateMonth: "月", dateDay: "日", timeHour: "時", timeMinute: "分", timeSecond: "秒",
     ageLabel: "年齡", profileTitle: "主體檔案", genderLabel: "性別", genderMale: "男", genderFemale: "女", genderOther: "其他", nameLabel: "姓名 (測算姓名五行)",
     combineAnalysis: "結合名字和出生年月日時分析",
@@ -273,7 +292,7 @@ const ZH_TW_TRANS = {
     buyNow: "立即購買", addToCart: "加入購物車", cart: "購物車", shopTitle: "靈寶閣", shopDesc: "精選法物，補全五行，增強氣運。",
     shopCategoryChinese: "十二生肖系列", shopCategoryWestern: "十二星座系列", productDetails: "寶物詳情", luckyElement: "五行喜用",
     zodiacRat: "鼠", zodiacOx: "牛", zodiacTiger: "虎", zodiacRabbit: "兔", zodiacDragon: "龍", zodiacSnake: "蛇", zodiacHorse: "馬", zodiacGoat: "羊", zodiacMonkey: "猴", zodiacRooster: "雞", zodiacDog: "狗", zodiacPig: "豬",
-    starAries: "白羊座", starTaurus: "金牛座", starGemini: "雙子座", starCancer: "巨蟹座", starLeo: "獅子座", starVirgo: "處女座", starLibra: "天秤座", starScorpio: "天蠍座", starSagittarius: "射手座", starCapricorn: "摩羯座", starAquarius: "水瓶座", starPisces: "雙魚座",
+    starAries: "白羊座", starTaurus: "金牛座", starGemini: "雙子座", starCancer: "巨蟹座", starLeo: "獅子座", starVirgo: "處女座", starLibra: "天秤座", starScorpio: "天蝎座", starSagittarius: "射手座", starCapricorn: "摩羯座", starAquarius: "水瓶座", starPisces: "雙魚座",
     elementMetal: "金", elementWood: "木", elementWater: "水", elementFire: "火", elementEarth: "土",
     productNameBracelet: "{zodiac} 開運黑曜石手串", productNamePendant: "{zodiac} 和田玉守護吊墜", productNameAmulet: "{zodiac} 黃金星象護身符",
     productDescBracelet: "手工串制黑曜石與足金配飾，刻有{zodiac}生肖圖案。具有極強的辟邪化煞功效，穩固氣場，招財進寶。",
@@ -286,6 +305,15 @@ const ZH_TW_TRANS = {
     reportHeaderAura: "整體氣場", reportHeaderElements: "五行分析", reportHeaderName: "姓名吉凶分析", reportHeaderStar: "星座運勢分析", reportHeaderFortune: "流年流月運勢", reportHeaderWealth: "財運與事業", reportHeaderFamily: "家庭與情感", reportHeaderParents: "父母與祖蔭", reportHeaderAdvice: "大師建議",
     reportHeaderHealth: "健康分析", reportHeaderLove: "情感/姻緣分析", reportHeaderDailyLuck: "今日運勢",
     networkTimeout: "網絡超時！", scanQRCode: "請掃描二維碼支付",
+    
+    // Auth
+    login: "登錄", signup: "註冊", logout: "退出登錄",
+    emailPlaceholder: "郵箱地址", passwordPlaceholder: "密碼", confirmPassword: "確認密碼",
+    loginGoogle: "使用 Google 登錄", forgotPassword: "忘記密碼？",
+    noAccount: "還沒有賬號？", createAccount: "立即註冊",
+    hasAccount: "已有賬號？", loginLink: "直接登錄",
+    passMismatch: "兩次密碼輸入不一致", authSuccess: "認證成功！",
+    resetSent: "重置密碼鏈接已發送至您的郵箱。",
     
     // Palmistry
     palmLifeLine: "生命線分析",
@@ -331,7 +359,7 @@ const ZH_TW_TRANS = {
 
     adviceWaterColor: '黑、藍', adviceWaterDirection: '北方', adviceWaterHabit: '思考、智慧', adviceWaterDesc: '您的五行缺水。需要增強智慧和適應能力，如水般流動。',
     adviceWaterName: '建議名字中帶有三點水（氵）的字，如：沐、清、海、洋。', adviceWaterPhilosophy: '“上善若水”，利萬物而不爭，適應萬變。',
-    adviceWaterDiet: '多吃黑色/深色食物（黑豆、海帶、黑芝麻）和鹹味。注意補水。',
+    adviceWaterDiet: '多吃黑色/深色食物（黑豆、海帶、黑芝麻）和咸味。注意補水。',
     adviceWaterHome: '在北方擺放水景（魚缸、流水擺件）或鏡子。使用藍色或黑色裝飾。',
 
     adviceFireColor: '紅、紫、橙', adviceFireDirection: '南方', adviceFireHabit: '社交、熱情', adviceFireDesc: '您的五行缺火。需要增強熱情和行動力，如火般溫暖。',

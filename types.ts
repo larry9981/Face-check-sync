@@ -5,6 +5,11 @@ export interface UserState {
   hasPaidSingle: boolean;
   history: HistoryRecord[]; // Added history array
   userId: string;
+  // Auth fields
+  isLoggedIn: boolean;
+  email?: string;
+  name?: string;
+  authType?: 'email' | 'google' | 'guest';
 }
 
 export interface AppConfig {

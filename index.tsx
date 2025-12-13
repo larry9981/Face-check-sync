@@ -8,7 +8,7 @@ import { LANGUAGES, TRANSLATIONS } from './translations';
 import { calculateAge, calculateWuXing, getWesternZodiac } from './utils';
 import { UserState, Plan, CartItem, Product, HistoryRecord, Order, AppConfig } from './types';
 import { BaguaSVG } from './components/Icons';
-import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './components/Modals';
+import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal, AuthModal } from './components/Modals';
 import { PrivacyPolicy, TermsOfService, AboutPage } from './pages/StaticPages';
 import { ShopPage } from './pages/ShopPage';
 import { CartPage } from './pages/CartPage'; 
@@ -164,7 +164,10 @@ const callBackendAPI = async (endpoint: string, body: any = {}, method = 'POST',
                      date: new Date().toLocaleDateString(), 
                      resultText: text,
                      elements: body.elements,
-                     readingType: body.readingType
+                     readingType: body.readingType,
+                     gender: body.gender, // Pass gender to local history
+                     name: body.name,     // Pass name to local history
+                     birthDate: body.birthDate // Pass DOB to local history
                  });
                  return { text };
             }
@@ -368,8 +371,9 @@ const App = () => {
   // App State
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const [userState, setUserState] = useState<UserState>({ 
-      trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [], userId: '' 
+      trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [], userId: '', isLoggedIn: false 
   });
+  const [showAuthModal, setShowAuthModal] = useState(false);
   
   // Generate a random User ID if not present (Simple Auth)
   useEffect(() => {
@@ -379,7 +383,8 @@ const App = () => {
       if (!parsed) {
           parsed = { 
               trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [],
-              userId: `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+              userId: `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+              isLoggedIn: false
           };
       } else if (!parsed.userId) {
           parsed.userId = `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -393,6 +398,36 @@ const App = () => {
           localStorage.setItem('fortune_user_state_v3', JSON.stringify(userState)); 
       }
   }, [userState]);
+
+  const handleLoginSuccess = (user: any) => {
+      setUserState(prev => ({
+          ...prev,
+          isLoggedIn: true,
+          userId: user.id || prev.userId,
+          email: user.email,
+          name: user.name,
+          authType: user.authType
+      }));
+      // Fetch user specific history
+      // Note: We deliberately don't fetch immediately here to keep it simple, 
+      // but useEffect dependent on userId will pick it up if changed.
+  };
+
+  const handleLogout = () => {
+      setUserState(prev => ({
+          ...prev,
+          isLoggedIn: false,
+          email: undefined,
+          name: undefined,
+          authType: undefined,
+          history: [] // Clear history on logout
+      }));
+      // Generate new Guest ID
+      const newGuestId = `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      setUserState(prev => ({ ...prev, userId: newGuestId }));
+      setCurrentPage('home');
+      setView('start');
+  };
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -691,7 +726,10 @@ This is a demonstration of the result layout.
           image: base64Data,
           userId: userState.userId,
           elements: wuXingResult, // Save elements to backend/history
-          readingType: readingType // Save type
+          readingType: readingType, // Save type
+          gender: gender,       // Pass gender to backend
+          name: userName,       // Pass name to backend
+          birthDate: birthDate  // Pass DOB to backend
       }, 'POST', appConfig), 5, 4000, (retryMsg) => setLoadingMessage(retryMsg));
 
       const response: any = await apiCall;
@@ -872,10 +910,23 @@ This is a demonstration of the result layout.
              <span style={getNavLinkStyle('history')} onClick={() => { setCurrentPage('history'); setView('start'); }}>
                  <i className="fas fa-history" style={{marginRight: '5px'}}></i>{t.history}
              </span>
-             <div style={{position: 'relative', cursor: 'pointer', marginLeft: '10px', marginRight: '15px'}} onClick={() => { setCurrentPage('cart'); setView('start'); }}>
+             <div style={{position: 'relative', cursor: 'pointer', marginLeft: '10px', marginRight: '5px'}} onClick={() => { setCurrentPage('cart'); setView('start'); }}>
                  <i className="fas fa-shopping-cart" style={{color: theme.gold}}></i>
                  {cart.length > 0 && <span style={{position: 'absolute', top: '-8px', right: '-8px', background: '#c0392b', color: '#fff', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{cart.reduce((a,c) => a + c.quantity, 0)}</span>}
              </div>
+             
+             {/* LOGIN BUTTON / USER INFO */}
+             {userState.isLoggedIn ? (
+                 <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '10px'}}>
+                     <span style={{color: theme.gold, fontSize: '0.8rem'}}>{userState.name || 'User'}</span>
+                     <i className="fas fa-sign-out-alt" style={{cursor: 'pointer', color: '#888'}} onClick={handleLogout} title={t.logout}></i>
+                 </div>
+             ) : (
+                 <span style={{...styles.navLink, marginLeft: '10px', color: theme.gold}} onClick={() => setShowAuthModal(true)}>
+                     <i className="fas fa-user"></i> {t.login}
+                 </span>
+             )}
+
              <select style={{background: 'rgba(0,0,0,0.5)', color: theme.gold, border: '1px solid #555', borderRadius: '4px', padding: '2px', marginLeft: '10px'}} value={language} onChange={(e) => switchLanguage(e.target.value)}>
                 {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
              </select>
@@ -890,6 +941,9 @@ This is a demonstration of the result layout.
         {showPaymentModal && selectedPlan && <PaymentModal t={t} plan={selectedPlan} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />}
         {showBalanceModal && (<FiveElementsBalanceModal t={t} missingElement={calculatedElements ? calculatedElements.missingElement : 'Metal'} aiAdvice={balanceAiAdvice} onClose={() => setShowBalanceModal(false)} onBuyProduct={handleBuyProduct} />)}
         
+        {/* AUTH MODAL */}
+        {showAuthModal && <AuthModal t={t} onClose={() => setShowAuthModal(false)} onLoginSuccess={handleLoginSuccess} />}
+
         {showSettings && <SettingsModal t={t} config={appConfig} onSave={saveConfig} onClose={() => setShowSettings(false)} />}
 
         {currentPage === 'product-detail' && selectedProduct && (
