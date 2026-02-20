@@ -1,6 +1,8 @@
 
 import express from 'express';
 import cors from 'cors';
+import * as fs from 'fs';
+import * as path from 'path';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 // =========================================================
@@ -8,34 +10,67 @@ import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 // =========================================================
 const PORT = process.env.PORT || 3000;
 const GOOGLE_API_KEY = process.env.API_KEY || "YOUR_GOOGLE_API_KEY";
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 
 // Choose Provider: 'Google' | 'OpenAI' | 'DeepSeek'
 let CURRENT_PROVIDER = 'Google'; 
 
 const app = express();
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Allow large image uploads
+app.use(express.json({ limit: '50mb' }) as any); // Allow large image uploads
 
 // =========================================================
-// 🗄️ MOCK DATABASE (In-Memory for Demo)
-// In production, replace this with MongoDB, PostgreSQL, etc.
+// 🗄️ FILE-BASED PERSISTENCE
 // =========================================================
-const DB = {
-    orders: [] as any[],
-    userHistory: {} as Record<string, any[]>, // Key: userId, Value: Array of records
-    users: [] as any[] // Mock User Table: { id, email, password (hashed in real app), name, authType }
+// Using process.cwd() is safer for varying execution environments (e.g. containers)
+const DB_FILE = path.resolve(process.cwd(), 'database.json');
+
+interface DatabaseSchema {
+    users: any[];
+    orders: any[];
+    userHistory: Record<string, any[]>;
+}
+
+// Initial State
+let DB: DatabaseSchema = {
+    users: [],
+    orders: [],
+    userHistory: {}
 };
+
+// Load Data from File
+const loadData = () => {
+    try {
+        if (fs.existsSync(DB_FILE)) {
+            const raw = fs.readFileSync(DB_FILE, 'utf8');
+            DB = JSON.parse(raw);
+            console.log("[Backend] Database loaded successfully.");
+        } else {
+            console.log("[Backend] No database file found. Creating new one at", DB_FILE);
+            saveData();
+        }
+    } catch (e) {
+        console.error("[Backend] Error loading database:", e);
+    }
+};
+
+// Save Data to File
+const saveData = () => {
+    try {
+        fs.writeFileSync(DB_FILE, JSON.stringify(DB, null, 2));
+    } catch (e) {
+        console.error("[Backend] Error saving database:", e);
+    }
+};
+
+// Initialize DB on startup
+loadData();
 
 // =========================================================
 // 🧠 AI LOGIC
 // =========================================================
 async function callAI(prompt: string, base64Image?: string, config?: any) {
-    // If client sends config, prioritize it (Demo Mode)
     const provider = config?.textProvider || CURRENT_PROVIDER;
-    console.log(`[Backend] Processing AI Request via ${provider}...`);
-
+    
     if (provider === 'Google') {
         const apiKey = config?.googleKey || GOOGLE_API_KEY;
         const ai = new GoogleGenAI({ apiKey });
@@ -59,8 +94,6 @@ async function callAI(prompt: string, base64Image?: string, config?: any) {
         return response.text;
     } 
     
-    // Add logic for OpenAI / DeepSeek here if needed (similar to previous index.tsx implementation)
-    // but running securely on the server.
     throw new Error("Provider not implemented in backend demo yet.");
 }
 
@@ -72,10 +105,28 @@ async function callAI(prompt: string, base64Image?: string, config?: any) {
 
 // 1. Sign Up
 app.post('/api/auth/signup', (req, res) => {
+    loadData(); // Ensure fresh data
     const { email, password, name } = req.body;
     
+    // 1. Validate Fields
+    if (!email || !password) {
+        return res.status(400).json({ error: "Email and Password are required." });
+    }
+
+    // 2. Validate Email Format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: "Invalid email format." });
+    }
+
+    // 3. Validate Password Length
+    if (password.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters." });
+    }
+    
+    // 4. Check Duplicate
     if (DB.users.find(u => u.email === email)) {
-        return res.status(400).json({ error: "Email already exists" });
+        return res.status(400).json({ error: "Email already registered." });
     }
 
     const newUser = {
@@ -83,10 +134,17 @@ app.post('/api/auth/signup', (req, res) => {
         email,
         password, // In production, HASH this password!
         name: name || email.split('@')[0],
-        authType: 'email'
+        authType: 'email',
+        // Persistence Fields
+        isSubscribed: false,
+        trialStartDate: new Date().toISOString(),
+        hasPaidSingle: false,
+        registeredAt: new Date().toISOString()
     };
     
     DB.users.push(newUser);
+    saveData(); // Persist
+
     // Don't return password
     const { password: _, ...userSafe } = newUser;
     res.json({ success: true, user: userSafe });
@@ -94,22 +152,30 @@ app.post('/api/auth/signup', (req, res) => {
 
 // 2. Login
 app.post('/api/auth/login', (req, res) => {
+    loadData(); // Ensure fresh data
     const { email, password } = req.body;
     
-    const user = DB.users.find(u => u.email === email && u.password === password);
+    if (!email || !password) return res.status(400).json({ error: "Missing credentials." });
+
+    const userByEmail = DB.users.find(u => u.email === email);
     
-    if (!user) {
-        return res.status(401).json({ error: "Invalid credentials" });
+    if (!userByEmail) {
+        // Return 404 for user not found with specific message code
+        return res.status(404).json({ error: "Account not found.", code: 'USER_NOT_FOUND' });
     }
 
-    const { password: _, ...userSafe } = user;
+    if (userByEmail.password !== password) {
+        return res.status(401).json({ error: "Invalid password.", code: 'INVALID_CREDENTIALS' });
+    }
+
+    const { password: _, ...userSafe } = userByEmail;
     res.json({ success: true, user: userSafe });
 });
 
 // 3. Google Login (Mock)
 app.post('/api/auth/google', (req, res) => {
+    loadData();
     const { token, email, name } = req.body;
-    // In production, verify the Google Token with Google's API libraries here.
     
     let user = DB.users.find(u => u.email === email);
     
@@ -119,9 +185,13 @@ app.post('/api/auth/google', (req, res) => {
             id: `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             email,
             name,
-            authType: 'google'
+            authType: 'google',
+            isSubscribed: false,
+            trialStartDate: new Date().toISOString(),
+            registeredAt: new Date().toISOString()
         };
         DB.users.push(user);
+        saveData();
     }
 
     const { password: _, ...userSafe } = user;
@@ -131,15 +201,8 @@ app.post('/api/auth/google', (req, res) => {
 // 4. Forgot Password
 app.post('/api/auth/forgot-password', (req, res) => {
     const { email } = req.body;
-    // In production, send real email with reset link.
-    // Here we just simulate success.
-    
-    const user = DB.users.find(u => u.email === email);
-    if (user) {
-        console.log(`[Mock Email] Sending password reset to ${email}`);
-    }
-    
-    // Always return success for security (prevent email enumeration)
+    // Simulate sending email
+    console.log(`[Mock Email] Sending password reset to ${email}`);
     res.json({ success: true, message: "If account exists, email sent." });
 });
 
@@ -156,7 +219,6 @@ app.post('/api/analyze', async (req, res) => {
         if (userId) {
             if (!DB.userHistory[userId]) DB.userHistory[userId] = [];
             
-            // Extract a summary or data for history
             const historyRecord = {
                 id: Date.now(),
                 date: new Date().toLocaleDateString(),
@@ -166,13 +228,12 @@ app.post('/api/analyze', async (req, res) => {
                 birthDate: birthDate,
                 readingType: readingType,
                 elements: elements,
-                // In a real app, parse the JSON/result to extract elements/name
                 summary: "AI Analysis Result" 
             };
             
-            // Keep last 5 records
             DB.userHistory[userId].unshift(historyRecord);
-            DB.userHistory[userId] = DB.userHistory[userId].slice(0, 5);
+            DB.userHistory[userId] = DB.userHistory[userId].slice(0, 10); // Keep last 10
+            saveData();
         }
 
         res.json({ text: resultText });
@@ -196,24 +257,46 @@ app.post('/api/translate', async (req, res) => {
 
 // 3. Create Order Endpoint
 app.post('/api/orders', (req, res) => {
+    loadData();
     const order = req.body;
     order.id = `ORD-${Date.now().toString().slice(-6)}`;
     order.date = new Date().toLocaleDateString();
-    order.status = 'paid'; // Assumed paid for this demo flow
+    order.status = 'paid'; 
     
     DB.orders.unshift(order);
+
+    // Sync Subscription if User Email matches
+    if (order.email) {
+        const userIndex = DB.users.findIndex(u => u.email === order.email);
+        if (userIndex !== -1) {
+            // Check if order items indicate a subscription
+            const isSub = order.items.toLowerCase().includes('month') || order.items.toLowerCase().includes('year');
+            const isSingle = order.items.toLowerCase().includes('single');
+
+            if (isSub) {
+                DB.users[userIndex].isSubscribed = true;
+                console.log(`[Backend] User ${order.email} subscription activated.`);
+            }
+            if (isSingle) {
+                DB.users[userIndex].hasPaidSingle = true;
+            }
+        }
+    }
+
+    saveData();
     console.log(`[Backend] New Order Created: ${order.id}`);
     res.json({ success: true, orderId: order.id });
 });
 
 // 4. Get Orders Endpoint (Admin)
 app.get('/api/admin/orders', (req, res) => {
-    // In production, verify Admin Token here
+    loadData();
     res.json(DB.orders);
 });
 
 // 5. Get User History Endpoint
 app.get('/api/history/:userId', (req, res) => {
+    loadData();
     const { userId } = req.params;
     const history = DB.userHistory[userId] || [];
     res.json(history);

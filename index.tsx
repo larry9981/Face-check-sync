@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 // RESTORED: Needed for Client-Side Fallback if Server is offline
@@ -8,13 +9,13 @@ import { LANGUAGES, TRANSLATIONS } from './translations';
 import { calculateAge, calculateWuXing, getWesternZodiac } from './utils';
 import { UserState, Plan, CartItem, Product, HistoryRecord, Order, AppConfig } from './types';
 import { BaguaSVG } from './components/Icons';
-import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal, AuthModal } from './components/Modals';
+import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './components/Modals';
 import { PrivacyPolicy, TermsOfService, AboutPage } from './pages/StaticPages';
 import { ShopPage } from './pages/ShopPage';
 import { CartPage } from './pages/CartPage'; 
 import { AdminPage } from './pages/AdminPage';
 import { PricingPage } from './pages/PricingPage';
-import { RenderStartView, RenderSelectionView, RenderCameraView, RenderResultView, LoadingSpinner, RenderHistoryView } from './pages/HomeViews';
+import { RenderStartView, RenderSelectionView, RenderResultView, LoadingSpinner, RenderHistoryView, RenderCameraView } from './pages/HomeViews';
 
 // =========================================================
 // 🌐 FRONTEND CONFIGURATION
@@ -255,6 +256,168 @@ const resizeImage = (base64Str: string, maxWidth = 1024, maxHeight = 1024): Prom
   });
 };
 
+// --- AUTH MODAL COMPONENT (UPDATED VALIDATION) ---
+const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void, onLoginSuccess: (user: any) => void }) => {
+    const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPass, setConfirmPass] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [resetSent, setResetSent] = useState(false);
+
+    // Email Regex: Standard format checking
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    const handleAuthAction = async (action: 'login' | 'signup' | 'forgot' | 'google') => {
+        setLoading(true);
+        setError('');
+        
+        try {
+            // Client-Side Validation
+            if (action === 'login' || action === 'signup') {
+                if (!email) throw new Error(t.required + ": " + t.emailLabel);
+                if (!emailRegex.test(email)) throw new Error("Invalid email format (example@domain.com)");
+                if (!password) throw new Error(t.required + ": " + t.passwordPlaceholder);
+                if (action === 'signup') {
+                     if (password.length < 6) throw new Error("Password must be at least 6 characters.");
+                     if (password !== confirmPass) throw new Error(t.passMismatch);
+                }
+            }
+
+            const endpoint = `/auth/${action}`;
+            let body: any = { email };
+
+            if (action === 'login' || action === 'signup') {
+                body.password = password;
+            }
+            if (action === 'google') {
+                body = { 
+                    email: `google_user_${Date.now()}@gmail.com`, 
+                    name: "Google User", 
+                    token: "mock_google_token" 
+                };
+            }
+
+            const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                // Specific handling for User Not Found
+                if (data.code === 'USER_NOT_FOUND') {
+                    throw new Error(t.userNotFound);
+                }
+                throw new Error(data.error || "Authentication failed");
+            }
+
+            if (action === 'forgot') {
+                setResetSent(true);
+            } else {
+                onLoginSuccess(data.user);
+                onClose();
+            }
+
+        } catch (err: any) {
+            // Fallback for "Network Error" if backend is down - Simulate success for demo
+            if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                 console.warn("Backend unavailable, using mock auth");
+                 if (action === 'forgot') { setResetSent(true); }
+                 else {
+                     onLoginSuccess({ 
+                         id: 'mock_user', 
+                         email: email || 'mock@example.com', 
+                         name: email ? email.split('@')[0] : 'Guest',
+                         authType: action === 'google' ? 'google' : 'email'
+                     });
+                     onClose();
+                 }
+            } else {
+                setError(err.message);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)'}}>
+            <div style={{...styles.glassPanel, maxWidth: '400px', width: '90%', padding: '30px'}}>
+                <button onClick={onClose} style={{position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer'}}>&times;</button>
+                
+                <div style={{textAlign: 'center', marginBottom: '20px'}}>
+                    <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.8rem', margin: 0}}>
+                        {mode === 'login' ? t.login : mode === 'signup' ? t.signup : t.forgotPassword}
+                    </h2>
+                </div>
+
+                {mode === 'forgot' ? (
+                    <>
+                        {!resetSent ? (
+                            <>
+                                <input type="email" placeholder={t.emailPlaceholder} style={styles.formInput} value={email} onChange={e => setEmail(e.target.value)} />
+                                <button style={{...styles.button, width: '100%', marginTop: '10px'}} onClick={() => handleAuthAction('forgot')} disabled={loading}>
+                                    {loading ? '...' : 'Reset Password'}
+                                </button>
+                            </>
+                        ) : (
+                            <div style={{textAlign: 'center', color: '#2ecc71', padding: '20px'}}>
+                                <i className="fas fa-envelope" style={{fontSize: '2rem', marginBottom: '10px'}}></i>
+                                <p>{t.resetSent}</p>
+                            </div>
+                        )}
+                        <div style={{textAlign: 'center', marginTop: '15px'}}>
+                            <span style={{color: theme.gold, cursor: 'pointer', fontSize: '0.9rem'}} onClick={() => { setMode('login'); setResetSent(false); }}>{t.backBtn}</span>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <input type="email" placeholder={t.emailPlaceholder} style={styles.formInput} value={email} onChange={e => setEmail(e.target.value)} />
+                        <input type="password" placeholder={t.passwordPlaceholder} style={styles.formInput} value={password} onChange={e => setPassword(e.target.value)} />
+                        
+                        {mode === 'signup' && (
+                            <input type="password" placeholder={t.confirmPassword} style={styles.formInput} value={confirmPass} onChange={e => setConfirmPass(e.target.value)} />
+                        )}
+
+                        {error && <div style={{color: '#e74c3c', fontSize: '0.8rem', marginBottom: '10px'}}>{error}</div>}
+
+                        <button style={{...styles.button, width: '100%', marginTop: '10px'}} onClick={() => handleAuthAction(mode)} disabled={loading}>
+                            {loading ? '...' : (mode === 'login' ? t.login : t.signup)}
+                        </button>
+
+                        <div style={{display: 'flex', alignItems: 'center', margin: '20px 0'}}>
+                            <div style={{flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)'}}></div>
+                            <span style={{padding: '0 10px', color: '#666', fontSize: '0.8rem'}}>OR</span>
+                            <div style={{flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)'}}></div>
+                        </div>
+
+                        <button style={{...styles.secondaryButton, width: '100%', marginTop: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderColor: '#fff', color: '#fff'}} onClick={() => handleAuthAction('google')}>
+                            <i className="fab fa-google"></i> {t.loginGoogle}
+                        </button>
+
+                        <div style={{textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: '#aaa'}}>
+                            {mode === 'login' ? (
+                                <>
+                                    <div style={{marginBottom: '10px', cursor: 'pointer', color: '#ccc'}} onClick={() => setMode('forgot')}>{t.forgotPassword}</div>
+                                    {t.noAccount} <span style={{color: theme.gold, cursor: 'pointer'}} onClick={() => setMode('signup')}>{t.createAccount}</span>
+                                </>
+                            ) : (
+                                <>
+                                    {t.hasAccount} <span style={{color: theme.gold, cursor: 'pointer'}} onClick={() => setMode('login')}>{t.loginLink}</span>
+                                </>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // --- SETTINGS MODAL COMPONENT ---
 const SettingsModal = ({ t, config, onSave, onClose }: { t: any, config: AppConfig, onSave: (c: AppConfig) => void, onClose: () => void }) => {
     const [localConfig, setLocalConfig] = useState<AppConfig>(config);
@@ -399,6 +562,7 @@ const App = () => {
       }
   }, [userState]);
 
+  // Handle Login and Sync State from Server Data
   const handleLoginSuccess = (user: any) => {
       setUserState(prev => ({
           ...prev,
@@ -406,11 +570,12 @@ const App = () => {
           userId: user.id || prev.userId,
           email: user.email,
           name: user.name,
-          authType: user.authType
+          authType: user.authType,
+          // Sync Subscription Status from Server DB
+          isSubscribed: user.isSubscribed || false,
+          trialStartDate: user.trialStartDate || prev.trialStartDate,
+          hasPaidSingle: user.hasPaidSingle || false
       }));
-      // Fetch user specific history
-      // Note: We deliberately don't fetch immediately here to keep it simple, 
-      // but useEffect dependent on userId will pick it up if changed.
   };
 
   const handleLogout = () => {
@@ -420,7 +585,9 @@ const App = () => {
           email: undefined,
           name: undefined,
           authType: undefined,
-          history: [] // Clear history on logout
+          history: [], // Clear history on logout
+          isSubscribed: false, // Reset subscription for guest
+          hasPaidSingle: false
       }));
       // Generate new Guest ID
       const newGuestId = `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -521,38 +688,83 @@ const App = () => {
       }
   };
 
+  const stopCamera = () => { 
+      if (videoRef.current && videoRef.current.srcObject) { 
+          (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop()); 
+          videoRef.current.srcObject = null; 
+      } 
+  };
+
   const startCamera = async (type: 'face' | 'palm') => {
+    // SECURITY CHECK for Mobile Chrome
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        alert("Secure context required. Please use HTTPS to access camera on mobile devices.");
+        return;
+    }
+
     setReadingType(type);
     if (useAdvancedAnalysis && !birthDate) { alert("Please complete your birth date."); return; }
+    
+    // Stop any previous stream
+    stopCamera();
+
     setView('camera'); 
     if (!isPlayingMusic) setIsPlayingMusic(true);
+    
     try { 
         // Force User Camera for Face, Environment for Palm (if available)
+        // Explicitly set audio: false to prevent permission issues on some Android browsers
         const constraints = {
+            audio: false,
             video: {
                 facingMode: type === 'face' ? 'user' : 'environment'
             }
         };
         const stream = await navigator.mediaDevices.getUserMedia(constraints); 
-        if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); } 
-    } catch (err) { 
+        
+        // Wait for next tick/render to ensure ref is populated
+        setTimeout(async () => {
+            if (videoRef.current) { 
+                videoRef.current.srcObject = stream; 
+                try {
+                    await videoRef.current.play();
+                } catch (e) {
+                    console.error("Play error", e);
+                }
+            } 
+        }, 100);
+
+    } catch (err: any) { 
         console.warn("Camera Init Error, trying fallback", err);
+        
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            alert("Camera access denied. Please allow camera permissions in your browser settings.");
+            setView('selection');
+            return;
+        }
+
         try {
              // Fallback to basic constraint if facingMode fails
-             const stream = await navigator.mediaDevices.getUserMedia({ video: true }); 
-             if (videoRef.current) { videoRef.current.srcObject = stream; videoRef.current.play(); } 
-        } catch (e) {
-            alert("Unable to access camera. Please check permissions."); 
+             const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); 
+             setTimeout(async () => {
+                 if (videoRef.current) { 
+                     videoRef.current.srcObject = stream; 
+                     try { await videoRef.current.play(); } catch(e) { console.error(e); }
+                 } 
+             }, 100);
+        } catch (e: any) {
+            alert(`Camera Error: ${e.name || e.message}. Please check browser permissions.`); 
             setView('selection');
         }
     }
   };
-  const stopCamera = () => { if (videoRef.current && videoRef.current.srcObject) { (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop()); videoRef.current.srcObject = null; } };
   
   const capturePhoto = async (): Promise<boolean> => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
-      if (video.readyState !== 4) return false;
+      // Ensure video has actual data
+      if (video.readyState < 2) return false;
+      
       const canvas = canvasRef.current; 
       // Handle orientation changes or simple aspect ratio
       const videoWidth = video.videoWidth;
@@ -567,8 +779,6 @@ const App = () => {
       const ctx = canvas.getContext('2d'); 
       if (ctx) { 
           // Mirror image ONLY if using front camera (face mode typically)
-          // But technically 'facingMode' isn't always reliable property to read back.
-          // Simple heuristic: Face reading usually front cam -> mirror. Palm -> back cam -> no mirror.
           if (readingType === 'face') {
               ctx.translate(canvas.width, 0); 
               ctx.scale(-1, 1); 
@@ -834,7 +1044,7 @@ This is a demonstration of the result layout.
               total: total,
               shippingAddress: shipping.address ? `${shipping.address}, ${shipping.city}` : 'Digital',
               paymentMethod: paymentDetails?.method || 'unknown',
-              email: contact.email,
+              email: contact.email || userState.email, // Use logged in email if available
               phone: contact.phone
           };
           

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { theme, styles } from '../theme';
 import { Product, Plan } from '../types';
@@ -86,6 +87,8 @@ export const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () 
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [resetSent, setResetSent] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPass, setShowConfirmPass] = useState(false);
 
     // Simulated API call helper
     const handleAuthAction = async (action: 'login' | 'signup' | 'forgot' | 'google') => {
@@ -126,6 +129,14 @@ export const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () 
             const data = await res.json();
 
             if (!res.ok) {
+                // Specific handling for User Not Found
+                if (data.code === 'USER_NOT_FOUND') {
+                    throw new Error(t.userNotFound);
+                }
+                // Specific handling for Invalid Credentials (password mismatch)
+                if (data.code === 'INVALID_CREDENTIALS') {
+                    throw new Error(t.invalidCredentials);
+                }
                 throw new Error(data.error || "Authentication failed");
             }
 
@@ -138,19 +149,12 @@ export const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () 
             }
 
         } catch (err: any) {
-            // Fallback for "Network Error" if backend is down - Simulate success for demo
+            // STRICT ENFORCEMENT: Only allow server-validated login
+            console.error("Auth Error:", err);
+            
             if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-                 console.warn("Backend unavailable, using mock auth");
-                 if (action === 'forgot') { setResetSent(true); }
-                 else {
-                     onLoginSuccess({ 
-                         id: 'mock_user', 
-                         email: email || 'mock@example.com', 
-                         name: email ? email.split('@')[0] : 'Guest',
-                         authType: action === 'google' ? 'google' : 'email'
-                     });
-                     onClose();
-                 }
+                 // Do not allow mock fallback. User must connect to server.
+                 setError(t.networkTimeout || "Connection to server failed. Please ensure backend is running.");
             } else {
                 setError(err.message);
             }
@@ -192,10 +196,37 @@ export const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () 
                 ) : (
                     <>
                         <input type="email" placeholder={t.emailPlaceholder} style={styles.formInput} value={email} onChange={e => setEmail(e.target.value)} />
-                        <input type="password" placeholder={t.passwordPlaceholder} style={styles.formInput} value={password} onChange={e => setPassword(e.target.value)} />
+                        
+                        <div style={{position: 'relative'}}>
+                            <input 
+                                type={showPassword ? "text" : "password"} 
+                                placeholder={t.passwordPlaceholder} 
+                                style={styles.formInput} 
+                                value={password} 
+                                onChange={e => setPassword(e.target.value)} 
+                            />
+                            <i 
+                                className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"} 
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{position: 'absolute', right: '12px', top: '14px', cursor: 'pointer', color: theme.darkGold, fontSize: '1rem'}}
+                            ></i>
+                        </div>
                         
                         {mode === 'signup' && (
-                            <input type="password" placeholder={t.confirmPassword} style={styles.formInput} value={confirmPass} onChange={e => setConfirmPass(e.target.value)} />
+                            <div style={{position: 'relative'}}>
+                                <input 
+                                    type={showConfirmPass ? "text" : "password"} 
+                                    placeholder={t.confirmPassword} 
+                                    style={styles.formInput} 
+                                    value={confirmPass} 
+                                    onChange={e => setConfirmPass(e.target.value)} 
+                                />
+                                <i 
+                                    className={showConfirmPass ? "fas fa-eye-slash" : "fas fa-eye"} 
+                                    onClick={() => setShowConfirmPass(!showConfirmPass)}
+                                    style={{position: 'absolute', right: '12px', top: '14px', cursor: 'pointer', color: theme.darkGold, fontSize: '1rem'}}
+                                ></i>
+                            </div>
                         )}
 
                         {error && <div style={{color: '#e74c3c', fontSize: '0.8rem', marginBottom: '10px'}}>{error}</div>}

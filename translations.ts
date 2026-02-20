@@ -53,6 +53,8 @@ const EN_TRANS = {
     hasAccount: "Already have an account?", loginLink: "Login here",
     passMismatch: "Passwords do not match.", authSuccess: "Authentication Successful!",
     resetSent: "Password reset link sent to your email.",
+    userNotFound: "Account not found. Please sign up first.",
+    invalidCredentials: "Incorrect email or password.",
     
     // Palmistry Specifics
     palmLifeLine: "Life Line Analysis",
@@ -118,7 +120,7 @@ const EN_TRANS = {
     emailLabel: "Email Address", phoneLabel: "Phone Number", exportBtn: "Export Orders (Excel/WPS)", moreProducts: "Complete Collection",
     required: "Required", optional: "Optional",
     
-    adminLogin: "Admin Login", adminDashboard: "Order Dashboard", username: "Username", password: "Password", login: "Login",
+    adminLogin: "Admin Login", adminDashboard: "Order Dashboard", username: "Username", password: "Password",
     orderId: "Order ID", customer: "Customer", items: "Items", amount: "Amount", status: "Status", date: "Date", address: "Address", noOrders: "No orders found.",
     
     aboutTitle: "About Mystic Face",
@@ -166,7 +168,7 @@ const ZH_CN_TRANS = {
     productNameBracelet: "{zodiac} 开运黑曜石手串", productNamePendant: "{zodiac} 和田玉守护吊坠", productNameAmulet: "{zodiac} 黄金星象护身符",
     productDescBracelet: "手工串制黑曜石与足金配饰，刻有{zodiac}生肖图案。具有极强的辟邪化煞功效，稳固气场，招财进宝。",
     productDescPendant: "精选上等和田玉，雕刻栩栩如生的{zodiac}形象。长期佩戴可滋养身心，促进健康，遇贵人扶持。",
-    productDescAmulet: "精美18k金{zodiac}护身符，镶嵌水晶，汇聚星辰之力，助您心想事成，诸事顺遂。",
+    productDescAmulet: "精美18k金{zodiac}护身符，鑲嵌水晶，汇聚星辰之力，助您心想事成，诸事顺遂。",
     freeTrialsHint: "免费试用期 (剩余: {count}天)", shippingDetails: "收货地址", addressLine: "街道地址", city: "城市", zipCode: "邮编", country: "国家", recipientName: "收件人姓名",
     snapPhoto: "拍照", balanceBtn: "五行平衡调理", balanceTitle: "大师优化建议", yourWeakest: "您的喜用神 (最缺)",
     luckyColors: "幸运色", luckyDirection: "吉利方位", luckyHabit: "改运习惯", recommendedCures: "推荐补运法物",
@@ -183,6 +185,8 @@ const ZH_CN_TRANS = {
     hasAccount: "已有账号？", loginLink: "直接登录",
     passMismatch: "两次密码输入不一致", authSuccess: "认证成功！",
     resetSent: "重置密码链接已发送至您的邮箱。",
+    userNotFound: "账号不存在，请先注册。",
+    invalidCredentials: "账号密码不一致，请重试。",
     
     // Palmistry Specifics
     palmLifeLine: "生命线分析",
@@ -248,7 +252,7 @@ const ZH_CN_TRANS = {
     emailLabel: "邮箱地址", phoneLabel: "联系电话", exportBtn: "导出订单 (Excel/WPS)", moreProducts: "更多精选",
     required: "必填", optional: "选填",
     
-    adminLogin: "管理员登录", adminDashboard: "订单管理后台", username: "用户名", password: "密码", login: "登录",
+    adminLogin: "管理员登录", adminDashboard: "订单管理后台", username: "用户名", password: "密码",
     orderId: "订单号", customer: "客户", items: "商品", amount: "金额", status: "状态", date: "日期", address: "地址", noOrders: "暂无订单数据。",
     
     aboutTitle: "关于玄机面相",
@@ -314,6 +318,8 @@ const ZH_TW_TRANS = {
     hasAccount: "已有賬號？", loginLink: "直接登錄",
     passMismatch: "兩次密碼輸入不一致", authSuccess: "認證成功！",
     resetSent: "重置密碼鏈接已發送至您的郵箱。",
+    userNotFound: "賬號不存在，請先註冊。",
+    invalidCredentials: "賬號密碼不一致，請重試。",
     
     // Palmistry
     palmLifeLine: "生命線分析",
@@ -348,7 +354,7 @@ const ZH_TW_TRANS = {
     saveConfig: "保存配置", configSaved: "配置已保存！",
 
     adviceMetalColor: '金、銀、白', adviceMetalDirection: '西方', adviceMetalHabit: '條理、規劃', adviceMetalDesc: '您的五行缺金。需要增強決斷力和條理性。',
-    adviceMetalName: '建議名字中帶有金字旁（钅）的字，如：鋒、銘、鐘、鑫。', adviceMetalPhilosophy: '“真金不怕火煉”，在磨礪中成就自我。',
+    adviceMetalName: '建議名字中帶有金字旁（钅）的字，如：鋒、銘、鐘、鑫。', adviceMetalPhilosophy: '“真金不怕火煉”，在磨砺中成就自我。',
     adviceMetalDiet: '多吃白色食物（梨、花菜、白蘿蔔）和適量辛辣口味。避免過多苦味。',
     adviceMetalHome: '在家中西方擺放金屬飾品或風鈴。使用白色或金屬色調的裝飾。',
     
@@ -378,7 +384,7 @@ const ZH_TW_TRANS = {
     emailLabel: "郵箱地址", phoneLabel: "聯繫電話", exportBtn: "導出訂單 (Excel/WPS)", moreProducts: "更多精選",
     required: "必填", optional: "選填",
     
-    adminLogin: "管理員登錄", adminDashboard: "訂單管理後臺", username: "用戶名", password: "密碼", login: "登錄",
+    adminLogin: "管理員登錄", adminDashboard: "訂單管理後臺", username: "用戶名", password: "密碼",
     orderId: "訂單號", customer: "客戶", items: "商品", amount: "金額", status: "狀態", date: "日期", address: "地址", noOrders: "暫無訂單數據。",
     
     aboutTitle: "關於玄機面相",
