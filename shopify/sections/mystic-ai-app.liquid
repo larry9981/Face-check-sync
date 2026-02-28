@@ -1,0 +1,238 @@
+{% comment %}
+  Mystic AI Face & Palm Reading - Optimized for Shopify Online Store 2.0
+{% endcomment %}
+
+{{ 'mystic-app.css' | asset_url | stylesheet_tag }}
+
+<div class="mystic-theme-wrapper" 
+     id="MysticApp-{{ section.id }}" 
+     style="--accent-color: {{ section.settings.accent_color }}; --bg-color: {{ section.settings.bg_color }}; --text-color: {{ section.settings.text_color }};">
+  
+  <div class="mystic-container">
+    <header class="mystic-header">
+      <h1 class="mystic-title">{{ section.settings.title | escape }}</h1>
+      <p class="mystic-subtitle">{{ section.settings.subtitle | escape }}</p>
+    </header>
+
+    <main id="mystic-main-content">
+      <div id="view-start" class="mystic-view active">
+        <div class="mode-selection">
+          <button class="mode-card" onclick="MysticApp.selectMode('face')">
+            <span class="mode-icon">👤</span>
+            <h3>{{ section.settings.face_label | escape }}</h3>
+          </button>
+          <button class="mode-card" onclick="MysticApp.selectMode('palm')">
+            <span class="mode-icon">✋</span>
+            <h3>{{ section.settings.palm_label | escape }}</h3>
+          </button>
+        </div>
+      </div>
+
+      <div id="view-selection" class="mystic-view">
+        <div class="user-form">
+          <div class="form-group">
+            <label>{{ section.settings.name_label | escape }}</label>
+            <input type="text" id="user-name" placeholder="请输入您的姓名">
+          </div>
+          <div class="form-group">
+            <label>{{ section.settings.gender_label | escape }}</label>
+            <select id="user-gender">
+              <option value="male">男</option>
+              <option value="female">女</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>{{ section.settings.dob_label | escape }}</label>
+            <input type="date" id="user-dob">
+          </div>
+          <div class="form-group">
+            <label>选择语言 / Language</label>
+            <select id="app-language" onchange="MysticApp.updateLanguage(this.value)">
+              <option value="zh-CN">简体中文</option>
+              <option value="en-US">English</option>
+              <option value="ja-JP">日本語</option>
+              <option value="ko-KR">한국어</option>
+              <option value="zh-TW">繁體中文</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="mystic-btn primary" onclick="MysticApp.startCamera()">确认并开启摄像头</button>
+            <button class="mystic-btn secondary" onclick="MysticApp.switchView('start')">返回</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-camera" class="mystic-view">
+        <div class="camera-container">
+          <video id="mystic-video" autoplay playsinline></video>
+          <div class="camera-overlay"></div>
+        </div>
+        <div class="camera-actions">
+          <button class="mystic-btn primary" onclick="MysticApp.capture()">📸 拍照分析</button>
+          <button class="mystic-btn secondary" onclick="MysticApp.reset()">返回</button>
+        </div>
+      </div>
+
+      <div id="view-analyzing" class="mystic-view">
+        <div class="loader"></div>
+        <p class="loading-text">正在窥探天机，请稍候...</p>
+      </div>
+
+      <div id="view-result" class="mystic-view">
+        <div id="analysis-result" class="result-body"></div>
+        
+        {% if section.settings.show_products and section.settings.product_list != blank %}
+          <div class="mystic-products">
+            <h3>{{ section.settings.product_title | escape }}</h3>
+            <div class="product-grid">
+              {% for product in section.settings.product_list %}
+                <a href="{{ product.url }}" class="product-item">
+                  {% if product.featured_image != blank %}
+                    <img 
+                      src="{{ product.featured_image | image_url: width: 400 }}" 
+                      alt="{{ product.title | escape }}" 
+                      loading="lazy"
+                      width="{{ product.featured_image.width }}"
+                      height="{{ product.featured_image.height }}"
+                      style="width: 100%; height: auto; border-radius: 5px;"
+                    >
+                  {% else %}
+                    {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
+                  {% endif %}
+                  <p>{{ product.title | escape }}</p>
+                  <span>{{ product.price | money }}</span>
+                </a>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <button class="mystic-btn primary" onclick="MysticApp.reset()">重新分析</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<canvas id="mystic-canvas" style="display:none;"></canvas>
+
+<script>
+  window.MysticConfig = {
+    apiKey: {{ section.settings.gemini_key | json }},
+    instruction: "你是一位精通面相和手相的东方命理大师。请根据用户提供的图片进行深度分析，给出性格、运势和建议。使用Markdown格式，多用表情符号。"
+  };
+</script>
+<script src="{{ 'mystic-app.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "AI 面相手相分析",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "AI 配置"
+    },
+    {
+      "type": "text",
+      "id": "gemini_key",
+      "label": "Gemini API Key"
+    },
+    {
+      "type": "header",
+      "content": "内容设置"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "主标题",
+      "default": "神秘 AI 命理"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "副标题",
+      "default": "融合古老智慧与现代 AI，探索你的命运"
+    },
+    {
+      "type": "text",
+      "id": "face_label",
+      "label": "面相按钮文字",
+      "default": "面相分析"
+    },
+    {
+      "type": "text",
+      "id": "palm_label",
+      "label": "手相按钮文字",
+      "default": "手相分析"
+    },
+    {
+      "type": "text",
+      "id": "name_label",
+      "label": "姓名输入标签",
+      "default": "您的姓名"
+    },
+    {
+      "type": "text",
+      "id": "gender_label",
+      "label": "性别选择标签",
+      "default": "您的性别"
+    },
+    {
+      "type": "text",
+      "id": "dob_label",
+      "label": "出生日期标签",
+      "default": "出生日期"
+    },
+    {
+      "type": "header",
+      "content": "样式设置"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "背景颜色",
+      "default": "#0a0a0a"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "文字颜色",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "强调颜色 (金色)",
+      "default": "#d4af37"
+    },
+    {
+      "type": "header",
+      "content": "产品推荐"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_products",
+      "label": "显示推荐产品",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "product_title",
+      "label": "产品部分标题",
+      "default": "为您推荐的转运好物"
+    },
+    {
+      "type": "product_list",
+      "id": "product_list",
+      "label": "选择推荐产品",
+      "limit": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "AI 面相手相分析"
+    }
+  ]
+}
+{% endschema %}

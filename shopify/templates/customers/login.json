@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "main": {
+      "type": "mystic-login",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

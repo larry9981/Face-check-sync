@@ -9,6 +9,7 @@ export interface UserState {
   isLoggedIn: boolean;
   email?: string;
   name?: string;
+  username?: string;
   authType?: 'email' | 'google' | 'guest';
 }
 
@@ -37,6 +38,7 @@ export interface Plan {
   price: string;
   desc: string;
   isSub: boolean;
+  priceId?: string; // Stripe Price ID
 }
 
 export interface Product {

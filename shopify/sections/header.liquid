@@ -1,0 +1,113 @@
+<header class="mystic-header-nav">
+  <div class="nav-container">
+    <a href="/" class="mystic-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="50" cy="50" r="45" stroke-dasharray="10 5"/>
+          <path d="M50 20 L50 80 M20 50 L80 50 M30 30 L70 70 M30 70 L70 30"/>
+        </svg>
+      </div>
+      <span>{{ section.settings.site_name | escape }}</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="/">{{ 'general.home' | t | default: '首页' }}</a>
+      <a href="/pages/pricing">{{ 'general.pricing' | t | default: '定价' }}</a>
+      <a href="/collections/all">{{ 'general.shop' | t | default: '商城' }}</a>
+      <a href="/pages/about">{{ 'general.about' | t | default: '关于' }}</a>
+      
+      <div class="nav-actions">
+        <a href="/cart" class="cart-icon">
+          <i class="fas fa-shopping-cart"></i>
+          {% if cart.item_count > 0 %}
+            <span class="cart-count">{{ cart.item_count }}</span>
+          {% endif %}
+        </a>
+
+        {% if customer %}
+          <a href="/account" class="user-link">{{ customer.first_name }}</a>
+          <a href="/account/logout" class="logout-link"><i class="fas fa-sign-out-alt"></i></a>
+        {% else %}
+          <a href="/account/login" class="login-btn">{{ 'customer.login.title' | t | default: '登录' }}</a>
+        {% endif %}
+      </div>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .mystic-header-nav {
+    background: rgba(0, 0, 0, 0.9);
+    border-bottom: 1px solid var(--accent-color);
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+  }
+  .nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+  }
+  .mystic-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--accent-color);
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-family: 'Cinzel', serif;
+  }
+  .logo-icon { width: 35px; height: 35px; }
+  .nav-links { display: flex; align-items: center; gap: 25px; }
+  .nav-links a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: 0.3s;
+  }
+  .nav-links a:hover { color: var(--accent-color); }
+  .nav-actions { display: flex; align-items: center; gap: 20px; border-left: 1px solid #333; padding-left: 20px; }
+  .cart-icon { position: relative; color: var(--accent-color); font-size: 1.2rem; }
+  .cart-count {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background: #c0392b;
+    color: #fff;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-btn {
+    border: 1px solid var(--accent-color);
+    padding: 8px 18px;
+    border-radius: 20px;
+    color: var(--accent-color) !important;
+  }
+  .login-btn:hover { background: var(--accent-color); color: #000 !important; }
+</style>
+
+{% schema %}
+{
+  "name": "导航栏",
+  "settings": [
+    {
+      "type": "text",
+      "id": "site_name",
+      "label": "网站名称",
+      "default": "神秘 AI 命理"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,86 @@
+<div class="auth-section">
+  <div class="mystic-container">
+    <div class="auth-card">
+      <h2 class="mystic-title">{{ 'customer.login.title' | t | default: '登录' }}</h2>
+      {% form 'customer_login' %}
+        {{ form.errors | default_errors }}
+        <div class="form-group">
+          <label for="CustomerEmail">{{ 'customer.login.email' | t | default: '邮箱' }}</label>
+          <input type="email" name="customer[email]" id="CustomerEmail" placeholder="Email" required>
+        </div>
+        <div class="form-group">
+          <label for="CustomerPassword">{{ 'customer.login.password' | t | default: '密码' }}</label>
+          <input type="password" name="customer[password]" id="CustomerPassword" placeholder="Password" required>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="mystic-btn primary">{{ 'customer.login.sign_in' | t | default: '登录' }}</button>
+          
+          <div class="divider"><span>或者</span></div>
+          
+          <button type="button" class="mystic-btn google-btn" onclick="MysticAuth.googleLogin()">
+            <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" alt="Google">
+            使用 Google 账号登录
+          </button>
+
+          <a href="/account/register" class="mystic-btn secondary">{{ 'customer.login.create_account' | t | default: '注册账号' }}</a>
+        </div>
+      {% endform %}
+    </div>
+  </div>
+</div>
+
+<style>
+  .google-btn {
+    background: #fff !important;
+    color: #000 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: none !important;
+  }
+  .google-btn img { width: 20px; }
+  .divider {
+    margin: 20px 0;
+    position: relative;
+    text-align: center;
+    border-bottom: 1px solid #333;
+  }
+  .divider span {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111;
+    padding: 0 15px;
+    color: #666;
+    font-size: 0.8rem;
+  }
+</style>
+
+<style>
+  .auth-section { padding: 100px 20px; background: var(--bg-color); min-height: 80vh; display: flex; align-items: center; }
+  .auth-card {
+    max-width: 450px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 50px;
+    border-radius: 20px;
+    border: 1px solid var(--accent-color);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  .auth-card h2 { margin-bottom: 30px; }
+  .form-group { margin-bottom: 25px; text-align: left; }
+  .form-group label { display: block; margin-bottom: 10px; color: var(--accent-color); }
+  .form-group input {
+    width: 100%;
+    padding: 15px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid #333;
+    color: #fff;
+    border-radius: 10px;
+    font-size: 1rem;
+  }
+  .form-actions { display: flex; flex-direction: column; gap: 15px; margin-top: 30px; }
+  .errors { color: #e74c3c; margin-bottom: 20px; list-style: none; padding: 0; }
+</style>

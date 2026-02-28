@@ -1,0 +1,70 @@
+<div class="pricing-section">
+  <div class="mystic-container">
+    <h2 class="mystic-title">{{ section.settings.title }}</h2>
+    <div class="pricing-grid">
+      {% for block in section.blocks %}
+        <div class="pricing-card {% if block.settings.featured %}featured{% endif %}">
+          <div class="card-header">
+            <h3>{{ block.settings.name }}</h3>
+            <div class="price">{{ block.settings.price }}</div>
+          </div>
+          <div class="card-body">
+            {{ block.settings.description }}
+          </div>
+          <div class="card-footer">
+            <a href="{{ block.settings.link }}" class="mystic-btn primary">{{ block.settings.button_text }}</a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<style>
+  .pricing-section { padding: 80px 20px; background: var(--bg-color); }
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+    margin-top: 50px;
+  }
+  .pricing-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid #333;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    transition: 0.3s;
+  }
+  .pricing-card.featured {
+    border-color: var(--accent-color);
+    background: rgba(212, 175, 55, 0.05);
+    transform: scale(1.05);
+  }
+  .pricing-card h3 { color: var(--accent-color); font-size: 1.5rem; margin-bottom: 10px; }
+  .price { font-size: 2.5rem; font-weight: bold; margin: 20px 0; }
+  .card-body { color: #aaa; margin-bottom: 30px; min-height: 150px; }
+</style>
+
+{% schema %}
+{
+  "name": "定价方案",
+  "settings": [
+    { "type": "text", "id": "title", "label": "标题", "default": "选择您的命理方案" }
+  ],
+  "blocks": [
+    {
+      "type": "plan",
+      "name": "方案",
+      "settings": [
+        { "type": "text", "id": "name", "label": "方案名称" },
+        { "type": "text", "id": "price", "label": "价格" },
+        { "type": "richtext", "id": "description", "label": "描述" },
+        { "type": "text", "id": "button_text", "label": "按钮文字", "default": "立即订阅" },
+        { "type": "url", "id": "link", "label": "购买链接" },
+        { "type": "checkbox", "id": "featured", "label": "推荐方案", "default": false }
+      ]
+    }
+  ]
+}
+{% endschema %}

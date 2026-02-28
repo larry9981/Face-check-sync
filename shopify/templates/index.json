@@ -1,0 +1,17 @@
+{
+  "sections": {
+    "main": {
+      "type": "mystic-ai-app",
+      "settings": {
+        "title": "神秘 AI 命理",
+        "subtitle": "融合古老智慧与现代 AI，探索你的命运",
+        "bg_color": "#0a0a0a",
+        "accent_color": "#d4af37",
+        "text_color": "#ffffff"
+      }
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

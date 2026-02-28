@@ -10,11 +10,12 @@ import { calculateAge, calculateWuXing, getWesternZodiac } from './utils';
 import { UserState, Plan, CartItem, Product, HistoryRecord, Order, AppConfig } from './types';
 import { BaguaSVG } from './components/Icons';
 import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './components/Modals';
-import { PrivacyPolicy, TermsOfService, AboutPage } from './pages/StaticPages';
+import { PrivacyPolicy, TermsOfService, RefundPolicy, AboutPage } from './pages/StaticPages';
 import { ShopPage } from './pages/ShopPage';
 import { CartPage } from './pages/CartPage'; 
 import { AdminPage } from './pages/AdminPage';
 import { PricingPage } from './pages/PricingPage';
+import { LandingPage } from './pages/LandingPage';
 import { RenderStartView, RenderSelectionView, RenderResultView, LoadingSpinner, RenderHistoryView, RenderCameraView } from './pages/HomeViews';
 
 // =========================================================
@@ -22,7 +23,7 @@ import { RenderStartView, RenderSelectionView, RenderResultView, LoadingSpinner,
 // =========================================================
 
 // Point this to your backend server URL
-const API_BASE_URL = "http://localhost:3000/api"; 
+const API_BASE_URL = "/api"; 
 
 // Music
 const AMBIENT_MUSIC_URL = "https://cdn.pixabay.com/audio/2022/02/07/audio_1919830500.mp3";
@@ -259,6 +260,7 @@ const resizeImage = (base64Str: string, maxWidth = 1024, maxHeight = 1024): Prom
 // --- AUTH MODAL COMPONENT (UPDATED VALIDATION) ---
 const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void, onLoginSuccess: (user: any) => void }) => {
     const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPass, setConfirmPass] = useState('');
@@ -285,18 +287,61 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
                 }
             }
 
+            if (action === 'signup') {
+                if (!name) throw new Error(t.required + ": Username");
+                if (name.length < 2) throw new Error("Username must be at least 2 characters.");
+            }
+
             const endpoint = `/auth/${action}`;
             let body: any = { email };
 
             if (action === 'login' || action === 'signup') {
                 body.password = password;
+                if (action === 'signup') body.name = name;
             }
             if (action === 'google') {
-                body = { 
-                    email: `google_user_${Date.now()}@gmail.com`, 
-                    name: "Google User", 
-                    token: "mock_google_token" 
-                };
+                // Real Google Login with Firebase
+                try {
+                    const { initializeApp } = await import('firebase/app');
+                    const { getAuth, signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
+                    
+                    // Use placeholders for Firebase config - User must provide these in .env or code
+                    const firebaseConfig = {
+                        apiKey: process.env.VITE_FIREBASE_API_KEY,
+                        authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+                        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+                        storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+                        messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+                        appId: process.env.VITE_FIREBASE_APP_ID
+                    };
+
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    const provider = new GoogleAuthProvider();
+                    const result = await signInWithPopup(auth, provider);
+                    const user = result.user;
+                    
+                    body = { 
+                        email: user.email, 
+                        name: user.displayName, 
+                        token: await user.getIdToken(),
+                        authType: 'google'
+                    };
+                } catch (fbErr: any) {
+                    console.error("Firebase Auth Error:", fbErr);
+                    // Fallback for demo if Firebase is not configured
+                    if (!process.env.VITE_FIREBASE_API_KEY) {
+                        console.warn("Firebase not configured. Using mock Google login.");
+                        body = { 
+                            email: `google_user_${Date.now()}@gmail.com`, 
+                            name: "Google User", 
+                            token: "mock_google_token",
+                            authType: 'google'
+                        };
+                    } else {
+                        throw fbErr;
+                    }
+                }
             }
 
             const res = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -376,6 +421,9 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
                     </>
                 ) : (
                     <>
+                        {mode === 'signup' && (
+                            <input type="text" placeholder="Username" style={styles.formInput} value={name} onChange={e => setName(e.target.value)} />
+                        )}
                         <input type="email" placeholder={t.emailPlaceholder} style={styles.formInput} value={email} onChange={e => setEmail(e.target.value)} />
                         <input type="password" placeholder={t.passwordPlaceholder} style={styles.formInput} value={password} onChange={e => setPassword(e.target.value)} />
                         
@@ -489,7 +537,7 @@ const App = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const [currentPage, setCurrentPage] = useState<'home' | 'pricing' | 'shop' | 'product-detail' | 'about' | 'privacy' | 'terms' | 'history' | 'cart'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'analysis' | 'pricing' | 'shop' | 'product-detail' | 'about' | 'privacy' | 'terms' | 'refund' | 'history' | 'cart'>('home');
   
   // Configuration State
   const [appConfig, setAppConfig] = useState<AppConfig>({
@@ -500,6 +548,7 @@ const App = () => {
       deepseekKey: ''
   });
   const [showSettings, setShowSettings] = useState(false);
+  const [subscriptionDetails, setSubscriptionDetails] = useState<any>(null);
 
   // Load Config from LocalStorage
   useEffect(() => {
@@ -553,6 +602,9 @@ const App = () => {
           parsed.userId = `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       }
       setUserState(parsed);
+      if (parsed.isLoggedIn && parsed.email) {
+          fetchSubscriptionDetails(parsed.email);
+      }
   }, []);
 
   // Save basic state locally (subscription status)
@@ -576,6 +628,39 @@ const App = () => {
           trialStartDate: user.trialStartDate || prev.trialStartDate,
           hasPaidSingle: user.hasPaidSingle || false
       }));
+      if (user.email) fetchSubscriptionDetails(user.email);
+  };
+
+  const fetchSubscriptionDetails = async (email: string) => {
+      try {
+          const res = await fetch(`${API_BASE_URL}/subscription/${email}`);
+          if (res.ok) {
+              const data = await res.json();
+              setSubscriptionDetails(data);
+          }
+      } catch (e) {
+          console.error("Failed to fetch subscription", e);
+      }
+  };
+
+  const cancelSubscription = async () => {
+      if (!userState.email) return;
+      if (!confirm("Are you sure you want to cancel your subscription? You will lose access at the end of your current billing period.")) return;
+      
+      try {
+          const res = await fetch(`${API_BASE_URL}/subscription/cancel`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: userState.email })
+          });
+          if (res.ok) {
+              const data = await res.json();
+              handleLoginSuccess(data.user);
+              alert("Subscription canceled successfully.");
+          }
+      } catch (e) {
+          alert("Failed to cancel subscription.");
+      }
   };
 
   const handleLogout = () => {
@@ -935,6 +1020,7 @@ This is a demonstration of the result layout.
           prompt,
           image: base64Data,
           userId: userState.userId,
+          email: userState.email, // Pass email for subscription check
           elements: wuXingResult, // Save elements to backend/history
           readingType: readingType, // Save type
           gender: gender,       // Pass gender to backend
@@ -1085,7 +1171,38 @@ This is a demonstration of the result layout.
 
   const getNavLinkStyle = (page: string) => ({ ...styles.navLink, color: currentPage === page ? theme.gold : theme.text, borderBottom: currentPage === page ? `2px solid ${theme.gold}` : 'none' });
 
-  const triggerPayment = (plan: Plan) => { setSelectedPlan(plan); setShowPaymentModal(true); };
+  const triggerPayment = async (plan: Plan) => { 
+      if (!userState.isLoggedIn) {
+          alert(t.loginRequired || "Please login to subscribe.");
+          setShowAuthModal(true);
+          return;
+      }
+
+      if (plan.priceId) {
+          try {
+              const res = await fetch(`${API_BASE_URL}/create-checkout-session`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                      priceId: plan.priceId,
+                      email: userState.email,
+                      userId: userState.userId,
+                      planType: plan.id.includes('month') ? 'monthly' : (plan.id.includes('year') ? 'yearly' : 'single')
+                  })
+              });
+              if (res.ok) {
+                  const { url } = await res.json();
+                  window.location.href = url; // Redirect to Stripe
+                  return;
+              }
+          } catch (e) {
+              console.error("Stripe Error:", e);
+          }
+      }
+
+      setSelectedPlan(plan); 
+      setShowPaymentModal(true); 
+  };
 
   if (isAdminMode) {
       return (
@@ -1113,7 +1230,8 @@ This is a demonstration of the result layout.
             <span style={{color: theme.gold}}>{t.title}</span>
           </div>
           <div className="nav-links">
-             <span style={getNavLinkStyle('home')} onClick={handleGoHome}>{t.home}</span>
+             <span style={getNavLinkStyle('home')} onClick={() => { setCurrentPage('home'); setView('start'); }}>{t.home}</span>
+             <span style={getNavLinkStyle('analysis')} onClick={() => { setCurrentPage('analysis'); setView('start'); }}>{t.navAnalysis}</span>
              <span style={getNavLinkStyle('pricing')} onClick={() => { setCurrentPage('pricing'); setView('start'); }}>{t.pricing}</span>
              <span style={getNavLinkStyle('shop')} onClick={() => { setCurrentPage('shop'); setView('start'); }}>{t.shop}</span>
              <span style={getNavLinkStyle('about')} onClick={() => { setCurrentPage('about'); setView('start'); }}>{t.about}</span>
@@ -1163,6 +1281,10 @@ This is a demonstration of the result layout.
         )}
 
         {currentPage === 'home' && (
+            <LandingPage t={t} onExplore={() => setCurrentPage('analysis')} />
+        )}
+
+        {currentPage === 'analysis' && (
              <div style={{...styles.heroSection, paddingTop: '1rem'}}>
                 {view === 'start' && <RenderStartView t={t} freeTrials={getDaysRemaining()} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
                 {view === 'selection' && <RenderSelectionView 
@@ -1197,26 +1319,59 @@ This is a demonstration of the result layout.
         {currentPage === 'about' && <div style={styles.heroSection}><AboutPage t={t} /></div>}
         {currentPage === 'privacy' && <div style={styles.heroSection}><PrivacyPolicy t={t} /></div>}
         {currentPage === 'terms' && <div style={styles.heroSection}><TermsOfService t={t} /></div>}
-        {currentPage === 'history' && <div style={styles.heroSection}>
-            <RenderHistoryView 
-                t={t} 
-                history={userState.history} 
-                onViewResult={handleLoadHistory} 
-                language={language}
-                isSpeaking={isSpeaking}
-                isTranslating={isTranslating}
-                LANGUAGES={LANGUAGES}
-                onLanguageChange={(e: any) => switchLanguage(e.target.value)}
-                onToggleSpeech={toggleSpeech}
-                onBuyProduct={handleBuyProduct}
-                onOpenBalance={handleOpenBalance}
-            />
-        </div>}
+        {currentPage === 'refund' && <div style={styles.heroSection}><RefundPolicy t={t} /></div>}
+        {currentPage === 'history' && (
+            <div style={styles.heroSection}>
+                {userState.isLoggedIn && (
+                    <div style={{...styles.glassPanel, width: '100%', maxWidth: '1000px', marginBottom: '20px', textAlign: 'left'}}>
+                        <h3 style={{color: theme.gold, marginBottom: '15px'}}><i className="fas fa-crown"></i> {t.subManagement}</h3>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px'}}>
+                            <div>
+                                <div style={{fontSize: '0.9rem', color: '#aaa'}}>{t.currentPlan}</div>
+                                <div style={{fontSize: '1.2rem', color: '#fff', textTransform: 'capitalize'}}>{subscriptionDetails?.plan || t.planFree}</div>
+                            </div>
+                            <div>
+                                <div style={{fontSize: '0.9rem', color: '#aaa'}}>{t.subStatus}</div>
+                                <div style={{fontSize: '1.2rem', color: subscriptionDetails?.status === 'active' ? '#2ecc71' : '#e74c3c'}}>{subscriptionDetails?.status === 'active' ? t.statusActive : (subscriptionDetails?.status || t.statusNone)}</div>
+                            </div>
+                            {subscriptionDetails?.nextBillingDate && (
+                                <div>
+                                    <div style={{fontSize: '0.9rem', color: '#aaa'}}>{subscriptionDetails.cancelAtPeriodEnd ? t.subEndsOn : t.subNextBilling}</div>
+                                    <div style={{fontSize: '1.2rem', color: '#fff'}}>{new Date(subscriptionDetails.nextBillingDate).toLocaleDateString()}</div>
+                                </div>
+                            )}
+                            {subscriptionDetails?.status === 'active' && !subscriptionDetails.cancelAtPeriodEnd && (
+                                <button onClick={cancelSubscription} style={{...styles.secondaryButton, borderColor: '#e74c3c', color: '#e74c3c', marginTop: 0}}>
+                                    {t.subCancelBtn}
+                                </button>
+                            )}
+                            {subscriptionDetails?.cancelAtPeriodEnd && (
+                                <div style={{color: '#e67e22', fontSize: '0.9rem'}}>{t.subCanceledMsg.replace('{date}', new Date(subscriptionDetails.nextBillingDate).toLocaleDateString())}</div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                <RenderHistoryView 
+                    t={t} 
+                    history={userState.history} 
+                    onViewResult={handleLoadHistory} 
+                    language={language}
+                    isSpeaking={isSpeaking}
+                    isTranslating={isTranslating}
+                    LANGUAGES={LANGUAGES}
+                    onLanguageChange={(e: any) => switchLanguage(e.target.value)}
+                    onToggleSpeech={toggleSpeech}
+                    onBuyProduct={handleBuyProduct}
+                    onOpenBalance={handleOpenBalance}
+                />
+            </div>
+        )}
       </div>
       <footer style={styles.footer}>
-        <div style={{marginBottom: '10px', display: 'flex', justifyContent: 'center', gap: '20px'}}>
+        <div style={{marginBottom: '10px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('privacy'); setView('start');}}>{t.privacy}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('terms'); setView('start');}}>{t.terms}</span>
+            <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('refund'); setView('start');}}>{t.refundTitle}</span>
             <span style={{cursor: 'pointer', color: '#666', fontSize: '0.8rem'}} onClick={() => setShowSettings(true)}><i className="fas fa-cog"></i></span>
         </div>
         <div>&copy; {new Date().getFullYear()} {t.title}. {t.footerRight}</div>

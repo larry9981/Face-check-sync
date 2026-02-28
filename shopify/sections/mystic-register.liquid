@@ -1,0 +1,75 @@
+<div class="auth-section">
+  <div class="mystic-container">
+    <div class="auth-card">
+      <h2 class="mystic-title">{{ 'customer.register.title' | t | default: '开启命运之旅' }}</h2>
+      
+      {% form 'create_customer' %}
+        {{ form.errors | default_errors }}
+
+        <div class="form-group">
+          <label for="RegisterUsername">用户名 / Username</label>
+          <input type="text" name="customer[first_name]" id="RegisterUsername" placeholder="您的专属称呼" required>
+        </div>
+
+        <div class="form-group">
+          <label for="RegisterEmail">{{ 'customer.register.email' | t | default: '电子邮箱' }}</label>
+          <input type="email" name="customer[email]" id="RegisterEmail" placeholder="Email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="RegisterPassword">{{ 'customer.register.password' | t | default: '设置密码' }}</label>
+          <input type="password" name="customer[password]" id="RegisterPassword" placeholder="Password" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="mystic-btn primary">{{ 'customer.register.submit' | t | default: '立即注册' }}</button>
+          
+          <div class="divider"><span>或者</span></div>
+          
+          <button type="button" class="mystic-btn google-btn" onclick="MysticAuth.googleLogin()">
+            <img src="https://cdn1.iconfinder.com/data/icons/google-s-logo/150/Google_Icons-09-512.png" alt="Google">
+            使用 Google 账号登录
+          </button>
+
+          <a href="/account/login" class="mystic-btn secondary">已有账号？去登录</a>
+        </div>
+      {% endform %}
+    </div>
+  </div>
+</div>
+
+<style>
+  .google-btn {
+    background: #fff !important;
+    color: #000 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: none !important;
+  }
+  .google-btn img { width: 20px; }
+  .divider {
+    margin: 20px 0;
+    position: relative;
+    text-align: center;
+    border-bottom: 1px solid #333;
+  }
+  .divider span {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111;
+    padding: 0 15px;
+    color: #666;
+    font-size: 0.8rem;
+  }
+</style>
+
+{% schema %}
+{
+  "name": "注册页面",
+  "settings": []
+}
+{% endschema %}

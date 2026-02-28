@@ -42,202 +42,32 @@ interface PaymentProps {
 
 // --- PAYMENT SERVICE (API CLIENT) ---
 const PaymentService = {
-    // 1. Create Order: Calls backend to get the QR Code URL (code_url for WeChat, qr_code for Alipay)
-    createOrder: async (provider: 'wechat' | 'alipay', amount: number, description: string) => {
-        if (USE_MOCK_BACKEND) {
-            // SIMULATION
-            return new Promise<{orderId: string, qrUrl: string}>((resolve) => {
-                setTimeout(() => {
-                    resolve({
-                        orderId: `ord_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                        // This API generates a QR code image for the URL. In production, 'qrUrl' is the link returned by Alipay/WeChat
-                        qrUrl: `https://example.com/pay/${provider}?amt=${amount}&t=${Date.now()}` 
-                    });
-                }, 800);
-            });
-        } else {
-            // REAL BACKEND CALL
-            const response = await fetch(`${API_BASE_URL}/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ provider, amount, description, currency: 'CNY' })
-            });
-            if (!response.ok) throw new Error("Network response was not ok");
-            return await response.json(); // Expected: { orderId: "...", qrUrl: "weixin://..." }
-        }
-    },
-
-    // 2. Check Status: Polls backend to see if user has scanned and paid
-    checkStatus: async (orderId: string) => {
-        if (USE_MOCK_BACKEND) {
-            // SIMULATION: Randomly succeed
-            return new Promise<string>((resolve) => {
-                setTimeout(() => {
-                    // 20% chance to succeed per poll for demo purposes
-                    resolve(Math.random() > 0.8 ? 'paid' : 'pending');
-                }, 400);
-            });
-        } else {
-            // REAL BACKEND CALL
-            const response = await fetch(`${API_BASE_URL}/status?orderId=${orderId}`);
-            if (!response.ok) throw new Error("Network response was not ok");
-            const data = await response.json();
-            return data.status; // 'pending' | 'paid' | 'failed'
-        }
-    }
-};
-
-// --- WECHAT / ALIPAY QR CODE INTEGRATION ---
-export const QRCodePayment = ({ provider, amount, description, t, onSuccess }: { provider: 'wechat' | 'alipay', amount: number, description?: string, t: any, onSuccess: () => void }) => {
-    const [qrUrl, setQrUrl] = useState<string | null>(null);
-    const [orderId, setOrderId] = useState<string | null>(null);
-    const [status, setStatus] = useState<'loading' | 'ready' | 'success' | 'error'>('loading');
-    const [errorMsg, setErrorMsg] = useState('');
-
-    const color = provider === 'wechat' ? '#2ecc71' : '#3498db';
-    const icon = provider === 'wechat' ? 'fa-weixin' : 'fa-alipay';
-    const title = provider === 'wechat' ? 'WeChat Pay' : 'Alipay';
-
-    // 1. Initialize Order on Mount
-    useEffect(() => {
-        let isMounted = true;
-        
-        const initPayment = async () => {
-            try {
-                // Convert USD to CNY approx for display/logic (In real app, backend handles conversion)
-                const cnyAmount = Math.round(amount * 7.2 * 100) / 100;
-                
-                const data = await PaymentService.createOrder(provider, cnyAmount, description || "Mystic Service");
-                
-                if (isMounted) {
-                    setQrUrl(data.qrUrl);
-                    setOrderId(data.orderId);
-                    setStatus('ready');
-                }
-            } catch (err: any) {
-                if (isMounted) {
-                    setStatus('error');
-                    setErrorMsg("Failed to connect to payment server.");
-                    console.error("Payment Init Error:", err);
-                }
-            }
-        };
-
-        initPayment();
-
-        return () => { isMounted = false; };
-    }, [provider, amount, description]);
-
-    // 2. Poll for Status
-    useEffect(() => {
-        if (status !== 'ready' || !orderId) return;
-
-        const interval = setInterval(async () => {
-            try {
-                const payStatus = await PaymentService.checkStatus(orderId);
-                if (payStatus === 'paid') {
-                    setStatus('success');
-                    clearInterval(interval);
-                    setTimeout(onSuccess, 1500); // Wait a bit to show success tick
-                }
-            } catch (err) {
-                console.warn("Polling failed", err);
-            }
-        }, 3000); // Poll every 3 seconds
-
-        return () => clearInterval(interval);
-    }, [status, orderId, onSuccess]);
-
-    return (
-        <div style={{textAlign: 'center', padding: '20px', border: `1px solid ${theme.darkGold}`, borderRadius: '8px', background: 'rgba(255,255,255,0.05)'}}>
-            <div style={{fontSize: '1.2rem', color: '#fff', marginBottom: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
-                <i className={`fab ${icon}`} style={{color: color, fontSize: '1.5rem'}}></i>
-                <span style={{fontFamily: 'sans-serif'}}>{title}</span>
-            </div>
-            
-            {status === 'loading' && (
-                <div style={{padding: '40px'}}>
-                    <i className="fas fa-circle-notch fa-spin" style={{color: theme.gold, fontSize: '2rem'}}></i>
-                    <div style={{marginTop: '15px', color: '#aaa'}}>{t.processing || "Generating QR..."}</div>
-                </div>
-            )}
-
-            {status === 'error' && (
-                <div style={{padding: '20px', color: '#e74c3c'}}>
-                    <i className="fas fa-exclamation-circle" style={{fontSize: '2rem', marginBottom: '10px'}}></i>
-                    <div>{errorMsg || "System Busy"}</div>
-                    <button onClick={() => window.location.reload()} style={{marginTop: '10px', background: 'transparent', border: '1px solid #e74c3c', color: '#e74c3c', padding: '5px 10px', cursor: 'pointer'}}>Retry</button>
-                </div>
-            )}
-
-            {status === 'ready' && qrUrl && (
-                <div className="fade-in">
-                    <div style={{background: '#fff', padding: '10px', display: 'inline-block', borderRadius: '4px'}}>
-                        {/* 
-                            RENDER QR CODE 
-                            In production, use a library like 'qrcode.react'.
-                            Here we use a reliable API to render the QR string returned by backend.
-                        */}
-                        <img 
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrUrl)}`} 
-                            alt={`${title} QR`} 
-                            style={{width: '180px', height: '180px', display: 'block'}} 
-                        />
-                    </div>
-                    
-                    <div style={{marginTop: '15px', color: theme.gold, fontSize: '1.6rem', fontWeight: 'bold', fontFamily: 'sans-serif'}}>
-                        ¥{(amount * 7.2).toFixed(2)}
-                    </div>
-                    
-                    <div style={{marginTop: '10px', fontSize: '0.9rem', color: '#aaa', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'}}>
-                        <i className="fas fa-mobile-alt"></i>
-                        {t.scanQRCode || "Please scan with App"}
-                    </div>
-                </div>
-            )}
-
-            {status === 'success' && (
-                <div className="fade-in" style={{padding: '30px'}}>
-                    <i className="fas fa-check-circle" style={{color: '#2ecc71', fontSize: '3rem', marginBottom: '15px'}}></i>
-                    <h3 style={{color: '#fff', margin: 0}}>{t.success || "Payment Successful!"}</h3>
-                </div>
-            )}
-        </div>
-    );
+    // PayPal/Stripe logic can be added here if needed for backend calls
 };
 
 // --- PAYPAL INTEGRATION ---
-export const PayPalButton = ({ amount, currency, description, onSuccess, onError }: PaymentProps) => {
+export const PayPalButton = ({ amount, currency, description, onSuccess, onError, userId, planId }: PaymentProps & { userId?: string, planId?: string }) => {
     const paypalRef = useRef<HTMLDivElement>(null);
     const [sdkReady, setSdkReady] = useState(false);
     const SCRIPT_ID = "paypal-sdk-script-unique"; 
 
     useEffect(() => {
-        // 1. Check if script is already present in DOM
         if (document.getElementById(SCRIPT_ID)) {
-            if (window.paypal) {
-                setSdkReady(true);
-            } else {
-                // Wait for existing script to load
+            if (window.paypal) setSdkReady(true);
+            else {
                 const el = document.getElementById(SCRIPT_ID);
                 if (el) el.addEventListener('load', () => setSdkReady(true));
             }
             return;
         }
 
-        // 2. Load the script only if not present
         const script = document.createElement("script");
         script.id = SCRIPT_ID;
         script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=${currency}&components=buttons`;
         script.type = "text/javascript";
         script.async = true;
-        
         script.onload = () => setSdkReady(true);
-        script.onerror = () => {
-             console.error("PayPal SDK failed to load");
-             onError("Failed to load PayPal SDK");
-        };
-        
+        script.onerror = () => onError("Failed to load PayPal SDK");
         document.body.appendChild(script);
     }, [currency]);
 
@@ -249,25 +79,36 @@ export const PayPalButton = ({ amount, currency, description, onSuccess, onError
 
                 try {
                     window.paypal.Buttons({
-                        createOrder: (data: any, actions: any) => {
-                            return actions.order.create({
-                                purchase_units: [{
-                                    description: description,
-                                    amount: {
-                                        value: amount.toString()
-                                    }
-                                }]
+                        createOrder: async () => {
+                            const res = await fetch('/api/paypal/create-order', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ amount, planId })
                             });
+                            const data = await res.json();
+                            return data.id;
                         },
-                        onApprove: async (data: any, actions: any) => {
-                            const order = await actions.order.capture();
-                            onSuccess(order);
+                        onApprove: async (data: any) => {
+                            const res = await fetch('/api/paypal/capture-order', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ orderId: data.orderID, userId })
+                            });
+                            const details = await res.json();
+                            onSuccess(details);
+                        },
+                        style: {
+                            layout: 'vertical',
+                            color: 'gold',
+                            shape: 'rect',
+                            label: 'paypal'
                         },
                         onError: (err: any) => {
-                            console.error("PayPal internal error:", err);
+                            console.error("PayPal Error:", err);
+                            onError(err);
                         }
                     }).render(paypalRef.current).catch((e: any) => {
-                        console.error("PayPal button render failed:", e);
+                        console.error("PayPal render failed:", e);
                     });
                 } catch (err) {
                     console.error("PayPal init exception:", err);
@@ -275,12 +116,12 @@ export const PayPalButton = ({ amount, currency, description, onSuccess, onError
             }, 100);
             return () => clearTimeout(timer);
         }
-    }, [sdkReady, amount, description]);
+    }, [sdkReady, amount, description, userId, planId]);
 
     return (
         <div style={{ marginTop: '20px' }}>
             <div ref={paypalRef} style={{ minHeight: '150px' }}></div>
-            {!sdkReady && <div style={{color: '#888', textAlign: 'center'}}>Loading PayPal...</div>}
+            {!sdkReady && <div style={{color: theme.gold, textAlign: 'center', fontFamily: 'Cinzel, serif'}}>Loading PayPal...</div>}
         </div>
     );
 };

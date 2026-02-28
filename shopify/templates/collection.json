@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "main": {
+      "type": "mystic-shop",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

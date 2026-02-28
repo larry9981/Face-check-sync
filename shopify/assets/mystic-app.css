@@ -1,0 +1,178 @@
+/* Mystic App Styles for Shopify */
+.mystic-theme-wrapper {
+  background: var(--bg-color);
+  color: var(--text-color);
+  padding: 40px 20px;
+  font-family: 'Cinzel', serif;
+  min-height: 700px;
+  display: flex;
+  justify-content: center;
+}
+
+.mystic-container {
+  max-width: 900px;
+  width: 100%;
+  text-align: center;
+}
+
+.mystic-title {
+  color: var(--accent-color);
+  font-size: 3rem;
+  letter-spacing: 4px;
+  margin-bottom: 10px;
+}
+
+.mystic-view {
+  display: none;
+  animation: fadeIn 0.5s ease;
+}
+
+.mystic-view.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mode-selection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-top: 50px;
+}
+
+.mode-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--accent-color);
+  padding: 40px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.mode-card:hover {
+  background: rgba(212, 175, 55, 0.1);
+  box-shadow: 0 0 30px var(--accent-color);
+  transform: scale(1.02);
+}
+
+.user-form {
+  max-width: 400px;
+  margin: 40px auto;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 30px;
+  border-radius: 15px;
+  border: 1px solid var(--accent-color);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent-color);
+  font-size: 0.9rem;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 8px;
+  font-family: inherit;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.mystic-btn {
+  padding: 15px 40px;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: 0.3s;
+  border: 1px solid var(--accent-color);
+}
+
+.mystic-btn.primary {
+  background: var(--accent-color);
+  color: #000;
+}
+
+.mystic-btn.secondary {
+  background: transparent;
+  color: var(--accent-color);
+}
+
+.camera-container {
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto;
+  border: 2px solid var(--accent-color);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+#mystic-video {
+  width: 100%;
+  display: block;
+}
+
+.loader {
+  border: 4px solid rgba(255,255,255,0.1);
+  border-left-color: var(--accent-color);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  animation: spin 1s linear infinite;
+  margin: 40px auto;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.result-body {
+  text-align: left;
+  background: rgba(255,255,255,0.05);
+  padding: 30px;
+  border-radius: 15px;
+  line-height: 1.8;
+  margin-bottom: 40px;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.product-item {
+  text-decoration: none;
+  color: inherit;
+  background: rgba(255,255,255,0.03);
+  padding: 15px;
+  border-radius: 10px;
+  transition: 0.3s;
+}
+
+.product-item:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.product-item img {
+  width: 100%;
+  border-radius: 5px;
+}

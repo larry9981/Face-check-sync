@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { theme, styles } from '../theme';
 import { Product, Plan } from '../types';
-import { PayPalButton, StripePaymentForm, QRCodePayment } from './PaymentIntegration';
+import { PayPalButton, StripePaymentForm } from './PaymentIntegration';
 import { SHOP_PRODUCTS } from '../products';
 import { hashCode, ELEMENT_ADVICE, ImagePersistence } from '../utils';
 
@@ -82,6 +82,7 @@ const CachedProductItem = ({ product, t, onClick, isLarge = false }: { product: 
 export const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void, onLoginSuccess: (user: any) => void }) => {
     const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPass, setConfirmPass] = useState('');
     const [error, setError] = useState('');
@@ -101,8 +102,10 @@ export const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () 
 
             if (action === 'login' || action === 'signup') {
                 body.password = password;
+                if (action === 'signup') body.username = username;
             }
             if (action === 'signup') {
+                if (!username) throw new Error("Username is required");
                 if (password !== confirmPass) {
                     setError(t.passMismatch);
                     setLoading(false);
@@ -195,6 +198,9 @@ export const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () 
                     </>
                 ) : (
                     <>
+                        {mode === 'signup' && (
+                            <input type="text" placeholder="Username" style={styles.formInput} value={username} onChange={e => setUsername(e.target.value)} />
+                        )}
                         <input type="email" placeholder={t.emailPlaceholder} style={styles.formInput} value={email} onChange={e => setEmail(e.target.value)} />
                         
                         <div style={{position: 'relative'}}>
@@ -430,11 +436,8 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
     );
 };
 
-export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: (details: any) => void }) => {
-    // Detect if we should offer Chinese Payment Methods
-    const isChinese = t.title === "玄机面相" || t.title === "玄機面相";
-
-    const [method, setMethod] = useState<'card' | 'paypal' | 'wechat' | 'alipay'>(isChinese ? 'wechat' : 'card');
+export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: (details: any) => void, userId?: string }) => {
+    const [method, setMethod] = useState<'card' | 'paypal'>('card');
     const [successState, setSuccessState] = useState(false);
     
     const [name, setName] = useState('');
@@ -477,8 +480,8 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
     const isPhysicalProduct = 'category' in plan;
     const needsShipping = isPhysicalProduct || plan.id === 'cart_checkout';
     
-    const isPhoneRequired = isChinese;
-    const isEmailRequired = !isChinese; 
+    const isPhoneRequired = false;
+    const isEmailRequired = true; 
 
     const hasShipping = !needsShipping || (name && address && city && zip && country);
     const hasContact = (!isPhoneRequired || phone) && (!isEmailRequired || email);
@@ -548,19 +551,7 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
 
             <div style={{marginBottom: '20px'}}>
                 <label style={{display: 'block', marginBottom: '10px', color: '#aaa'}}>{t.paymentMethod}</label>
-                <div style={{display: 'grid', gridTemplateColumns: isChinese ? '1fr 1fr 1fr 1fr' : '1fr 1fr', gap: '8px'}}>
-                    
-                    {isChinese && (
-                        <>
-                             <button style={{padding: '10px', background: method === 'wechat' ? '#2ecc71' : 'transparent', border: `1px solid ${method === 'wechat' ? '#2ecc71' : theme.darkGold}`, color: method === 'wechat' ? '#fff' : theme.darkGold, fontSize: '0.8rem'}} onClick={() => setMethod('wechat')}>
-                                 <i className="fab fa-weixin"></i> WeChat
-                             </button>
-                             <button style={{padding: '10px', background: method === 'alipay' ? '#3498db' : 'transparent', border: `1px solid ${method === 'alipay' ? '#3498db' : theme.darkGold}`, color: method === 'alipay' ? '#fff' : theme.darkGold, fontSize: '0.8rem'}} onClick={() => setMethod('alipay')}>
-                                 <i className="fab fa-alipay"></i> Alipay
-                             </button>
-                        </>
-                    )}
-
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px'}}>
                     <button style={{padding: '10px', background: method === 'card' ? theme.darkGold : 'transparent', border: `1px solid ${theme.darkGold}`, color: method === 'card' ? '#000' : theme.darkGold, fontSize: '0.8rem', whiteSpace: 'nowrap'}} onClick={() => setMethod('card')}>
                         <i className="fas fa-credit-card"></i> Card
                     </button>
@@ -573,8 +564,7 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess }: { t: any, plan: Pl
             {canProceedToPay ? (
                 <>
                     {method === 'card' && <StripePaymentForm amount={priceVal} description={title} currency="USD" t={t} onSuccess={handleSuccess} onError={handleError} />}
-                    {method === 'paypal' && <PayPalButton amount={priceVal} description={title} currency="USD" t={t} onSuccess={handleSuccess} onError={handleError} />}
-                    {(method === 'wechat' || method === 'alipay') && <QRCodePayment provider={method} amount={priceVal} description={title} t={t} onSuccess={handleSuccess} />}
+                    {method === 'paypal' && <PayPalButton amount={priceVal} description={title} currency="USD" t={t} onSuccess={handleSuccess} onError={handleError} userId={userId} planId={plan.id} />}
                 </>
             ) : (
                 <div style={{padding: '10px', background: 'rgba(255,0,0,0.1)', border: '1px solid red', color: '#ffaaaa', fontSize: '0.9rem', textAlign: 'center'}}>

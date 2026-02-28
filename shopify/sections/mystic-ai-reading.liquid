@@ -1,0 +1,299 @@
+{% comment %}
+  Mystic AI Face & Palm Reading Section for Shopify
+  This section allows users to perform AI analysis and integrates with Shopify products.
+{% endcomment %}
+
+<style>
+  .mystic-ai-section {
+    background: {{ section.settings.bg_color }};
+    color: {{ section.settings.text_color }};
+    padding: 60px 20px;
+    font-family: 'Cinzel', serif;
+    text-align: center;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .mystic-container {
+    max-width: 800px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid {{ section.settings.accent_color }};
+    border-radius: 15px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  }
+
+  .mystic-title {
+    color: {{ section.settings.accent_color }};
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+  }
+
+  .mystic-btn {
+    background: transparent;
+    color: {{ section.settings.accent_color }};
+    border: 1px solid {{ section.settings.accent_color }};
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+
+  .mystic-btn:hover {
+    background: {{ section.settings.accent_color }};
+    color: #000;
+    box-shadow: 0 0 20px {{ section.settings.accent_color }};
+  }
+
+  #mystic-video {
+    width: 100%;
+    max-width: 500px;
+    border-radius: 10px;
+    border: 2px solid {{ section.settings.accent_color }};
+    margin-top: 20px;
+  }
+
+  .result-area {
+    margin-top: 30px;
+    text-align: left;
+    line-height: 1.6;
+    font-family: 'Inter', sans-serif;
+    color: #eee;
+  }
+
+  .loading-spinner {
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-left-color: {{ section.settings.accent_color }};
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .product-recommendations {
+    margin-top: 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+  }
+
+  .recommendation-card {
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 10px;
+    border-radius: 8px;
+  }
+</style>
+
+<div class="mystic-ai-section" id="MysticAI-{{ section.id }}">
+  <div class="mystic-container">
+    <h2 class="mystic-title">{{ section.settings.title }}</h2>
+    <p>{{ section.settings.subtitle }}</p>
+
+    <div id="mystic-app-root">
+      <!-- Start View -->
+      <div id="view-start">
+        <button class="mystic-btn" onclick="MysticAI.init('face')">👤 {{ section.settings.face_btn_text }}</button>
+        <button class="mystic-btn" onclick="MysticAI.init('palm')">✋ {{ section.settings.palm_btn_text }}</button>
+      </div>
+
+      <!-- Camera View -->
+      <div id="view-camera" style="display:none;">
+        <video id="mystic-video" autoplay playsinline></video>
+        <canvas id="mystic-canvas" style="display:none;"></canvas>
+        <div style="margin-top: 20px;">
+          <button class="mystic-btn" onclick="MysticAI.capture()">📸 拍照分析</button>
+          <button class="mystic-btn" onclick="MysticAI.reset()" style="border-color: #666; color: #666;">返回</button>
+        </div>
+      </div>
+
+      <!-- Analyzing View -->
+      <div id="view-analyzing" style="display:none;">
+        <div class="loading-spinner"></div>
+        <p>正在窥探天机，请稍候...</p>
+      </div>
+
+      <!-- Result View -->
+      <div id="view-result" style="display:none;">
+        <div id="analysis-output" class="result-area"></div>
+        
+        {% if section.settings.show_products %}
+          <div class="product-recommendations">
+            <h3 style="grid-column: 1/-1; color: {{ section.settings.accent_color }};">为您推荐的转运好物</h3>
+            {% for product in section.settings.product_list %}
+              <div class="recommendation-card">
+                <img src="{{ product.featured_image | img_url: 'medium' }}" style="width: 100%;">
+                <p style="font-size: 0.8rem;">{{ product.title }}</p>
+                <a href="{{ product.url }}" class="mystic-btn" style="padding: 5px 10px; font-size: 0.7rem;">查看</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <button class="mystic-btn" onclick="MysticAI.reset()" style="margin-top: 30px;">重新分析</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const MysticAI = {
+    type: 'face',
+    stream: null,
+    apiUrl: '{{ section.settings.api_url }}', // 你的后端 API 地址
+
+    init: async function(type) {
+      this.type = type;
+      this.switchView('camera');
+      try {
+        this.stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: type === 'face' ? 'user' : 'environment' }
+        });
+        document.getElementById('mystic-video').srcObject = this.stream;
+      } catch (err) {
+        alert("无法访问摄像头，请确保已授权。");
+        this.reset();
+      }
+    },
+
+    capture: function() {
+      const video = document.getElementById('mystic-video');
+      const canvas = document.getElementById('mystic-canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const base64Image = canvas.toDataURL('image/jpeg').split(',')[1];
+      this.analyze(base64Image);
+    },
+
+    analyze: async function(imageData) {
+      this.switchView('analyzing');
+      
+      try {
+        const response = await fetch(`${this.apiUrl}/analyze`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image: imageData,
+            readingType: this.type,
+            prompt: `你是一位算命大师。请分析这张${this.type === 'face' ? '面相' : '手相'}。给出运势、性格和建议。使用 Markdown 格式。`
+          })
+        });
+        
+        const data = await response.json();
+        this.showResult(data.text);
+      } catch (err) {
+        alert("分析失败，请检查 API 配置。");
+        this.reset();
+      }
+    },
+
+    showResult: function(text) {
+      this.switchView('result');
+      // 简单的 Markdown 渲染（实际建议引入 marked.js）
+      document.getElementById('analysis-output').innerHTML = text.replace(/\n/g, '<br>').replace(/## (.*)/g, '<h3 style="color:{{ section.settings.accent_color }}">$1</h3>');
+    },
+
+    switchView: function(viewId) {
+      ['start', 'camera', 'analyzing', 'result'].forEach(v => {
+        document.getElementById('view-' + v).style.display = (v === viewId) ? 'block' : 'none';
+      });
+    },
+
+    reset: function() {
+      if (this.stream) {
+        this.stream.getTracks().forEach(track => track.stop());
+      }
+      this.switchView('start');
+    }
+  };
+</script>
+
+{% schema %}
+{
+  "name": "AI 面相手相分析",
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "标题",
+      "default": "神秘 AI 命理"
+    },
+    {
+      "type": "text",
+      "id": "subtitle",
+      "label": "副标题",
+      "default": "融合古老智慧与现代 AI，探索你的命运"
+    },
+    {
+      "type": "text",
+      "id": "api_url",
+      "label": "API 接口地址",
+      "info": "填写你部署的 Express 后端地址",
+      "default": "https://your-api-server.com/api"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "背景颜色",
+      "default": "#0a0a0a"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "文字颜色",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "强调颜色 (金色)",
+      "default": "#d4af37"
+    },
+    {
+      "type": "text",
+      "id": "face_btn_text",
+      "label": "面相按钮文字",
+      "default": "面相分析"
+    },
+    {
+      "type": "text",
+      "id": "palm_btn_text",
+      "label": "手相按钮文字",
+      "default": "手相分析"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_products",
+      "label": "显示产品推荐",
+      "default": true
+    },
+    {
+      "type": "product_list",
+      "id": "product_list",
+      "label": "选择推荐产品",
+      "limit": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "AI 面相手相分析",
+      "category": "Interactive"
+    }
+  ]
+}
+{% endschema %}

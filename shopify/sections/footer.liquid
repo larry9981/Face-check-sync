@@ -1,0 +1,49 @@
+<footer class="mystic-footer">
+  <div class="footer-container">
+    <div class="footer-links">
+      <a href="/pages/privacy-policy">{{ 'general.privacy' | t | default: '隐私政策' }}</a>
+      <a href="/pages/terms-of-service">{{ 'general.terms' | t | default: '服务条款' }}</a>
+      <a href="/pages/about">{{ 'general.about' | t | default: '关于我们' }}</a>
+    </div>
+    <div class="footer-copyright">
+      &copy; {{ 'now' | date: "%Y" }} {{ shop.name }}. {{ 'general.footer_right' | t | default: '保留所有权利' }}
+    </div>
+  </div>
+</footer>
+
+<style>
+  .mystic-footer {
+    background: #050505;
+    border-top: 1px solid #222;
+    padding: 40px 0;
+    margin-top: 80px;
+    text-align: center;
+    color: #666;
+    font-size: 0.85rem;
+  }
+  .footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 20px;
+  }
+  .footer-links a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: 0.3s;
+  }
+  .footer-links a:hover { color: #fff; }
+  .footer-copyright { border-top: 1px solid #111; padding-top: 20px; }
+</style>
+
+{% schema %}
+{
+  "name": "页脚",
+  "settings": []
+}
+{% endschema %}

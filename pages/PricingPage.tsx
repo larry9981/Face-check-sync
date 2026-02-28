@@ -5,9 +5,9 @@ import { Plan } from '../types';
 
 export const PricingPage = ({ t, onSelectPlan }: { t: any, onSelectPlan: (plan: Plan) => void }) => {
     const plans: Plan[] = [
-        { id: 'sub_monthly', title: t.planSubMonth, price: t.planSubMonthPrice, desc: t.planSubMonthDesc, isSub: true },
-        { id: 'one_month', title: t.planOneMonth, price: t.planOneMonthPrice, desc: t.planOneMonthDesc, isSub: true },
-        { id: 'sub_year', title: t.planSubYear, price: t.planSubYearPrice, desc: t.planSubYearDesc, isSub: true },
+        { id: 'sub_monthly', title: t.planSubMonth, price: t.planSubMonthPrice, desc: t.planSubMonthDesc, isSub: true, priceId: 'price_monthly_placeholder' },
+        { id: 'one_month', title: t.planOneMonth, price: t.planOneMonthPrice, desc: t.planOneMonthDesc, isSub: true, priceId: 'price_onemonth_placeholder' },
+        { id: 'sub_year', title: t.planSubYear, price: t.planSubYearPrice, desc: t.planSubYearDesc, isSub: true, priceId: 'price_yearly_placeholder' },
     ];
     return (
       <div style={{maxWidth: '1200px', width: '95%', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
