@@ -2,13 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { theme, styles } from '../theme';
 import { Product, Plan } from '../types';
-import { PayPalButton, StripePaymentForm } from './PaymentIntegration';
 import { SHOP_PRODUCTS } from '../products';
 import { hashCode, ELEMENT_ADVICE, ImagePersistence } from '../utils';
 
 // --- NEW COMPONENT: Cached Image ---
 // Handles async loading from IndexedDB to avoid re-fetching from API
-const CachedImage = ({ productId, prompt, size = 512, style, className }: { productId: string, prompt: string, size?: number, style?: React.CSSProperties, className?: string }) => {
+const CachedImage = ({ productId, prompt, size = 512, style, className, imageUrl }: { productId: string, prompt: string, size?: number, style?: React.CSSProperties, className?: string, imageUrl?: string }) => {
+    // If we have a direct imageUrl, use it immediately
+    if (imageUrl) {
+        return <img src={imageUrl} style={style} className={className} alt="Product" />;
+    }
+
     // Initialize with memory cache if available for instant render
     const uniqueId = `${productId}_${size}`;
     const initialUrl = ImagePersistence.memoryCache.get(uniqueId) || null;
@@ -70,203 +74,11 @@ const CachedProductItem = ({ product, t, onClick, isLarge = false }: { product: 
             onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
          >
              <div style={{width: '100%', height: '100px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                 <CachedImage productId={product.id} prompt={product.imagePrompt} size={150} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px'}} />
+                 <CachedImage productId={product.id} prompt={product.imagePrompt} size={150} style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px'}} imageUrl={product.imageUrl} />
              </div>
              <div style={{fontSize: '0.7rem', color: '#ccc', marginTop: '5px', height: '30px', overflow: 'hidden'}}>{name}</div>
              <div style={{fontWeight: 'bold', fontSize: '0.8rem', color: theme.gold}}>{product.price}</div>
          </div>
-    );
-};
-
-// --- AUTH MODAL ---
-export const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void, onLoginSuccess: (user: any) => void }) => {
-    const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
-    const [email, setEmail] = useState('');
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPass, setConfirmPass] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [resetSent, setResetSent] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPass, setShowConfirmPass] = useState(false);
-
-    // Simulated API call helper
-    const handleAuthAction = async (action: 'login' | 'signup' | 'forgot' | 'google') => {
-        setLoading(true);
-        setError('');
-        
-        try {
-            const endpoint = `/auth/${action}`;
-            let body: any = { email };
-
-            if (action === 'login' || action === 'signup') {
-                body.password = password;
-                if (action === 'signup') body.username = username;
-            }
-            if (action === 'signup') {
-                if (!username) throw new Error("Username is required");
-                if (password !== confirmPass) {
-                    setError(t.passMismatch);
-                    setLoading(false);
-                    return;
-                }
-            }
-            if (action === 'google') {
-                // Mock Google Token Data
-                body = { 
-                    email: `google_user_${Date.now()}@gmail.com`, 
-                    name: "Google User", 
-                    token: "mock_google_token" 
-                };
-            }
-
-            // Call Backend (Use callBackendAPI logic from index or simple fetch here)
-            // Assuming relative path works via proxy or direct
-            const res = await fetch(`http://localhost:3000/api${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                // Specific handling for User Not Found
-                if (data.code === 'USER_NOT_FOUND') {
-                    throw new Error(t.userNotFound);
-                }
-                // Specific handling for Invalid Credentials (password mismatch)
-                if (data.code === 'INVALID_CREDENTIALS') {
-                    throw new Error(t.invalidCredentials);
-                }
-                throw new Error(data.error || "Authentication failed");
-            }
-
-            if (action === 'forgot') {
-                setResetSent(true);
-            } else {
-                // Success Login/Signup
-                onLoginSuccess(data.user);
-                onClose();
-            }
-
-        } catch (err: any) {
-            // STRICT ENFORCEMENT: Only allow server-validated login
-            console.error("Auth Error:", err);
-            
-            if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-                 // Do not allow mock fallback. User must connect to server.
-                 setError(t.networkTimeout || "Connection to server failed. Please ensure backend is running.");
-            } else {
-                setError(err.message);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)'}}>
-            <div style={{...styles.glassPanel, maxWidth: '400px', width: '90%', padding: '30px'}}>
-                <button onClick={onClose} style={{position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer'}}>&times;</button>
-                
-                <div style={{textAlign: 'center', marginBottom: '20px'}}>
-                    <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.8rem', margin: 0}}>
-                        {mode === 'login' ? t.login : mode === 'signup' ? t.signup : t.forgotPassword}
-                    </h2>
-                </div>
-
-                {mode === 'forgot' ? (
-                    <>
-                        {!resetSent ? (
-                            <>
-                                <input type="email" placeholder={t.emailPlaceholder} style={styles.formInput} value={email} onChange={e => setEmail(e.target.value)} />
-                                <button style={{...styles.button, width: '100%', marginTop: '10px'}} onClick={() => handleAuthAction('forgot')} disabled={loading}>
-                                    {loading ? '...' : 'Reset Password'}
-                                </button>
-                            </>
-                        ) : (
-                            <div style={{textAlign: 'center', color: '#2ecc71', padding: '20px'}}>
-                                <i className="fas fa-envelope" style={{fontSize: '2rem', marginBottom: '10px'}}></i>
-                                <p>{t.resetSent}</p>
-                            </div>
-                        )}
-                        <div style={{textAlign: 'center', marginTop: '15px'}}>
-                            <span style={{color: theme.gold, cursor: 'pointer', fontSize: '0.9rem'}} onClick={() => { setMode('login'); setResetSent(false); }}>{t.backBtn}</span>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        {mode === 'signup' && (
-                            <input type="text" placeholder="Username" style={styles.formInput} value={username} onChange={e => setUsername(e.target.value)} />
-                        )}
-                        <input type="email" placeholder={t.emailPlaceholder} style={styles.formInput} value={email} onChange={e => setEmail(e.target.value)} />
-                        
-                        <div style={{position: 'relative'}}>
-                            <input 
-                                type={showPassword ? "text" : "password"} 
-                                placeholder={t.passwordPlaceholder} 
-                                style={styles.formInput} 
-                                value={password} 
-                                onChange={e => setPassword(e.target.value)} 
-                            />
-                            <i 
-                                className={showPassword ? "fas fa-eye-slash" : "fas fa-eye"} 
-                                onClick={() => setShowPassword(!showPassword)}
-                                style={{position: 'absolute', right: '12px', top: '14px', cursor: 'pointer', color: theme.darkGold, fontSize: '1rem'}}
-                            ></i>
-                        </div>
-                        
-                        {mode === 'signup' && (
-                            <div style={{position: 'relative'}}>
-                                <input 
-                                    type={showConfirmPass ? "text" : "password"} 
-                                    placeholder={t.confirmPassword} 
-                                    style={styles.formInput} 
-                                    value={confirmPass} 
-                                    onChange={e => setConfirmPass(e.target.value)} 
-                                />
-                                <i 
-                                    className={showConfirmPass ? "fas fa-eye-slash" : "fas fa-eye"} 
-                                    onClick={() => setShowConfirmPass(!showConfirmPass)}
-                                    style={{position: 'absolute', right: '12px', top: '14px', cursor: 'pointer', color: theme.darkGold, fontSize: '1rem'}}
-                                ></i>
-                            </div>
-                        )}
-
-                        {error && <div style={{color: '#e74c3c', fontSize: '0.8rem', marginBottom: '10px'}}>{error}</div>}
-
-                        <button style={{...styles.button, width: '100%', marginTop: '10px'}} onClick={() => handleAuthAction(mode)} disabled={loading}>
-                            {loading ? '...' : (mode === 'login' ? t.login : t.signup)}
-                        </button>
-
-                        <div style={{display: 'flex', alignItems: 'center', margin: '20px 0'}}>
-                            <div style={{flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)'}}></div>
-                            <span style={{padding: '0 10px', color: '#666', fontSize: '0.8rem'}}>OR</span>
-                            <div style={{flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)'}}></div>
-                        </div>
-
-                        <button style={{...styles.secondaryButton, width: '100%', marginTop: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderColor: '#fff', color: '#fff'}} onClick={() => handleAuthAction('google')}>
-                            <i className="fab fa-google"></i> {t.loginGoogle}
-                        </button>
-
-                        <div style={{textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: '#aaa'}}>
-                            {mode === 'login' ? (
-                                <>
-                                    <div style={{marginBottom: '10px', cursor: 'pointer', color: '#ccc'}} onClick={() => setMode('forgot')}>{t.forgotPassword}</div>
-                                    {t.noAccount} <span style={{color: theme.gold, cursor: 'pointer'}} onClick={() => setMode('signup')}>{t.createAccount}</span>
-                                </>
-                            ) : (
-                                <>
-                                    {t.hasAccount} <span style={{color: theme.gold, cursor: 'pointer'}} onClick={() => setMode('login')}>{t.loginLink}</span>
-                                </>
-                            )}
-                        </div>
-                    </>
-                )}
-            </div>
-        </div>
     );
 };
 
@@ -368,7 +180,7 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
 
     const zodiacLocal = t[`zodiac${product.zodiac}`] || t[`star${product.zodiac}`] || product.zodiac;
     const name = t[product.nameKey] ? t[product.nameKey].replace('{zodiac}', zodiacLocal) : product.defaultName;
-    const desc = t[product.descKey] ? t[product.descKey].replace('{zodiac}', zodiacLocal) : "Mystical Item";
+    const desc = t[product.descKey] ? t[product.descKey].replace('{zodiac}', zodiacLocal) : (product.defaultDescription || "Mystical Item");
 
     const handleAddToCartClick = () => {
         onAddToCart();
@@ -400,7 +212,7 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
                     {/* LEFT: Image */}
                     <div className="product-detail-image">
                         <div style={{width: '100%', height: '400px', borderRadius: '8px', overflow: 'hidden', border: `1px solid ${theme.gold}`, boxShadow: '0 0 20px rgba(0,0,0,0.5)'}}>
-                            <CachedImage productId={product.id} prompt={product.imagePrompt} size={512} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                            <CachedImage productId={product.id} prompt={product.imagePrompt} size={512} style={{width: '100%', height: '100%', objectFit: 'cover'}} imageUrl={product.imageUrl} />
                         </div>
                     </div>
                     
@@ -437,23 +249,11 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
 };
 
 export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: (details: any) => void, userId?: string }) => {
-    const [method, setMethod] = useState<'card' | 'paypal'>('card');
     const [successState, setSuccessState] = useState(false);
     
-    const [name, setName] = useState('');
-    const [address, setAddress] = useState('');
-    const [city, setCity] = useState('');
-    const [zip, setZip] = useState('');
-    const [country, setCountry] = useState('');
-    
     const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
 
-    // DYNAMIC TITLE LOOKUP FOR LANGUAGE SYNC
-    // If the plan ID matches a known translation key, use the fresh 't' value.
-    // Otherwise fallback to the object title.
     let title = '';
-    let description = '';
 
     if (plan.id === 'sub_monthly') {
         title = t.planSubMonth;
@@ -464,12 +264,10 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
     } else if (plan.id === 'single') {
         title = t.planSingle;
     } else if ('nameKey' in plan) {
-        // Dynamic Product Name logic
         const p = plan as Product;
         const zodiacLocal = t[`zodiac${p.zodiac}`] || t[`star${p.zodiac}`] || p.zodiac;
         title = t[p.nameKey] ? t[p.nameKey].replace('{zodiac}', zodiacLocal) : p.defaultName;
     } else {
-        // Fix for Type Conversion Error: Ensure safe casting or property access
         const p = plan as any;
         title = p.title || p.defaultName || "Item";
     }
@@ -477,29 +275,13 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
     const priceStr = plan.price.replace(/[^0-9.]/g, '');
     const priceVal = parseFloat(priceStr);
     
-    const isPhysicalProduct = 'category' in plan;
-    const needsShipping = isPhysicalProduct || plan.id === 'cart_checkout';
-    
-    const isPhoneRequired = false;
-    const isEmailRequired = true; 
-
-    const hasShipping = !needsShipping || (name && address && city && zip && country);
-    const hasContact = (!isPhoneRequired || phone) && (!isEmailRequired || email);
-    const canProceedToPay = hasShipping && hasContact;
-
-    const handleSuccess = (details?: any) => {
+    const handleSuccess = () => {
         setSuccessState(true);
         const paymentDetails = {
-            ...details,
-            shipping: needsShipping ? { name, address, city, zip, country } : null,
-            contact: { email, phone },
-            method: method
+            contact: { email },
+            method: 'demo'
         };
         setTimeout(() => onSuccess(paymentDetails), 2000);
-    };
-
-    const handleError = (err: any) => {
-        alert("Payment Error: " + err.message || err);
     };
 
     if (successState) return <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}><div style={{...styles.glassPanel, textAlign: 'center', maxWidth: '400px'}}><h2 style={{color: theme.gold}}>{t.success}</h2></div></div>;
@@ -517,60 +299,29 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                      <span style={{fontWeight: 'bold'}}>{title}</span>
                      <span style={{fontSize: '1.2rem', fontWeight: 'bold', color: theme.gold}}>${priceVal.toFixed(2)}</span>
                  </div>
-                 {!needsShipping && <div style={{fontSize: '0.8rem', color: '#aaa', marginTop: '5px'}}>* Digital Service (Instant Access)</div>}
             </div>
             
             <div style={{marginBottom: '20px'}}>
                 <h3 style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '10px', textTransform: 'uppercase'}}>Contact Info</h3>
-                <div style={{marginBottom: '10px'}}>
-                    <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>
-                        {t.phoneLabel} {isPhoneRequired && <span style={{color: theme.accent}}>* ({t.required})</span>}
-                    </label>
-                    <input type="tel" placeholder="+1..." style={styles.cardInput} value={phone} onChange={e => setPhone(e.target.value)} />
-                </div>
                 <div>
                     <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>
-                        {t.emailLabel} {isEmailRequired && <span style={{color: theme.accent}}>* ({t.required})</span>}
+                        {t.emailLabel}
                     </label>
                     <input type="email" placeholder="you@example.com" style={styles.cardInput} value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
             </div>
 
-            {needsShipping && (
-                <div style={{marginBottom: '20px'}}>
-                    <h3 style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '10px', textTransform: 'uppercase'}}>{t.shippingDetails}</h3>
-                    <input type="text" placeholder={t.recipientName} style={styles.cardInput} value={name} onChange={e => setName(e.target.value)} />
-                    <input type="text" placeholder={t.addressLine} style={styles.cardInput} value={address} onChange={e => setAddress(e.target.value)} />
-                    <div style={{display: 'flex', gap: '10px'}}>
-                        <input type="text" placeholder={t.city} style={{...styles.cardInput, marginBottom: 0}} value={city} onChange={e => setCity(e.target.value)} />
-                        <input type="text" placeholder={t.zipCode} style={{...styles.cardInput, marginBottom: 0}} value={zip} onChange={e => setZip(e.target.value)} />
-                    </div>
-                    <input type="text" placeholder={t.country} style={{...styles.cardInput, marginTop: '10px'}} value={country} onChange={e => setCountry(e.target.value)} />
-                </div>
-            )}
-
-            <div style={{marginBottom: '20px'}}>
-                <label style={{display: 'block', marginBottom: '10px', color: '#aaa'}}>{t.paymentMethod}</label>
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px'}}>
-                    <button style={{padding: '10px', background: method === 'card' ? theme.darkGold : 'transparent', border: `1px solid ${theme.darkGold}`, color: method === 'card' ? '#000' : theme.darkGold, fontSize: '0.8rem', whiteSpace: 'nowrap'}} onClick={() => setMethod('card')}>
-                        <i className="fas fa-credit-card"></i> Card
-                    </button>
-                    <button style={{padding: '10px', background: method === 'paypal' ? '#0070ba' : 'transparent', border: `1px solid ${method === 'paypal' ? '#0070ba' : theme.darkGold}`, color: method === 'paypal' ? '#fff' : theme.darkGold, fontSize: '0.8rem'}} onClick={() => setMethod('paypal')}>
-                        <i className="fab fa-paypal"></i> PayPal
-                    </button>
-                </div>
-            </div>
-
-            {canProceedToPay ? (
-                <>
-                    {method === 'card' && <StripePaymentForm amount={priceVal} description={title} currency="USD" t={t} onSuccess={handleSuccess} onError={handleError} />}
-                    {method === 'paypal' && <PayPalButton amount={priceVal} description={title} currency="USD" t={t} onSuccess={handleSuccess} onError={handleError} userId={userId} planId={plan.id} />}
-                </>
-            ) : (
-                <div style={{padding: '10px', background: 'rgba(255,0,0,0.1)', border: '1px solid red', color: '#ffaaaa', fontSize: '0.9rem', textAlign: 'center'}}>
-                    Please complete all required fields (*) to proceed.
-                </div>
-            )}
+            <button 
+                style={{...styles.button, width: '100%', marginTop: '10px'}} 
+                onClick={handleSuccess}
+                disabled={!email}
+            >
+                {t.payNow} (Demo)
+            </button>
+            
+            <p style={{marginTop: '15px', fontSize: '0.8rem', color: '#888', textAlign: 'center'}}>
+                This is a demo payment interface. No real transaction will occur.
+            </p>
           </div>
         </div>
     );

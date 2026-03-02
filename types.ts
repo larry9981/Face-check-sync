@@ -5,6 +5,8 @@ export interface UserState {
   hasPaidSingle: boolean;
   history: HistoryRecord[]; // Added history array
   userId: string;
+  dailyGenerations?: { [date: string]: number }; // Track generations per day
+  lastGenerationDate?: string; // ISO Date string for the last generation
   // Auth fields
   isLoggedIn: boolean;
   email?: string;
@@ -49,9 +51,11 @@ export interface Product {
   numericPrice: number;
   imagePrompt: string;
   descKey: string;
-  category: 'bracelet' | 'pendant' | 'amulet';
+  defaultDescription?: string;
+  category: 'bracelet' | 'pendant' | 'amulet' | 'other';
   zodiac: string;
   element?: string;
+  imageUrl?: string;
 }
 
 export interface CartItem {

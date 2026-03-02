@@ -132,8 +132,14 @@ export const RenderStartView = ({ t, freeTrials, onStart }: { t: any, freeTrials
 
       </div>
 
-      <div style={{marginTop: '25px', fontSize: '0.8rem', color: '#888'}}>
-          {t.freeTrialsHint.replace('{count}', freeTrials.toString())}
+      <div style={{marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'center'}}>
+          <div style={{fontSize: '0.8rem', color: '#888'}}>
+              {t.freeTrialsHint.replace('{count}', freeTrials.toString())}
+          </div>
+          {/* Daily Limit Display */}
+          <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.1)', padding: '5px 15px', borderRadius: '20px', border: `1px solid ${theme.darkGold}`}}>
+              <i className="fas fa-bolt"></i> {t.dailyFreeRemaining.replace('{count}', '3')}
+          </div>
       </div>
     </div>
   );
@@ -450,7 +456,7 @@ export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCa
                <div className="mystical-scan-frame" style={{width: isPalm ? '280px' : '240px', height: isPalm ? '380px' : '320px'}}></div>
 
                {/* Countdown Overlay */}
-               {countdown > 0 && (
+               {countdown > 0 ? (
                    <div style={{
                        position: 'absolute',
                        top: 0,
@@ -483,6 +489,37 @@ export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCa
                        }}>
                            SCANNING...
                        </div>
+                       <button 
+                            onClick={() => setCountdown(0)}
+                            style={{
+                                marginTop: '30px',
+                                background: 'rgba(212, 175, 55, 0.2)',
+                                border: `1px solid ${theme.gold}`,
+                                color: theme.gold,
+                                padding: '10px 20px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontFamily: 'Cinzel, serif'
+                            }}
+                       >
+                           {t.captureBtn}
+                       </button>
+                   </div>
+               ) : (
+                   /* Manual Capture Button when countdown is 0 (if it didn't auto-capture yet) */
+                   <div style={{position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', zIndex: 30}}>
+                        <button 
+                            onClick={onCapture}
+                            style={{
+                                width: '70px',
+                                height: '70px',
+                                borderRadius: '50%',
+                                background: 'white',
+                                border: `5px solid ${theme.gold}`,
+                                cursor: 'pointer',
+                                boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+                            }}
+                        ></button>
                    </div>
                )}
            </div>
@@ -491,12 +528,13 @@ export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCa
                padding: '15px 20px', 
                background: '#050511', 
                display: 'flex', 
-               justifyContent: 'center', 
+               justifyContent: 'space-between', 
                alignItems: 'center', 
                borderTop: `1px solid ${accentColor}`,
                flexShrink: 0
            }}>
-               <button style={{...styles.secondaryButton, marginTop: 0, padding: '10px 30px', fontSize: '0.9rem', borderColor: accentColor, color: accentColor}} onClick={onStopCamera}>{t.cancelBtn}</button>
+               <button style={{...styles.secondaryButton, marginTop: 0, padding: '10px 20px', fontSize: '0.8rem', borderColor: accentColor, color: accentColor}} onClick={onStopCamera}>{t.cancelBtn}</button>
+               <div style={{color: '#888', fontSize: '0.8rem', fontStyle: 'italic'}}>{t.snapPhoto}</div>
            </div>
         </div>
     );

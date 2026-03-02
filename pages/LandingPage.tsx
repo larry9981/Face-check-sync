@@ -10,8 +10,103 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
+  const [currentBanner, setCurrentBanner] = React.useState(0);
+  const banners = [
+    { title: t.banner1Title, desc: t.banner1Desc, img: 'https://picsum.photos/seed/mystic1/1920/1080' },
+    { title: t.banner2Title, desc: t.banner2Desc, img: 'https://picsum.photos/seed/mystic2/1920/1080' },
+    { title: t.banner3Title, desc: t.banner3Desc, img: 'https://picsum.photos/seed/mystic3/1920/1080' },
+  ];
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % banners.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [banners.length]);
+
   return (
     <div style={{ width: '100%', overflowX: 'hidden' }}>
+      {/* Banner Section */}
+      <section style={{ 
+        height: '70vh', 
+        position: 'relative',
+        overflow: 'hidden',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        {banners.map((banner, idx) => (
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: currentBanner === idx ? 1 : 0 }}
+            transition={{ duration: 1 }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundImage: `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${banner.img})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              textAlign: 'center',
+              padding: '0 20px'
+            }}
+          >
+            <motion.h2
+              initial={{ y: 20, opacity: 0 }}
+              animate={currentBanner === idx ? { y: 0, opacity: 1 } : {}}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              style={{ 
+                fontSize: 'clamp(2rem, 5vw, 4rem)', 
+                fontFamily: 'Cinzel, serif', 
+                color: theme.gold,
+                marginBottom: '1rem',
+                textShadow: '0 2px 10px rgba(0,0,0,0.8)'
+              }}
+            >
+              {banner.title}
+            </motion.h2>
+            <motion.p
+              initial={{ y: 20, opacity: 0 }}
+              animate={currentBanner === idx ? { y: 0, opacity: 1 } : {}}
+              transition={{ delay: 0.7, duration: 0.8 }}
+              style={{ 
+                fontSize: 'clamp(1rem, 1.5vw, 1.2rem)', 
+                color: '#fff',
+                maxWidth: '700px',
+                textShadow: '0 1px 5px rgba(0,0,0,0.8)'
+              }}
+            >
+              {banner.desc}
+            </motion.p>
+          </motion.div>
+        ))}
+        
+        {/* Banner Indicators */}
+        <div style={{ position: 'absolute', bottom: '20px', display: 'flex', gap: '10px' }}>
+          {banners.map((_, idx) => (
+            <div 
+              key={idx}
+              onClick={() => setCurrentBanner(idx)}
+              style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: currentBanner === idx ? theme.gold : 'rgba(255,255,255,0.3)',
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              }}
+            />
+          ))}
+        </div>
+      </section>
+
       {/* Hero Section */}
       <section style={{ 
         height: '90vh', 

@@ -1,23 +1,12 @@
 
 import express from 'express';
 import cors from 'cors';
-import * as path from 'path';
+import path from 'path';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { createServer as createViteServer } from 'vite';
-import { OAuth2Client } from 'google-auth-library';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import Stripe from 'stripe';
-import { User, Order, History } from './models';
-
-// Lazy Stripe Init
-let stripe: Stripe | null = null;
-const getStripe = () => {
-    if (!stripe && process.env.STRIPE_SECRET_KEY) {
-        stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    }
-    return stripe;
-};
+import { User, Order, History, Product } from './models.js';
 
 // =========================================================
 // ⚙️ BACKEND CONFIGURATION
@@ -27,37 +16,6 @@ const GOOGLE_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || "YOU
 
 // Choose Provider: 'Google' | 'OpenAI' | 'DeepSeek'
 let CURRENT_PROVIDER = 'Google'; 
-
-// --- SUBSCRIPTION EXPIRATION CHECKER ---
-const checkSubscriptionStatus = async (email: string) => {
-    try {
-        const user = await User.findOne({ email });
-        if (user && user.isSubscribed && user.nextBillingDate) {
-            const now = new Date();
-            if (now > user.nextBillingDate) {
-                if (user.cancelAtPeriodEnd) {
-                    // Subscription expired and was canceled
-                    user.isSubscribed = false;
-                    user.subscriptionStatus = 'expired';
-                    user.subscriptionPlan = 'free';
-                    await user.save();
-                    console.log(`[Backend] Subscription for ${email} has expired.`);
-                } else {
-                    // Simulate Auto-Renewal
-                    const next = new Date(user.nextBillingDate);
-                    if (user.subscriptionPlan === 'monthly') next.setMonth(next.getMonth() + 1);
-                    if (user.subscriptionPlan === 'yearly') next.setFullYear(next.getFullYear() + 1);
-                    
-                    user.nextBillingDate = next;
-                    await user.save();
-                    console.log(`[Backend] Subscription for ${email} auto-renewed until ${next.toLocaleDateString()}.`);
-                }
-            }
-        }
-    } catch (err) {
-        console.error("Error checking subscription status:", err);
-    }
-};
 
 async function startServer() {
     const app = express();
@@ -153,52 +111,12 @@ app.post('/api/auth/login', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: "Missing credentials." });
 
     try {
-        await checkSubscriptionStatus(email);
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ error: "Account not found.", code: 'USER_NOT_FOUND' });
 
         const isMatch = await bcrypt.compare(password, user.password || '');
         if (!isMatch) return res.status(401).json({ error: "Invalid password.", code: 'INVALID_CREDENTIALS' });
 
-        const userObj = user.toObject();
-        const userSafe = { ...userObj, id: userObj._id.toString() };
-        delete (userSafe as any).password;
-        res.json({ success: true, user: userSafe });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-// 3. Google Login
-app.post('/api/auth/google', async (req, res) => {
-    const { token, email: providedEmail, name: providedName } = req.body;
-    let email = providedEmail;
-    let name = providedName;
-
-    if (token && token !== 'mock_google_token' && process.env.GOOGLE_CLIENT_ID) {
-        try {
-            const ticket = await client.verifyIdToken({
-                idToken: token,
-                audience: process.env.GOOGLE_CLIENT_ID,
-            });
-            const payload = ticket.getPayload();
-            if (payload) {
-                email = payload.email;
-                name = payload.name;
-            }
-        } catch (err) {
-            return res.status(401).json({ error: "Invalid Google token." });
-        }
-    }
-
-    try {
-        let user = await User.findOne({ email });
-        if (!user) {
-            user = new User({ email, name, authType: 'google' });
-            await user.save();
-        }
         const userObj = user.toObject();
         const userSafe = { ...userObj, id: userObj._id.toString() };
         delete (userSafe as any).password;
@@ -220,8 +138,7 @@ app.post('/api/auth/forgot-password', (req, res) => {
 // 1. AI Analysis Endpoint
 app.post('/api/analyze', async (req, res) => {
     try {
-        const { prompt, image, userId, config, gender, name, birthDate, readingType, elements, email } = req.body;
-        if (email) await checkSubscriptionStatus(email);
+        const { prompt, image, userId, config, gender, name, birthDate, readingType, elements } = req.body;
         
         const resultText = await callAI(prompt, image, config);
         
@@ -256,7 +173,7 @@ app.post('/api/translate', async (req, res) => {
     }
 });
 
-// 3. Create Order Endpoint (Updated for Subscriptions)
+// 3. Create Order Endpoint (Simplified)
 app.post('/api/orders', async (req, res) => {
     const orderData = req.body;
     const orderId = `ORD-${Date.now().toString().slice(-6)}`;
@@ -264,188 +181,10 @@ app.post('/api/orders', async (req, res) => {
     try {
         const newOrder = new Order({ ...orderData, orderId });
         await newOrder.save();
-
-        if (orderData.email) {
-            const items = orderData.items.toLowerCase();
-            const isMonthly = items.includes('month');
-            const isYearly = items.includes('year');
-            const isSingle = items.includes('single');
-
-            const update: any = {};
-            if (isMonthly || isYearly) {
-                update.isSubscribed = true;
-                update.subscriptionPlan = isMonthly ? 'monthly' : 'yearly';
-                update.subscriptionStatus = 'active';
-                update.cancelAtPeriodEnd = false;
-                
-                // Set next billing date
-                const now = new Date();
-                if (isMonthly) now.setMonth(now.getMonth() + 1);
-                if (isYearly) now.setFullYear(now.getFullYear() + 1);
-                update.nextBillingDate = now;
-            }
-            if (isSingle) update.hasPaidSingle = true;
-
-            if (Object.keys(update).length > 0) {
-                await User.findOneAndUpdate({ email: orderData.email }, update);
-            }
-        }
         res.json({ success: true, orderId });
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }
-});
-
-// 6. Cancel Subscription
-app.post('/api/subscription/cancel', async (req, res) => {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: "Email required" });
-
-    try {
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ error: "User not found" });
-
-        const stripeInstance = getStripe();
-        if (user.stripeSubscriptionId && stripeInstance) {
-            // Cancel in Stripe (at period end)
-            await stripeInstance.subscriptions.update(user.stripeSubscriptionId, {
-                cancel_at_period_end: true
-            });
-        }
-
-        // Update local DB
-        user.cancelAtPeriodEnd = true;
-        user.subscriptionStatus = 'canceled';
-        await user.save();
-        
-        const userObj = user.toObject();
-        const userSafe = { ...userObj, id: userObj._id.toString() };
-        delete (userSafe as any).password;
-        
-        res.json({ success: true, user: userSafe });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 7. Get Subscription Details
-app.get('/api/subscription/:email', async (req, res) => {
-    const { email } = req.params;
-    try {
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ error: "User not found" });
-        
-        res.json({
-            plan: user.subscriptionPlan,
-            status: user.subscriptionStatus,
-            nextBillingDate: user.nextBillingDate,
-            cancelAtPeriodEnd: user.cancelAtPeriodEnd,
-            isSubscribed: user.isSubscribed
-        });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// --- STRIPE PAYMENTS ---
-
-// 1. Create Checkout Session
-app.post('/api/create-checkout-session', async (req, res) => {
-    const { priceId, email, userId, planType } = req.body;
-    const stripeInstance = getStripe();
-    
-    if (!stripeInstance) {
-        return res.status(500).json({ error: "Stripe not configured" });
-    }
-
-    try {
-        const session = await stripeInstance.checkout.sessions.create({
-            customer_email: email,
-            payment_method_types: ['card'],
-            line_items: [{ price: priceId, quantity: 1 }],
-            mode: planType === 'single' ? 'payment' : 'subscription',
-            success_url: `${req.headers.origin}/?payment=success`,
-            cancel_url: `${req.headers.origin}/?payment=cancel`,
-            client_reference_id: userId,
-            metadata: { planType, email }
-        });
-        res.json({ url: session.url });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 2. Stripe Webhook (Sync Payment Status)
-app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }) as any, async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    const stripeInstance = getStripe();
-    
-    if (!stripeInstance || !sig || !process.env.STRIPE_WEBHOOK_SECRET) {
-        return res.status(400).send('Webhook Error: Missing config');
-    }
-
-    let event;
-    try {
-        event = stripeInstance.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-    } catch (err: any) {
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as any;
-        const email = session.metadata.email;
-        const planType = session.metadata.planType;
-
-        const update: any = { isSubscribed: true };
-        if (planType === 'monthly') update.subscriptionPlan = 'monthly';
-        if (planType === 'yearly') update.subscriptionPlan = 'yearly';
-        
-        if (planType === 'single') {
-            update.isSubscribed = false;
-            update.hasPaidSingle = true;
-        } else {
-            update.subscriptionStatus = 'active';
-            update.stripeSubscriptionId = session.subscription;
-            update.stripeCustomerId = session.customer;
-            // Set initial billing date
-            const now = new Date();
-            if (planType === 'monthly') now.setMonth(now.getMonth() + 1);
-            if (planType === 'yearly') now.setFullYear(now.getFullYear() + 1);
-            update.nextBillingDate = now;
-        }
-
-        await User.findOneAndUpdate({ email }, update);
-        
-        const orderId = `STRIPE-${Date.now()}`;
-        const newOrder = new Order({
-            orderId,
-            email,
-            items: planType,
-            amount: session.amount_total / 100,
-            status: 'paid'
-        });
-        await newOrder.save();
-    }
-
-    if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
-        const subscription = event.data.object as any;
-        const status = subscription.status;
-        const cancelAtPeriodEnd = subscription.cancel_at_period_end;
-        
-        const update: any = {
-            subscriptionStatus: status === 'active' ? 'active' : 'expired',
-            isSubscribed: status === 'active',
-            cancelAtPeriodEnd: cancelAtPeriodEnd
-        };
-
-        if (status === 'active') {
-            update.nextBillingDate = new Date(subscription.current_period_end * 1000);
-        }
-
-        await User.findOneAndUpdate({ stripeSubscriptionId: subscription.id }, update);
-    }
-
-    res.json({ received: true });
 });
 
 // 4. Get Orders Endpoint (Admin)
@@ -464,6 +203,45 @@ app.get('/api/history/:userId', async (req, res) => {
     try {
         const history = await History.find({ userId }).sort({ date: -1 }).limit(10);
         res.json(history);
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- PRODUCT ROUTES ---
+
+// 1. Get All Products
+app.get('/api/products', async (req, res) => {
+    try {
+        const products = await Product.find().sort({ createdAt: -1 });
+        res.json(products);
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 2. Create/Update Product (Admin)
+app.post('/api/admin/products', async (req, res) => {
+    const productData = req.body;
+    try {
+        if (!productData.id) productData.id = `PROD-${Date.now()}`;
+        
+        const product = await Product.findOneAndUpdate(
+            { id: productData.id },
+            productData,
+            { upsert: true, new: true }
+        );
+        res.json(product);
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 3. Delete Product (Admin)
+app.delete('/api/admin/products/:id', async (req, res) => {
+    try {
+        await Product.findOneAndDelete({ id: req.params.id });
+        res.json({ success: true });
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }

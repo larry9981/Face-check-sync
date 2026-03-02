@@ -17,6 +17,12 @@ const ProductCard: React.FC<{ product: Product, t: any, onViewProduct: (p: Produ
         let isMounted = true;
         setLoading(true);
 
+        if (product.imageUrl) {
+            setImageUrl(product.imageUrl);
+            setLoading(false);
+            return;
+        }
+
         // Use ImagePersistence to get cached blob or fetch new
         ImagePersistence.loadImage(product.id, product.imagePrompt, 512)
             .then(url => {
@@ -56,8 +62,31 @@ const ProductCard: React.FC<{ product: Product, t: any, onViewProduct: (p: Produ
 };
 
 export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Product) => void }) => {
-    const [activeCategory, setActiveCategory] = useState<'chinese' | 'western'>('chinese');
-    const filteredProducts = SHOP_PRODUCTS.filter(p => {
+    const [activeCategory, setActiveCategory] = useState<'chinese' | 'western' | 'all'>('chinese');
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch('/api/products')
+            .then(res => res.json())
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    setProducts(data);
+                } else {
+                    // Fallback to static products if backend empty
+                    setProducts(SHOP_PRODUCTS);
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Failed to fetch products:", err);
+                setProducts(SHOP_PRODUCTS);
+                setLoading(false);
+            });
+    }, []);
+
+    const filteredProducts = products.filter(p => {
+        if (activeCategory === 'all') return true;
         if (activeCategory === 'chinese') return p.category === 'bracelet' || p.category === 'pendant';
         if (activeCategory === 'western') return p.category === 'amulet';
         return true;
@@ -72,12 +101,19 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
             <div style={{display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '30px', flexWrap: 'wrap'}}>
                 <button onClick={() => setActiveCategory('chinese')} style={{background: activeCategory === 'chinese' ? theme.gold : 'transparent', color: activeCategory === 'chinese' ? '#000' : theme.gold, border: `1px solid ${theme.gold}`, padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{t.shopCategoryChinese}</button>
                 <button onClick={() => setActiveCategory('western')} style={{background: activeCategory === 'western' ? theme.gold : 'transparent', color: activeCategory === 'western' ? '#000' : theme.gold, border: `1px solid ${theme.gold}`, padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{t.shopCategoryWestern}</button>
+                <button onClick={() => setActiveCategory('all')} style={{background: activeCategory === 'all' ? theme.gold : 'transparent', color: activeCategory === 'all' ? '#000' : theme.gold, border: `1px solid ${theme.gold}`, padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{t.moreProducts}</button>
             </div>
-            <div style={{display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center'}}>
-                {filteredProducts.map((prod) => (
-                    <ProductCard key={prod.id} product={prod} t={t} onViewProduct={onViewProduct} />
-                ))}
-            </div>
+            {loading ? (
+                <div style={{textAlign: 'center', padding: '50px', color: theme.gold}}>
+                    <i className="fas fa-spinner fa-spin" style={{fontSize: '3rem'}}></i>
+                </div>
+            ) : (
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center'}}>
+                    {filteredProducts.map((prod) => (
+                        <ProductCard key={prod.id} product={prod} t={t} onViewProduct={onViewProduct} />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

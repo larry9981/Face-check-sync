@@ -271,7 +271,7 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
     // Email Regex: Standard format checking
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    const handleAuthAction = async (action: 'login' | 'signup' | 'forgot' | 'google') => {
+    const handleAuthAction = async (action: 'login' | 'signup' | 'forgot') => {
         setLoading(true);
         setError('');
         
@@ -288,8 +288,8 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
             }
 
             if (action === 'signup') {
-                if (!name) throw new Error(t.required + ": Username");
-                if (name.length < 2) throw new Error("Username must be at least 2 characters.");
+                if (!name) throw new Error(t.usernameRequired);
+                if (name.length < 2) throw new Error(t.usernameMinLength);
             }
 
             const endpoint = `/auth/${action}`;
@@ -298,50 +298,6 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
             if (action === 'login' || action === 'signup') {
                 body.password = password;
                 if (action === 'signup') body.name = name;
-            }
-            if (action === 'google') {
-                // Real Google Login with Firebase
-                try {
-                    const { initializeApp } = await import('firebase/app');
-                    const { getAuth, signInWithPopup, GoogleAuthProvider } = await import('firebase/auth');
-                    
-                    // Use placeholders for Firebase config - User must provide these in .env or code
-                    const firebaseConfig = {
-                        apiKey: process.env.VITE_FIREBASE_API_KEY,
-                        authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-                        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-                        storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-                        messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-                        appId: process.env.VITE_FIREBASE_APP_ID
-                    };
-
-                    const app = initializeApp(firebaseConfig);
-                    const auth = getAuth(app);
-                    const provider = new GoogleAuthProvider();
-                    const result = await signInWithPopup(auth, provider);
-                    const user = result.user;
-                    
-                    body = { 
-                        email: user.email, 
-                        name: user.displayName, 
-                        token: await user.getIdToken(),
-                        authType: 'google'
-                    };
-                } catch (fbErr: any) {
-                    console.error("Firebase Auth Error:", fbErr);
-                    // Fallback for demo if Firebase is not configured
-                    if (!process.env.VITE_FIREBASE_API_KEY) {
-                        console.warn("Firebase not configured. Using mock Google login.");
-                        body = { 
-                            email: `google_user_${Date.now()}@gmail.com`, 
-                            name: "Google User", 
-                            token: "mock_google_token",
-                            authType: 'google'
-                        };
-                    } else {
-                        throw fbErr;
-                    }
-                }
             }
 
             const res = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -377,7 +333,7 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
                          id: 'mock_user', 
                          email: email || 'mock@example.com', 
                          name: email ? email.split('@')[0] : 'Guest',
-                         authType: action === 'google' ? 'google' : 'email'
+                         authType: 'email'
                      });
                      onClose();
                  }
@@ -422,7 +378,7 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
                 ) : (
                     <>
                         {mode === 'signup' && (
-                            <input type="text" placeholder="Username" style={styles.formInput} value={name} onChange={e => setName(e.target.value)} />
+                            <input type="text" placeholder={t.username} style={styles.formInput} value={name} onChange={e => setName(e.target.value)} />
                         )}
                         <input type="email" placeholder={t.emailPlaceholder} style={styles.formInput} value={email} onChange={e => setEmail(e.target.value)} />
                         <input type="password" placeholder={t.passwordPlaceholder} style={styles.formInput} value={password} onChange={e => setPassword(e.target.value)} />
@@ -435,16 +391,6 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
 
                         <button style={{...styles.button, width: '100%', marginTop: '10px'}} onClick={() => handleAuthAction(mode)} disabled={loading}>
                             {loading ? '...' : (mode === 'login' ? t.login : t.signup)}
-                        </button>
-
-                        <div style={{display: 'flex', alignItems: 'center', margin: '20px 0'}}>
-                            <div style={{flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)'}}></div>
-                            <span style={{padding: '0 10px', color: '#666', fontSize: '0.8rem'}}>OR</span>
-                            <div style={{flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)'}}></div>
-                        </div>
-
-                        <button style={{...styles.secondaryButton, width: '100%', marginTop: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', borderColor: '#fff', color: '#fff'}} onClick={() => handleAuthAction('google')}>
-                            <i className="fab fa-google"></i> {t.loginGoogle}
                         </button>
 
                         <div style={{textAlign: 'center', marginTop: '20px', fontSize: '0.8rem', color: '#aaa'}}>
@@ -548,7 +494,6 @@ const App = () => {
       deepseekKey: ''
   });
   const [showSettings, setShowSettings] = useState(false);
-  const [subscriptionDetails, setSubscriptionDetails] = useState<any>(null);
 
   // Load Config from LocalStorage
   useEffect(() => {
@@ -583,34 +528,34 @@ const App = () => {
   // App State
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const [userState, setUserState] = useState<UserState>({ 
-      trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [], userId: '', isLoggedIn: false 
+      trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [], userId: '', isLoggedIn: false,
+      dailyGenerations: {}, lastGenerationDate: ''
   });
   const [showAuthModal, setShowAuthModal] = useState(false);
   
   // Generate a random User ID if not present (Simple Auth)
   useEffect(() => {
-      let saved = localStorage.getItem('fortune_user_state_v3');
+      let saved = localStorage.getItem('fortune_user_state_v4');
       let parsed = saved ? JSON.parse(saved) : null;
       
       if (!parsed) {
           parsed = { 
               trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [],
               userId: `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-              isLoggedIn: false
+              isLoggedIn: false,
+              dailyGenerations: {},
+              lastGenerationDate: ''
           };
       } else if (!parsed.userId) {
           parsed.userId = `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       }
       setUserState(parsed);
-      if (parsed.isLoggedIn && parsed.email) {
-          fetchSubscriptionDetails(parsed.email);
-      }
   }, []);
 
   // Save basic state locally (subscription status)
   useEffect(() => { 
       if (userState.userId) {
-          localStorage.setItem('fortune_user_state_v3', JSON.stringify(userState)); 
+          localStorage.setItem('fortune_user_state_v4', JSON.stringify(userState)); 
       }
   }, [userState]);
 
@@ -628,39 +573,6 @@ const App = () => {
           trialStartDate: user.trialStartDate || prev.trialStartDate,
           hasPaidSingle: user.hasPaidSingle || false
       }));
-      if (user.email) fetchSubscriptionDetails(user.email);
-  };
-
-  const fetchSubscriptionDetails = async (email: string) => {
-      try {
-          const res = await fetch(`${API_BASE_URL}/subscription/${email}`);
-          if (res.ok) {
-              const data = await res.json();
-              setSubscriptionDetails(data);
-          }
-      } catch (e) {
-          console.error("Failed to fetch subscription", e);
-      }
-  };
-
-  const cancelSubscription = async () => {
-      if (!userState.email) return;
-      if (!confirm("Are you sure you want to cancel your subscription? You will lose access at the end of your current billing period.")) return;
-      
-      try {
-          const res = await fetch(`${API_BASE_URL}/subscription/cancel`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: userState.email })
-          });
-          if (res.ok) {
-              const data = await res.json();
-              handleLoginSuccess(data.user);
-              alert("Subscription canceled successfully.");
-          }
-      } catch (e) {
-          alert("Failed to cancel subscription.");
-      }
   };
 
   const handleLogout = () => {
@@ -747,6 +659,13 @@ const App = () => {
       const now = new Date();
       const diffMs = now.getTime() - start.getTime();
       return Math.max(0, Math.ceil(3 - (diffMs / (1000 * 60 * 60 * 24))));
+  };
+
+  const getDailyFreeRemaining = () => {
+      if (userState.isSubscribed) return 999;
+      const today = new Date().toISOString().split('T')[0];
+      const count = (userState.dailyGenerations && userState.dailyGenerations[today]) || 0;
+      return Math.max(0, 3 - count);
   };
 
   const switchLanguage = async (newLang: string) => {
@@ -921,7 +840,20 @@ This is a demonstration of the result layout.
 
   const processImage = async (base64Image: string) => {
     const now = new Date();
-    // 3-Day Free Trial Logic
+    const today = now.toISOString().split('T')[0];
+
+    // 1. Check Daily Limit (3 times per day)
+    if (!userState.isSubscribed && !userState.hasPaidSingle) {
+        const dailyCount = (userState.dailyGenerations && userState.dailyGenerations[today]) || 0;
+        if (dailyCount >= 3) {
+            alert(t.dailyLimitReached);
+            setShowPaywall(true);
+            setView('start');
+            return;
+        }
+    }
+
+    // 2. 3-Day Free Trial Logic (Legacy fallback check)
     if (!userState.isSubscribed && !userState.hasPaidSingle) {
         if (!userState.trialStartDate) {
             setUserState(prev => ({ ...prev, trialStartDate: now.toISOString() }));
@@ -1050,7 +982,18 @@ This is a demonstration of the result layout.
           readingType: readingType
       };
       // Optimistic Update
-      setUserState(prev => ({ ...prev, history: [newHistoryItem, ...(prev.history || [])].slice(0, 5) }));
+      setUserState(prev => {
+          const todayStr = new Date().toISOString().split('T')[0];
+          const newDaily = { ...(prev.dailyGenerations || {}) };
+          newDaily[todayStr] = (newDaily[todayStr] || 0) + 1;
+          
+          return { 
+              ...prev, 
+              history: [newHistoryItem, ...(prev.history || [])].slice(0, 5),
+              dailyGenerations: newDaily,
+              lastGenerationDate: now.toISOString()
+          };
+      });
       
       setView('result');
     } catch (error: any) { 
@@ -1286,7 +1229,7 @@ This is a demonstration of the result layout.
 
         {currentPage === 'analysis' && (
              <div style={{...styles.heroSection, paddingTop: '1rem'}}>
-                {view === 'start' && <RenderStartView t={t} freeTrials={getDaysRemaining()} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
+                {view === 'start' && <RenderStartView t={t} freeTrials={getDailyFreeRemaining()} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
                 {view === 'selection' && <RenderSelectionView 
                     t={t} readingType={readingType} gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
                     uploadProgress={uploadProgress} userName={userName} onSetUserName={setUserName} onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
@@ -1322,35 +1265,6 @@ This is a demonstration of the result layout.
         {currentPage === 'refund' && <div style={styles.heroSection}><RefundPolicy t={t} /></div>}
         {currentPage === 'history' && (
             <div style={styles.heroSection}>
-                {userState.isLoggedIn && (
-                    <div style={{...styles.glassPanel, width: '100%', maxWidth: '1000px', marginBottom: '20px', textAlign: 'left'}}>
-                        <h3 style={{color: theme.gold, marginBottom: '15px'}}><i className="fas fa-crown"></i> {t.subManagement}</h3>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px'}}>
-                            <div>
-                                <div style={{fontSize: '0.9rem', color: '#aaa'}}>{t.currentPlan}</div>
-                                <div style={{fontSize: '1.2rem', color: '#fff', textTransform: 'capitalize'}}>{subscriptionDetails?.plan || t.planFree}</div>
-                            </div>
-                            <div>
-                                <div style={{fontSize: '0.9rem', color: '#aaa'}}>{t.subStatus}</div>
-                                <div style={{fontSize: '1.2rem', color: subscriptionDetails?.status === 'active' ? '#2ecc71' : '#e74c3c'}}>{subscriptionDetails?.status === 'active' ? t.statusActive : (subscriptionDetails?.status || t.statusNone)}</div>
-                            </div>
-                            {subscriptionDetails?.nextBillingDate && (
-                                <div>
-                                    <div style={{fontSize: '0.9rem', color: '#aaa'}}>{subscriptionDetails.cancelAtPeriodEnd ? t.subEndsOn : t.subNextBilling}</div>
-                                    <div style={{fontSize: '1.2rem', color: '#fff'}}>{new Date(subscriptionDetails.nextBillingDate).toLocaleDateString()}</div>
-                                </div>
-                            )}
-                            {subscriptionDetails?.status === 'active' && !subscriptionDetails.cancelAtPeriodEnd && (
-                                <button onClick={cancelSubscription} style={{...styles.secondaryButton, borderColor: '#e74c3c', color: '#e74c3c', marginTop: 0}}>
-                                    {t.subCancelBtn}
-                                </button>
-                            )}
-                            {subscriptionDetails?.cancelAtPeriodEnd && (
-                                <div style={{color: '#e67e22', fontSize: '0.9rem'}}>{t.subCanceledMsg.replace('{date}', new Date(subscriptionDetails.nextBillingDate).toLocaleDateString())}</div>
-                            )}
-                        </div>
-                    </div>
-                )}
                 <RenderHistoryView 
                     t={t} 
                     history={userState.history} 
