@@ -2,22 +2,48 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { theme, styles } from '../theme';
-import { Wind, Droplets, Eye, Sparkles, ArrowRight } from 'lucide-react';
+import { Wind, Droplets, Eye, Sparkles, ArrowRight, Hand, CircleDot, MoonStar } from 'lucide-react';
+import { HomepageConfig } from '../types';
 
 interface LandingPageProps {
   t: any;
   onExplore: () => void;
+  homepageConfigs?: HomepageConfig[];
 }
 
-export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepageConfigs = [] }) => {
   const [currentBanner, setCurrentBanner] = React.useState(0);
-  const banners = [
-    { title: t.banner1Title, desc: t.banner1Desc, img: 'https://picsum.photos/seed/mystic1/1920/1080' },
-    { title: t.banner2Title, desc: t.banner2Desc, img: 'https://picsum.photos/seed/mystic2/1920/1080' },
-    { title: t.banner3Title, desc: t.banner3Desc, img: 'https://picsum.photos/seed/mystic3/1920/1080' },
+
+  // Filter and prepare banners
+  const bannerConfigs = homepageConfigs.filter(c => c.type === 'banner');
+  const banners = bannerConfigs.length > 0 ? bannerConfigs.map(c => ({
+    title: c.title || t.banner1Title,
+    desc: c.description || t.banner1Desc,
+    img: c.imageUrl || `https://image.pollinations.ai/prompt/${encodeURIComponent(c.imagePrompt || 'mystical feng shui landscape, ethereal lighting, zen, 8k')}?width=1920&height=1080&nologo=true&seed=${c.key.length}`
+  })) : [
+    { title: t.banner1Title, desc: t.banner1Desc, img: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80&w=1920' },
+    { title: t.banner2Title, desc: t.banner2Desc, img: 'https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?auto=format&fit=crop&q=80&w=1920' },
+    { title: t.banner3Title, desc: t.banner3Desc, img: 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80&w=1920' },
   ];
 
+  // Prepare sections
+  const getSection = (key: string, defaultTitle: string, defaultDesc: string, defaultImg: string) => {
+    const config = homepageConfigs.find(c => c.key === key);
+    return {
+      title: config?.title || defaultTitle,
+      desc: config?.description || defaultDesc,
+      img: config?.imageUrl || (config?.imagePrompt ? `https://image.pollinations.ai/prompt/${encodeURIComponent(config.imagePrompt)}?width=800&height=600&nologo=true&seed=${key.length}` : defaultImg)
+    };
+  };
+
+  const fengshui = getSection('fengshui', t.landingFengShuiTitle, t.landingFengShuiDesc, 'https://images.unsplash.com/photo-1515890435782-59a5bb6ec191?auto=format&fit=crop&q=80&w=800');
+  const face = getSection('face', t.landingFaceTitle, t.landingFaceDesc, 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&q=80&w=800');
+  const palm = getSection('palm', t.landingPalmTitle, t.landingPalmDesc, 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=800');
+  const wuxing = getSection('wuxing', t.landingWuXingTitle, t.landingWuXingDesc, 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800');
+  const zodiac = getSection('zodiac', t.landingZodiacTitle, t.landingZodiacDesc, 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800');
+
   React.useEffect(() => {
+    if (banners.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentBanner((prev) => (prev + 1) % banners.length);
     }, 5000);
@@ -89,22 +115,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
         ))}
         
         {/* Banner Indicators */}
-        <div style={{ position: 'absolute', bottom: '20px', display: 'flex', gap: '10px' }}>
-          {banners.map((_, idx) => (
-            <div 
-              key={idx}
-              onClick={() => setCurrentBanner(idx)}
-              style={{
-                width: '12px',
-                height: '12px',
-                borderRadius: '50%',
-                background: currentBanner === idx ? theme.gold : 'rgba(255,255,255,0.3)',
-                cursor: 'pointer',
-                transition: 'all 0.3s'
-              }}
-            />
-          ))}
-        </div>
+        {banners.length > 1 && (
+          <div style={{ position: 'absolute', bottom: '20px', display: 'flex', gap: '10px' }}>
+            {banners.map((_, idx) => (
+              <div 
+                key={idx}
+                onClick={() => setCurrentBanner(idx)}
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  background: currentBanner === idx ? theme.gold : 'rgba(255,255,255,0.3)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Hero Section */}
@@ -186,7 +214,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
                 color: theme.gold, 
                 margin: 0 
               }}>
-                {t.landingFengShuiTitle}
+                {fengshui.title}
               </h2>
             </div>
             <p style={{ 
@@ -195,7 +223,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
               color: '#bbb',
               textAlign: 'justify'
             }}>
-              {t.landingFengShuiDesc}
+              {fengshui.desc}
             </p>
           </motion.div>
           <motion.div
@@ -206,7 +234,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
             style={{ position: 'relative' }}
           >
             <img 
-              src="https://picsum.photos/seed/fengshui/800/600" 
+              src={fengshui.img} 
               alt="Feng Shui" 
               referrerPolicy="no-referrer"
               style={{ 
@@ -234,7 +262,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
           gap: '60px', 
-          alignItems: 'center'
+          alignItems: 'center',
+          marginBottom: '120px'
         }} className="responsive-grid">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -245,7 +274,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
             className="order-mobile-1"
           >
             <img 
-              src="https://picsum.photos/seed/faceanalysis/800/600" 
+              src={face.img} 
               alt="Face Reading" 
               referrerPolicy="no-referrer"
               style={{ 
@@ -273,7 +302,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
                 color: theme.gold, 
                 margin: 0 
               }}>
-                {t.landingFaceTitle}
+                {face.title}
               </h2>
             </div>
             <p style={{ 
@@ -282,8 +311,173 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
               color: '#bbb',
               textAlign: 'justify'
             }}>
-              {t.landingFaceDesc}
+              {face.desc}
             </p>
+          </motion.div>
+        </div>
+
+        {/* Palmistry Section */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '60px', 
+          alignItems: 'center',
+          marginBottom: '120px'
+        }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+              <Hand size={32} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2.5rem', 
+                color: theme.gold, 
+                margin: 0 
+              }}>
+                {palm.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1.1rem', 
+              lineHeight: '1.8', 
+              color: '#bbb',
+              textAlign: 'justify'
+            }}>
+              {palm.desc}
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <img 
+              src={palm.img} 
+              alt="Palmistry" 
+              referrerPolicy="no-referrer"
+              style={{ 
+                width: '100%', 
+                borderRadius: '20px', 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                border: `1px solid ${theme.darkGold}`
+              }} 
+            />
+          </motion.div>
+        </div>
+
+        {/* Five Elements Section */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '60px', 
+          alignItems: 'center',
+          marginBottom: '120px'
+        }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            style={{ order: 2 }}
+            className="order-mobile-1"
+          >
+            <img 
+              src={wuxing.img} 
+              alt="Five Elements" 
+              referrerPolicy="no-referrer"
+              style={{ 
+                width: '100%', 
+                borderRadius: '20px', 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                border: `1px solid ${theme.darkGold}`
+              }} 
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            style={{ order: 1 }}
+            className="order-mobile-2"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+              <CircleDot size={32} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2.5rem', 
+                color: theme.gold, 
+                margin: 0 
+              }}>
+                {wuxing.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1.1rem', 
+              lineHeight: '1.8', 
+              color: '#bbb',
+              textAlign: 'justify'
+            }}>
+              {wuxing.desc}
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Zodiac Section */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '60px', 
+          alignItems: 'center'
+        }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+              <MoonStar size={32} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2.5rem', 
+                color: theme.gold, 
+                margin: 0 
+              }}>
+                {zodiac.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1.1rem', 
+              lineHeight: '1.8', 
+              color: '#bbb',
+              textAlign: 'justify'
+            }}>
+              {zodiac.desc}
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <img 
+              src={zodiac.img} 
+              alt="Zodiac" 
+              referrerPolicy="no-referrer"
+              style={{ 
+                width: '100%', 
+                borderRadius: '20px', 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                border: `1px solid ${theme.darkGold}`
+              }} 
+            />
           </motion.div>
         </div>
       </section>
@@ -300,7 +494,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore }) => {
           viewport={{ once: true }}
         >
           <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: '3rem', color: theme.gold, marginBottom: '2rem' }}>
-            Ready to reveal your path?
+            {t.exploreDestiny}
           </h2>
           <button
             onClick={onExplore}

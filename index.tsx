@@ -7,7 +7,7 @@ import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { theme, styles } from './theme';
 import { LANGUAGES, TRANSLATIONS } from './translations';
 import { calculateAge, calculateWuXing, getWesternZodiac } from './utils';
-import { UserState, Plan, CartItem, Product, HistoryRecord, Order, AppConfig } from './types';
+import { UserState, Plan, CartItem, Product, HistoryRecord, Order, AppConfig, HomepageConfig } from './types';
 import { BaguaSVG } from './components/Icons';
 import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './components/Modals';
 import { PrivacyPolicy, TermsOfService, RefundPolicy, AboutPage } from './pages/StaticPages';
@@ -32,35 +32,8 @@ const AMBIENT_MUSIC_URL = "https://cdn.pixabay.com/audio/2022/02/07/audio_191983
 // 🛠️ LOCAL BACKEND SERVICE (FALLBACK & DYNAMIC CONFIG)
 // =========================================================
 
-const LocalBackend = {
-    // Mimic DB
-    getOrders: () => {
-        const stored = localStorage.getItem('mystic_all_orders');
-        return stored ? JSON.parse(stored) : [];
-    },
-    saveOrder: (order: any) => {
-        const orders = LocalBackend.getOrders();
-        order.id = `ORD-${Date.now().toString().slice(-6)}`;
-        order.date = new Date().toLocaleDateString();
-        order.status = 'paid';
-        orders.unshift(order);
-        localStorage.setItem('mystic_all_orders', JSON.stringify(orders));
-        return { success: true, orderId: order.id };
-    },
-    getHistory: (userId: string) => {
-        const allHistory = JSON.parse(localStorage.getItem('mystic_user_history_db') || '{}');
-        return allHistory[userId] || [];
-    },
-    saveHistory: (userId: string, record: any) => {
-        const allHistory = JSON.parse(localStorage.getItem('mystic_user_history_db') || '{}');
-        if (!allHistory[userId]) allHistory[userId] = [];
-        allHistory[userId].unshift(record);
-        // Limit to 5
-        allHistory[userId] = allHistory[userId].slice(0, 5);
-        localStorage.setItem('mystic_user_history_db', JSON.stringify(allHistory));
-    },
-    
-    // Mimic AI with Dynamic Configuration
+const AIService = {
+    // Call AI with Dynamic Configuration
     callAI: async (prompt: string, base64Image?: string, config?: AppConfig) => {
         // Default to Google if no config passed or keys missing
         let provider = config?.textProvider || 'Google';
@@ -71,11 +44,11 @@ const LocalBackend = {
             provider = 'Google';
         }
 
-        console.log(`[LocalBackend] Using ${provider}...`);
+        console.log(`[AIService] Using ${provider}...`);
 
         if (provider === 'Google') {
-            // Use User Key if available, else process.env
-            const apiKey = config?.googleKey || process.env.API_KEY;
+            // Use User Key if available, else process.env.GEMINI_API_KEY
+            const apiKey = config?.googleKey || process.env.GEMINI_API_KEY;
             if (!apiKey) throw new Error("Google API Key missing.");
 
             const ai = new GoogleGenAI({ apiKey });
@@ -138,12 +111,11 @@ const LocalBackend = {
 
 const callBackendAPI = async (endpoint: string, body: any = {}, method = 'POST', config?: AppConfig) => {
     try {
-        // 1. Try Real Backend
         const options: RequestInit = {
             method: method,
             headers: { 'Content-Type': 'application/json' }
         };
-        if (method === 'POST') options.body = JSON.stringify({ ...body, config }); // Pass config to backend if needed
+        if (method === 'POST') options.body = JSON.stringify({ ...body, config });
 
         const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
 
@@ -154,47 +126,12 @@ const callBackendAPI = async (endpoint: string, body: any = {}, method = 'POST',
         return await response.json();
 
     } catch (error: any) {
-        // 2. Fallback to LocalBackend if connection fails
-        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError') || error.message.includes('Connection refused')) {
-            // console.warn(`Backend unreachable. Using LocalBackend fallback for ${endpoint}`);
-            
-            // Route to local logic with Dynamic Config
-            if (endpoint === '/analyze') {
-                 const text = await LocalBackend.callAI(body.prompt, body.image, config);
-                 if (body.userId) LocalBackend.saveHistory(body.userId, {
-                     id: Date.now(), 
-                     date: new Date().toLocaleDateString(), 
-                     resultText: text,
-                     elements: body.elements,
-                     readingType: body.readingType,
-                     gender: body.gender, // Pass gender to local history
-                     name: body.name,     // Pass name to local history
-                     birthDate: body.birthDate // Pass DOB to local history
-                 });
-                 return { text };
-            }
-            if (endpoint === '/translate') {
-                const prompt = `Translate to ${body.targetLang}. Preserve formatting:\n\n${body.text}`;
-                const text = await LocalBackend.callAI(prompt, undefined, config); // No image for translation
-                return { text };
-            }
-            if (endpoint === '/orders' && method === 'POST') {
-                return LocalBackend.saveOrder(body);
-            }
-            if (endpoint === '/admin/orders' && method === 'GET') {
-                return LocalBackend.getOrders();
-            }
-            if (endpoint.startsWith('/history/') && method === 'GET') {
-                const userId = endpoint.split('/').pop() || '';
-                return LocalBackend.getHistory(userId);
-            }
-        }
         throw error;
     }
 };
 
 // Helper for Retry with Error Parsing
-const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 4000, onRetry?: (msg: string) => void): Promise<any> => {
+const callWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 1500, onRetry?: (msg: string) => void): Promise<any> => {
     try {
         return await fn();
     } catch (err: any) {
@@ -489,7 +426,7 @@ const App = () => {
   const [appConfig, setAppConfig] = useState<AppConfig>({
       textProvider: 'Google',
       imageProvider: 'Pollinations',
-      googleKey: process.env.API_KEY || '',
+      googleKey: process.env.GEMINI_API_KEY || '',
       openaiKey: '',
       deepseekKey: ''
   });
@@ -525,6 +462,20 @@ const App = () => {
   // IMPORTANT: Ensure t updates correctly. If translations are missing, this fallback prevents crashes.
   const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
   
+  const [homepageConfigs, setHomepageConfigs] = useState<HomepageConfig[]>([]);
+
+  useEffect(() => {
+      const fetchHomepage = async () => {
+          try {
+              const data = await callBackendAPI('/homepage', {}, 'GET');
+              if (Array.isArray(data)) setHomepageConfigs(data);
+          } catch (e) {
+              console.warn("Could not fetch homepage config", e);
+          }
+      };
+      fetchHomepage();
+  }, []);
+
   // App State
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const [userState, setUserState] = useState<UserState>({ 
@@ -676,14 +627,10 @@ const App = () => {
       if (view === 'result' && resultText) {
           setIsTranslating(true);
           try {
-              // Note: We use callWithRetry wrapping callBackendAPI. 
-              // We pass appConfig so LocalBackend knows which provider to use for translation.
-              const response = await callWithRetry(() => callBackendAPI('/translate', {
-                  text: resultText,
-                  targetLang: newLang
-              }, 'POST', appConfig), 5, 2000, (retryMsg) => console.log("Translating wait: " + retryMsg));
+              const prompt = `Translate the following markdown text to ${language}. Preserve all formatting, emojis, and headers exactly. Text:\n\n${resultText}`;
+              const translatedText = await callWithRetry(() => AIService.callAI(prompt, undefined, appConfig), 5, 2000, (retryMsg) => console.log("Translating wait: " + retryMsg));
               
-              if (response.text) setResultText(response.text);
+              if (translatedText) setResultText(translatedText);
           } catch (e: any) {
                console.warn("Translation failed:", e.message);
           } finally {
@@ -881,7 +828,21 @@ This is a demonstration of the result layout.
     setView('analyzing');
     setLoadingMessage(""); 
     setAnalysisProgress(0);
-    const progressInterval = setInterval(() => { setAnalysisProgress(prev => Math.min(prev + 1, 95)); }, 200);
+    
+    // Faster progress bar: reach 90% in ~5 seconds
+    const progressInterval = setInterval(() => { 
+        setAnalysisProgress(prev => {
+            const next = prev < 30 ? prev + 3 : (prev < 70 ? prev + 1.5 : (prev < 95 ? prev + 0.5 : prev));
+            
+            // Update message based on the NEXT value
+            if (next > 80) setLoadingMessage(t.analyzingStep4 || "Finalizing destiny...");
+            else if (next > 50) setLoadingMessage(t.analyzingStep3 || "Calculating elemental balance...");
+            else if (next > 20) setLoadingMessage(t.analyzingStep2 || "Mapping facial features...");
+            else setLoadingMessage(t.analyzingStep1 || "Connecting to celestial energy...");
+            
+            return next;
+        }); 
+    }, 100);
 
     const langConfig = LANGUAGES.find(l => l.code === language);
     // Explicitly tell AI the target language to reduce translation needs
@@ -947,30 +908,35 @@ This is a demonstration of the result layout.
           }
       }
 
-      // CALL BACKEND API (or FALLBACK) - Pass appConfig!
-      const apiCall = callWithRetry(() => callBackendAPI('/analyze', {
-          prompt,
-          image: base64Data,
-          userId: userState.userId,
-          email: userState.email, // Pass email for subscription check
-          elements: wuXingResult, // Save elements to backend/history
-          readingType: readingType, // Save type
-          gender: gender,       // Pass gender to backend
-          name: userName,       // Pass name to backend
-          birthDate: birthDate  // Pass DOB to backend
-      }, 'POST', appConfig), 5, 4000, (retryMsg) => setLoadingMessage(retryMsg));
-
-      const response: any = await apiCall;
+      // CALL AI DIRECTLY FROM FRONTEND
+      const result = await callWithRetry(() => AIService.callAI(prompt, base64Data, appConfig), 2, 1500, (retryMsg) => setLoadingMessage(retryMsg));
       
       clearInterval(progressInterval);
       setAnalysisProgress(100);
       setLoadingMessage("");
       await new Promise(resolve => setTimeout(resolve, 600));
       
-      const newResultText = response.text || "Destiny unclear.";
+      const newResultText = result || "Destiny unclear.";
       setResultText(newResultText);
       
-      // History is already updated via LocalBackend/Server, but we update UI state here for immediate feedback
+      // Save to History via Backend
+      if (userState.userId) {
+          try {
+              await callBackendAPI('/history', {
+                  userId: userState.userId,
+                  resultText: newResultText,
+                  gender,
+                  name: userName,
+                  birthDate,
+                  readingType,
+                  elements: wuXingResult
+              });
+          } catch (e) {
+              console.warn("Failed to save history to backend", e);
+          }
+      }
+
+      // Update UI state here for immediate feedback
       const newHistoryItem: HistoryRecord = {
           id: Date.now(),
           date: now.toLocaleDateString(),
@@ -1224,7 +1190,7 @@ This is a demonstration of the result layout.
         )}
 
         {currentPage === 'home' && (
-            <LandingPage t={t} onExplore={() => setCurrentPage('analysis')} />
+            <LandingPage t={t} homepageConfigs={homepageConfigs} onExplore={() => setCurrentPage('analysis')} />
         )}
 
         {currentPage === 'analysis' && (
@@ -1282,7 +1248,8 @@ This is a demonstration of the result layout.
         )}
       </div>
       <footer style={styles.footer}>
-        <div style={{marginBottom: '10px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
+        <SocialLinks t={t} />
+        <div style={{marginTop: '30px', marginBottom: '10px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('privacy'); setView('start');}}>{t.privacy}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('terms'); setView('start');}}>{t.terms}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('refund'); setView('start');}}>{t.refundTitle}</span>
@@ -1293,6 +1260,29 @@ This is a demonstration of the result layout.
     </div>
   );
 };
+
+const SocialLinks = ({ t }: { t: any }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', marginTop: '30px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '30px' }}>
+        <h3 style={{ color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', margin: 0 }}>{t.followUs}</h3>
+        <div style={{ display: 'flex', gap: '25px' }}>
+            <a href="#" style={{ color: '#fff', fontSize: '1.5rem', transition: 'color 0.3s' }} onMouseOver={e => e.currentTarget.style.color = theme.gold} onMouseOut={e => e.currentTarget.style.color = '#fff'}>
+                <i className="fab fa-facebook"></i>
+            </a>
+            <a href="#" style={{ color: '#fff', fontSize: '1.5rem', transition: 'color 0.3s' }} onMouseOver={e => e.currentTarget.style.color = theme.gold} onMouseOut={e => e.currentTarget.style.color = '#fff'}>
+                <i className="fab fa-instagram"></i>
+            </a>
+            <a href="#" style={{ color: '#fff', fontSize: '1.5rem', transition: 'color 0.3s' }} onMouseOver={e => e.currentTarget.style.color = theme.gold} onMouseOut={e => e.currentTarget.style.color = '#fff'}>
+                <i className="fab fa-twitter"></i>
+            </a>
+            <a href="#" style={{ color: '#fff', fontSize: '1.5rem', transition: 'color 0.3s' }} onMouseOver={e => e.currentTarget.style.color = theme.gold} onMouseOut={e => e.currentTarget.style.color = '#fff'}>
+                <i className="fab fa-youtube"></i>
+            </a>
+            <a href="#" style={{ color: '#fff', fontSize: '1.5rem', transition: 'color 0.3s' }} onMouseOver={e => e.currentTarget.style.color = theme.gold} onMouseOut={e => e.currentTarget.style.color = '#fff'}>
+                <i className="fab fa-tiktok"></i>
+            </a>
+        </div>
+    </div>
+);
 
 const root = createRoot(document.getElementById('root')!);
 root.render(<App />);

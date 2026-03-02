@@ -75,3 +75,13 @@ export interface Order {
   email?: string;
   phone?: string;
 }
+
+export interface HomepageConfig {
+  key: string;
+  type: 'banner' | 'section';
+  title: string;
+  description: string;
+  imageUrl?: string;
+  imagePrompt?: string;
+  order: number;
+}

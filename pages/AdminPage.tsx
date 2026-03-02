@@ -9,10 +9,12 @@ export const AdminPage = ({ t }: { t: any }) => {
     const [password, setPassword] = useState('admin');
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
-    const [activeTab, setActiveTab] = useState<'orders' | 'products'>('orders');
+    const [homepageConfigs, setHomepageConfigs] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'homepage'>('orders');
     
     // Product Form State
     const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
+    const [editingConfig, setEditingConfig] = useState<any | null>(null);
 
     const API_BASE_URL = "/api"; 
 
@@ -27,14 +29,46 @@ export const AdminPage = ({ t }: { t: any }) => {
                         const stored = localStorage.getItem('mystic_all_orders');
                         if (stored) setOrders(JSON.parse(stored));
                     });
-            } else {
+            } else if (activeTab === 'products') {
                 fetch(`${API_BASE_URL}/products`)
                     .then(res => res.json())
                     .then(data => { if (Array.isArray(data)) setProducts(data); })
                     .catch(err => console.error("Failed to fetch products:", err));
+            } else if (activeTab === 'homepage') {
+                fetch(`${API_BASE_URL}/homepage`)
+                    .then(res => res.json())
+                    .then(data => { if (Array.isArray(data)) setHomepageConfigs(data); })
+                    .catch(err => console.error("Failed to fetch homepage configs:", err));
             }
         }
     }, [isAuthenticated, activeTab]);
+
+    const handleSaveConfig = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingConfig) return;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/homepage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editingConfig)
+            });
+            if (res.ok) {
+                setHomepageConfigs(prev => {
+                    const idx = prev.findIndex(c => c.key === editingConfig.key);
+                    if (idx >= 0) {
+                        const newArr = [...prev];
+                        newArr[idx] = editingConfig;
+                        return newArr;
+                    }
+                    return [...prev, editingConfig];
+                });
+                setEditingConfig(null);
+            }
+        } catch (err) {
+            console.error("Save homepage config failed:", err);
+        }
+    };
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -172,6 +206,12 @@ export const AdminPage = ({ t }: { t: any }) => {
                     >
                         {t.productManagement}
                     </button>
+                    <button 
+                        onClick={() => setActiveTab('homepage')} 
+                        style={{...styles.secondaryButton, background: activeTab === 'homepage' ? theme.gold : 'transparent', color: activeTab === 'homepage' ? '#000' : theme.gold, marginTop: 0}}
+                    >
+                        {t.homepageManagement || "Homepage"}
+                    </button>
                     <button onClick={handleLogout} style={{...styles.secondaryButton, marginTop: 0}}>Logout</button>
                 </div>
             </div>
@@ -234,7 +274,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                         </div>
                     </div>
                 </>
-            ) : (
+            ) : activeTab === 'products' ? (
                 <div style={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px'}} className="responsive-grid">
                     <div style={styles.glassPanel}>
                         <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif'}}>{editingProduct?.id ? t.editProduct : t.addProduct}</h3>
@@ -310,6 +350,81 @@ export const AdminPage = ({ t }: { t: any }) => {
                                             <td style={{padding: '10px 15px', textAlign: 'right'}}>
                                                 <button onClick={() => setEditingProduct(p)} style={{background: 'none', border: 'none', color: theme.gold, cursor: 'pointer', marginRight: '10px'}}><i className="fas fa-edit"></i></button>
                                                 <button onClick={() => handleDeleteProduct(p.id)} style={{background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer'}}><i className="fas fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px'}} className="responsive-grid">
+                    <div style={styles.glassPanel}>
+                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif'}}>{t.editHomepage || "Edit Homepage Content"}</h3>
+                        <form onSubmit={handleSaveConfig} style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                            <input 
+                                type="text" placeholder="Key" style={{...styles.formInput, opacity: 0.7}} 
+                                value={editingConfig?.key || ''} readOnly 
+                            />
+                            <input 
+                                type="text" placeholder="Title" style={styles.formInput} 
+                                value={editingConfig?.title || ''} onChange={e => setEditingConfig({...editingConfig, title: e.target.value})} 
+                            />
+                            <textarea 
+                                placeholder="Description" style={{...styles.formInput, height: '120px'}} 
+                                value={editingConfig?.description || ''} onChange={e => setEditingConfig({...editingConfig, description: e.target.value})} 
+                            />
+                            <input 
+                                type="text" placeholder="Image URL (Manual)" style={styles.formInput} 
+                                value={editingConfig?.imageUrl || ''} onChange={e => setEditingConfig({...editingConfig, imageUrl: e.target.value})} 
+                            />
+                            <div style={{marginBottom: '10px'}}>
+                                <label style={{display: 'block', color: theme.gold, fontSize: '0.8rem', marginBottom: '5px'}}>Upload Image (Replaces URL)</label>
+                                <input 
+                                    type="file" accept="image/*" 
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                                setEditingConfig({...editingConfig, imageUrl: reader.result as string});
+                                            };
+                                            reader.readAsDataURL(file);
+                                        }
+                                    }}
+                                    style={{color: '#888', fontSize: '0.8rem'}}
+                                />
+                            </div>
+                            <input 
+                                type="text" placeholder="AI Image Prompt (Fallback)" style={styles.formInput} 
+                                value={editingConfig?.imagePrompt || ''} onChange={e => setEditingConfig({...editingConfig, imagePrompt: e.target.value})} 
+                            />
+                            <div style={{display: 'flex', gap: '10px'}}>
+                                <button type="submit" style={{...styles.button, flex: 1}} disabled={!editingConfig}>Save Changes</button>
+                                <button type="button" onClick={() => setEditingConfig(null)} style={{...styles.secondaryButton, flex: 1}}>Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden'}}>
+                        <div style={{overflowX: 'auto'}}>
+                            <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0'}}>
+                                <thead>
+                                    <tr style={{background: 'rgba(212, 175, 55, 0.2)', borderBottom: `1px solid ${theme.darkGold}`}}>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Type</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Section/Key</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Title</th>
+                                        <th style={{padding: '15px', textAlign: 'right', color: theme.gold}}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {homepageConfigs.map((c) => (
+                                        <tr key={c.key} style={{borderBottom: '1px solid rgba(255,255,255,0.1)'}}>
+                                            <td style={{padding: '10px 15px', textTransform: 'capitalize', fontSize: '0.8rem'}}>{c.type}</td>
+                                            <td style={{padding: '10px 15px', fontWeight: 'bold'}}>{c.key}</td>
+                                            <td style={{padding: '10px 15px'}}>{c.title}</td>
+                                            <td style={{padding: '10px 15px', textAlign: 'right'}}>
+                                                <button onClick={() => setEditingConfig(c)} style={{background: 'none', border: 'none', color: theme.gold, cursor: 'pointer'}}><i className="fas fa-edit"></i></button>
                                             </td>
                                         </tr>
                                     ))}

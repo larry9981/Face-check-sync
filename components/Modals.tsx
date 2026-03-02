@@ -7,10 +7,10 @@ import { hashCode, ELEMENT_ADVICE, ImagePersistence } from '../utils';
 
 // --- NEW COMPONENT: Cached Image ---
 // Handles async loading from IndexedDB to avoid re-fetching from API
-const CachedImage = ({ productId, prompt, size = 512, style, className, imageUrl }: { productId: string, prompt: string, size?: number, style?: React.CSSProperties, className?: string, imageUrl?: string }) => {
+export const CachedImage = ({ productId, prompt, size = 512, style, className, imageUrl }: { productId: string, prompt: string, size?: number, style?: React.CSSProperties, className?: string, imageUrl?: string }) => {
     // If we have a direct imageUrl, use it immediately
-    if (imageUrl) {
-        return <img src={imageUrl} style={style} className={className} alt="Product" />;
+    if (imageUrl && imageUrl.trim() !== "") {
+        return <img src={imageUrl} style={style} className={className} alt="Product" referrerPolicy="no-referrer" />;
     }
 
     // Initialize with memory cache if available for instant render
@@ -250,8 +250,8 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
 
 export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: (details: any) => void, userId?: string }) => {
     const [successState, setSuccessState] = useState(false);
-    
     const [email, setEmail] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal' | 'demo'>('stripe');
 
     let title = '';
 
@@ -279,7 +279,7 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
         setSuccessState(true);
         const paymentDetails = {
             contact: { email },
-            method: 'demo'
+            method: paymentMethod
         };
         setTimeout(() => onSuccess(paymentDetails), 2000);
     };
@@ -311,12 +311,66 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                 </div>
             </div>
 
+            <div style={{marginBottom: '20px'}}>
+                <h3 style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '10px', textTransform: 'uppercase'}}>Payment Method</h3>
+                <div style={{display: 'flex', gap: '10px'}}>
+                    <button 
+                        onClick={() => setPaymentMethod('stripe')}
+                        style={{
+                            flex: 1, padding: '15px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'stripe' ? theme.gold : '#333'}`,
+                            background: paymentMethod === 'stripe' ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
+                        }}
+                    >
+                        <i className="fab fa-stripe" style={{fontSize: '2rem', color: '#6772e5'}}></i>
+                        <span style={{fontSize: '0.8rem', color: paymentMethod === 'stripe' ? theme.gold : '#888'}}>Stripe</span>
+                    </button>
+                    <button 
+                        onClick={() => setPaymentMethod('paypal')}
+                        style={{
+                            flex: 1, padding: '15px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'paypal' ? theme.gold : '#333'}`,
+                            background: paymentMethod === 'paypal' ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
+                        }}
+                    >
+                        <i className="fab fa-paypal" style={{fontSize: '2rem', color: '#003087'}}></i>
+                        <span style={{fontSize: '0.8rem', color: paymentMethod === 'paypal' ? theme.gold : '#888'}}>PayPal</span>
+                    </button>
+                </div>
+            </div>
+
+            {paymentMethod === 'stripe' && (
+                <div style={{marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid #333'}}>
+                    <div style={{marginBottom: '10px'}}>
+                        <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>CARD NUMBER</label>
+                        <input type="text" placeholder="**** **** **** ****" style={{...styles.cardInput, background: 'transparent', border: 'none', borderBottom: '1px solid #444', borderRadius: 0, paddingLeft: 0}} disabled />
+                    </div>
+                    <div style={{display: 'flex', gap: '20px'}}>
+                        <div style={{flex: 1}}>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>EXPIRY</label>
+                            <input type="text" placeholder="MM/YY" style={{...styles.cardInput, background: 'transparent', border: 'none', borderBottom: '1px solid #444', borderRadius: 0, paddingLeft: 0}} disabled />
+                        </div>
+                        <div style={{flex: 1}}>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>CVC</label>
+                            <input type="text" placeholder="***" style={{...styles.cardInput, background: 'transparent', border: 'none', borderBottom: '1px solid #444', borderRadius: 0, paddingLeft: 0}} disabled />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {paymentMethod === 'paypal' && (
+                <div style={{marginBottom: '20px', padding: '20px', textAlign: 'center', background: 'rgba(0,48,135,0.1)', borderRadius: '8px', border: '1px solid #003087'}}>
+                    <i className="fab fa-paypal" style={{fontSize: '3rem', color: '#003087', marginBottom: '10px'}}></i>
+                    <p style={{fontSize: '0.9rem', color: '#ccc'}}>You will be redirected to PayPal to complete your purchase safely.</p>
+                </div>
+            )}
+
             <button 
                 style={{...styles.button, width: '100%', marginTop: '10px'}} 
                 onClick={handleSuccess}
                 disabled={!email}
             >
-                {t.payNow} (Demo)
+                {paymentMethod === 'paypal' ? 'Continue to PayPal' : t.payNow} (Demo)
             </button>
             
             <p style={{marginTop: '15px', fontSize: '0.8rem', color: '#888', textAlign: 'center'}}>

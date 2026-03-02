@@ -49,7 +49,18 @@ const ProductSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+const HomepageConfigSchema = new mongoose.Schema({
+  key: { type: String, required: true, unique: true }, // e.g., 'banner1', 'fengshui'
+  type: { type: String, required: true }, // 'banner' or 'section'
+  title: { type: String },
+  description: { type: String },
+  imageUrl: { type: String },
+  imagePrompt: { type: String }, // For AI generation fallback
+  order: { type: Number, default: 0 }
+});
+
 export const User = mongoose.model('User', UserSchema);
 export const Order = mongoose.model('Order', OrderSchema);
 export const History = mongoose.model('History', HistorySchema);
 export const Product = mongoose.model('Product', ProductSchema);
+export const HomepageConfig = mongoose.model('HomepageConfig', HomepageConfigSchema);

@@ -27,7 +27,7 @@ export const LoadingSpinner = ({ t, progress, message }: { t: any, progress?: nu
                 width: `${progress}%`, 
                 height: '100%', 
                 background: `linear-gradient(90deg, ${theme.darkGold}, #ffd700)`, 
-                transition: 'width 0.2s ease-out',
+                transition: 'width 0.1s linear',
                 boxShadow: `0 0 10px ${theme.darkGold}`
             }}></div>
         </div>

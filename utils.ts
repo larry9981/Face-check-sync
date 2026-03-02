@@ -182,8 +182,10 @@ export const ImagePersistence = {
     loadImage: async function(productId: string, prompt: string, size: number = 512): Promise<string> {
         const cacheKey = `${productId}_${size}`; 
         const seed = hashCode(productId);
-        // Default URL - Returns this if anything fails
+        // Primary AI URL
         const remoteUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${size}&height=${size}&nologo=true&seed=${seed}`;
+        // Secondary Fallback URL (Picsum)
+        const fallbackUrl = `https://picsum.photos/seed/${seed}/${size}/${size}`;
 
         // 1. Memory Cache (Fastest)
         if (this.memoryCache.has(cacheKey)) return this.memoryCache.get(cacheKey)!;
@@ -213,26 +215,43 @@ export const ImagePersistence = {
             }
 
             // 3. Network Fetch
-            const response = await fetch(remoteUrl);
-            if (!response.ok) return remoteUrl; // Fallback to live URL if fetch fails
-            
-            const blob = await response.blob();
+            try {
+                const response = await fetch(remoteUrl);
+                if (!response.ok) throw new Error("Pollinations failed");
+                
+                const blob = await response.blob();
 
-            // 4. Save to DB (Fire and Forget)
-            if (db) {
-                try {
-                    const tx = db.transaction(this.STORE_NAME, 'readwrite');
-                    tx.objectStore(this.STORE_NAME).put({ id: cacheKey, blob: blob, date: Date.now() });
-                } catch (e) { /* Ignore write errors */ }
+                // 4. Save to DB (Fire and Forget)
+                if (db) {
+                    try {
+                        const tx = db.transaction(this.STORE_NAME, 'readwrite');
+                        tx.objectStore(this.STORE_NAME).put({ id: cacheKey, blob: blob, date: Date.now() });
+                    } catch (e) { /* Ignore write errors */ }
+                }
+
+                const objectUrl = URL.createObjectURL(blob);
+                this.memoryCache.set(cacheKey, objectUrl);
+                return objectUrl;
+            } catch (e) {
+                // If Pollinations fails, try to fetch from Picsum and cache it
+                const response = await fetch(fallbackUrl);
+                if (!response.ok) return fallbackUrl;
+
+                const blob = await response.blob();
+                if (db) {
+                    try {
+                        const tx = db.transaction(this.STORE_NAME, 'readwrite');
+                        tx.objectStore(this.STORE_NAME).put({ id: cacheKey, blob: blob, date: Date.now() });
+                    } catch (e) { /* Ignore write errors */ }
+                }
+                const objectUrl = URL.createObjectURL(blob);
+                this.memoryCache.set(cacheKey, objectUrl);
+                return objectUrl;
             }
-
-            const objectUrl = URL.createObjectURL(blob);
-            this.memoryCache.set(cacheKey, objectUrl);
-            return objectUrl;
 
         } catch (error) {
             // Absolute Safety Net
-            return remoteUrl; 
+            return fallbackUrl; 
         }
     }
 };
