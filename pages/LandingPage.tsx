@@ -41,6 +41,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
   const palm = getSection('palm', t.landingPalmTitle, t.landingPalmDesc, 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=800');
   const wuxing = getSection('wuxing', t.landingWuXingTitle, t.landingWuXingDesc, 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800');
   const zodiac = getSection('zodiac', t.landingZodiacTitle, t.landingZodiacDesc, 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800');
+  const iching = getSection('iching', t.landingIChingTitle, t.landingIChingDesc, 'https://images.unsplash.com/photo-1515890435782-59a5bb6ec191?auto=format&fit=crop&q=80&w=800');
+  const bazi = getSection('bazi', t.landingBaziTitle, t.landingBaziDesc, 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&q=80&w=800');
+  const ziwei = getSection('ziwei', t.landingZiWeiTitle, t.landingZiWeiDesc, 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=800');
+  const qimen = getSection('qimen', t.landingQiMenTitle, t.landingQiMenDesc, 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800');
+  const plum = getSection('plum', t.landingPlumTitle, t.landingPlumDesc, 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800');
 
   React.useEffect(() => {
     if (banners.length <= 1) return;
@@ -470,6 +475,283 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             <img 
               src={zodiac.img} 
               alt="Zodiac" 
+              referrerPolicy="no-referrer"
+              style={{ 
+                width: '100%', 
+                borderRadius: '20px', 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                border: `1px solid ${theme.darkGold}`
+              }} 
+            />
+          </motion.div>
+        </div>
+
+        {/* I Ching Section */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '60px', 
+          alignItems: 'center',
+          marginBottom: '120px'
+        }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+              <Sparkles size={32} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2.5rem', 
+                color: theme.gold, 
+                margin: 0 
+              }}>
+                {iching.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1.1rem', 
+              lineHeight: '1.8', 
+              color: '#bbb',
+              textAlign: 'justify'
+            }}>
+              {iching.desc}
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <img 
+              src={iching.img} 
+              alt="I Ching" 
+              referrerPolicy="no-referrer"
+              style={{ 
+                width: '100%', 
+                borderRadius: '20px', 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                border: `1px solid ${theme.darkGold}`
+              }} 
+            />
+          </motion.div>
+        </div>
+
+        {/* Bazi Section */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '60px', 
+          alignItems: 'center',
+          marginBottom: '120px'
+        }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            style={{ order: 2 }}
+            className="order-mobile-1"
+          >
+            <img 
+              src={bazi.img} 
+              alt="Bazi" 
+              referrerPolicy="no-referrer"
+              style={{ 
+                width: '100%', 
+                borderRadius: '20px', 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                border: `1px solid ${theme.darkGold}`
+              }} 
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            style={{ order: 1 }}
+            className="order-mobile-2"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+              <CircleDot size={32} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2.5rem', 
+                color: theme.gold, 
+                margin: 0 
+              }}>
+                {bazi.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1.1rem', 
+              lineHeight: '1.8', 
+              color: '#bbb',
+              textAlign: 'justify'
+            }}>
+              {bazi.desc}
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Zi Wei Section */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '60px', 
+          alignItems: 'center',
+          marginBottom: '120px'
+        }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+              <MoonStar size={32} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2.5rem', 
+                color: theme.gold, 
+                margin: 0 
+              }}>
+                {ziwei.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1.1rem', 
+              lineHeight: '1.8', 
+              color: '#bbb',
+              textAlign: 'justify'
+            }}>
+              {ziwei.desc}
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <img 
+              src={ziwei.img} 
+              alt="Zi Wei" 
+              referrerPolicy="no-referrer"
+              style={{ 
+                width: '100%', 
+                borderRadius: '20px', 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                border: `1px solid ${theme.darkGold}`
+              }} 
+            />
+          </motion.div>
+        </div>
+
+        {/* Qi Men Section */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '60px', 
+          alignItems: 'center',
+          marginBottom: '120px'
+        }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            style={{ order: 2 }}
+            className="order-mobile-1"
+          >
+            <img 
+              src={qimen.img} 
+              alt="Qi Men" 
+              referrerPolicy="no-referrer"
+              style={{ 
+                width: '100%', 
+                borderRadius: '20px', 
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                border: `1px solid ${theme.darkGold}`
+              }} 
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            style={{ order: 1 }}
+            className="order-mobile-2"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+              <Wind size={32} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2.5rem', 
+                color: theme.gold, 
+                margin: 0 
+              }}>
+                {qimen.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1.1rem', 
+              lineHeight: '1.8', 
+              color: '#bbb',
+              textAlign: 'justify'
+            }}>
+              {qimen.desc}
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Plum Blossom Section */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '60px', 
+          alignItems: 'center'
+        }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+              <Sparkles size={32} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2.5rem', 
+                color: theme.gold, 
+                margin: 0 
+              }}>
+                {plum.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1.1rem', 
+              lineHeight: '1.8', 
+              color: '#bbb',
+              textAlign: 'justify'
+            }}>
+              {plum.desc}
+            </p>
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <img 
+              src={plum.img} 
+              alt="Plum Blossom" 
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 

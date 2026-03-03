@@ -453,7 +453,11 @@ export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCa
                <canvas ref={canvasRef} style={{display: 'none'}}></canvas>
                
                {/* Traditional Mystical Overlay */}
-               <div className="mystical-scan-frame" style={{width: isPalm ? '280px' : '240px', height: isPalm ? '380px' : '320px'}}></div>
+               <div className="mystical-scan-frame" style={{
+                   width: isPalm ? '300px' : '240px', 
+                   height: isPalm ? '450px' : '320px',
+                   borderRadius: isPalm ? '15px' : '50% 50% 45% 45%'
+               }}></div>
 
                {/* Countdown Overlay */}
                {countdown > 0 ? (
