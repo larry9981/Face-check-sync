@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { theme, styles } from '../theme';
 import { Order, Product } from '../types';
@@ -6,42 +5,112 @@ import { Order, Product } from '../types';
 export const AdminPage = ({ t }: { t: any }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [username, setUsername] = useState('admin');
-    const [password, setPassword] = useState('admin');
+    const [password, setPassword] = useState('admin123');
+    
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [homepageConfigs, setHomepageConfigs] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<'orders' | 'products' | 'homepage'>('orders');
+    const [usersList, setUsersList] = useState<any[]>([]);
     
-    // Product Form State
+    const [activeTab, setActiveTab] = useState<'orders' | 'analytics' | 'products' | 'homepage' | 'settings' | 'payments'>('orders');
+    
+    // Config and pixels states
+    const [settings, setSettings] = useState<any>({
+        googlePixelId: '',
+        facebookPixelId: '',
+        paypalClientId: '',
+        paypalEnabled: true,
+        stripePublicKey: '',
+        stripeEnabled: true
+    });
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
+    const [settingsStatus, setSettingsStatus] = useState('');
+
+    // Product & Homepage form states
     const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
     const [editingConfig, setEditingConfig] = useState<any | null>(null);
 
+    // AI Generation spinners
+    const [isGeneratingProdDesc, setIsGeneratingProdDesc] = useState(false);
+    const [isGeneratingProdLongDesc, setIsGeneratingProdLongDesc] = useState(false);
+    const [isGeneratingHomeDesc, setIsGeneratingHomeDesc] = useState(false);
+
     const API_BASE_URL = "/api"; 
 
+    // Retrieve data whenever active status or credentials match
     useEffect(() => {
         if (isAuthenticated) {
-            if (activeTab === 'orders') {
-                fetch(`${API_BASE_URL}/admin/orders`)
+            // Load orders
+            fetch(`${API_BASE_URL}/admin/orders`)
+                .then(res => res.json())
+                .then(data => { if (Array.isArray(data)) setOrders(data); })
+                .catch(err => {
+                    console.error("Failed to fetch orders:", err);
+                    const stored = localStorage.getItem('mystic_all_orders');
+                    if (stored) setOrders(JSON.parse(stored));
+                });
+
+            // Load products
+            fetch(`${API_BASE_URL}/products`)
+                .then(res => res.json())
+                .then(data => { if (Array.isArray(data)) setProducts(data); })
+                .catch(err => console.error("Failed to fetch products:", err));
+
+            // Load homepage
+            fetch(`${API_BASE_URL}/homepage`)
+                .then(res => res.json())
+                .then(data => { if (Array.isArray(data)) setHomepageConfigs(data); })
+                .catch(err => console.error("Failed to fetch homepage configs:", err));
+
+            // Load global settings
+            fetch(`${API_BASE_URL}/admin/settings`)
+                .then(res => res.json())
+                .then(data => { if (data) setSettings(data); })
+                .catch(err => console.error("Failed to fetch settings:", err));
+
+            // Load registered users
+            fetch(`${API_BASE_URL}/admin/users`)
+                .then(res => res.json())
+                .then(data => { if (Array.isArray(data)) setUsersList(data); })
+                .catch(err => console.error("Failed to fetch registered users list:", err));
+        }
+    }, [isAuthenticated]);
+
+    // Handle updates on changing tabs
+    useEffect(() => {
+        if (isAuthenticated) {
+            if (activeTab === 'analytics') {
+                fetch(`${API_BASE_URL}/admin/users`)
                     .then(res => res.json())
-                    .then(data => { if (Array.isArray(data)) setOrders(data); })
-                    .catch(err => {
-                        console.error("Failed to fetch orders:", err);
-                        const stored = localStorage.getItem('mystic_all_orders');
-                        if (stored) setOrders(JSON.parse(stored));
-                    });
-            } else if (activeTab === 'products') {
-                fetch(`${API_BASE_URL}/products`)
-                    .then(res => res.json())
-                    .then(data => { if (Array.isArray(data)) setProducts(data); })
-                    .catch(err => console.error("Failed to fetch products:", err));
-            } else if (activeTab === 'homepage') {
-                fetch(`${API_BASE_URL}/homepage`)
-                    .then(res => res.json())
-                    .then(data => { if (Array.isArray(data)) setHomepageConfigs(data); })
-                    .catch(err => console.error("Failed to fetch homepage configs:", err));
+                    .then(data => { if (Array.isArray(data)) setUsersList(data); })
+                    .catch(err => console.error("Failed to reload users:", err));
             }
         }
-    }, [isAuthenticated, activeTab]);
+    }, [activeTab, isAuthenticated]);
+
+    const handleSaveSettings = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSavingSettings(true);
+        setSettingsStatus('');
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+            if (res.ok) {
+                setSettingsStatus('success');
+            } else {
+                setSettingsStatus('error');
+            }
+        } catch (err) {
+            console.error(err);
+            setSettingsStatus('error');
+        } finally {
+            setIsSavingSettings(false);
+            setTimeout(() => setSettingsStatus(''), 4000);
+        }
+    };
 
     const handleSaveConfig = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -64,15 +133,16 @@ export const AdminPage = ({ t }: { t: any }) => {
                     return [...prev, editingConfig];
                 });
                 setEditingConfig(null);
+                alert("Homepage section updated successfully!");
             }
         } catch (err) {
             console.error("Save homepage config failed:", err);
+            alert("Error saving homepage configuration details.");
         }
     };
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        // Hardcoded credentials for demo
         if (username === 'admin' && password === 'admin123') {
             setIsAuthenticated(true);
         } else {
@@ -107,58 +177,171 @@ export const AdminPage = ({ t }: { t: any }) => {
                     return [updated, ...prev];
                 });
                 setEditingProduct(null);
+                alert("Product saved successfully.");
             }
         } catch (err) {
             console.error("Save product failed:", err);
+            alert("Error saving product item.");
         }
     };
 
     const handleDeleteProduct = async (id: string) => {
-        if (!confirm('Are you sure?')) return;
+        if (!confirm('Are you sure you want to delete this product?')) return;
         try {
             const res = await fetch(`${API_BASE_URL}/admin/products/${id}`, { method: 'DELETE' });
             if (res.ok) {
                 setProducts(prev => prev.filter(p => p.id !== id));
             }
         } catch (err) {
-            console.error("Delete product failed:", err);
+            console.error(err);
         }
     };
 
-    const downloadCSV = () => {
-        if (orders.length === 0) {
-            alert(t.noOrders);
-            return;
+    // AI copywriting caller
+    const handleAIGenerateDesc = async (field: 'defaultDescription' | 'longDescription') => {
+        if (!editingProduct) return;
+        if (field === 'defaultDescription') setIsGeneratingProdDesc(true);
+        else setIsGeneratingProdLongDesc(true);
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/generate-text`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'product',
+                    context: {
+                        name: editingProduct.defaultName || '',
+                        sku: editingProduct.sku || '',
+                        price: editingProduct.price || '',
+                        category: editingProduct.category || '',
+                        element: editingProduct.element || '',
+                        zodiac: editingProduct.zodiac || '',
+                        language: t.langCode || 'zh'
+                    }
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.text) {
+                    setEditingProduct(prev => ({
+                        ...prev,
+                        [field]: data.text
+                    }));
+                }
+            } else {
+                const err = await res.json();
+                alert("AI generation failed: " + (err.error || "Unknown error"));
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Connection error to AI copywriter node.");
+        } finally {
+            if (field === 'defaultDescription') setIsGeneratingProdDesc(false);
+            else setIsGeneratingProdLongDesc(false);
         }
+    };
 
-        // CSV Header
-        const headers = [
-            t.orderId, t.date, t.customer, t.items, t.amount, t.status, t.address, "Email", "Phone", "Payment Method"
-        ];
+    const handleAIGenerateHomeDesc = async () => {
+        if (!editingConfig) return;
+        setIsGeneratingHomeDesc(true);
 
-        // CSV Rows
-        const rows = orders.map(order => [
-            `"${order.id}"`,
-            `"${order.date}"`,
-            `"${order.customerName}"`,
-            `"${order.items.replace(/"/g, '""')}"`, // Escape quotes
-            order.total.toFixed(2),
-            `"${order.status}"`,
-            `"${order.shippingAddress.replace(/"/g, '""')}"`,
-            `"${order.email || ''}"`,
-            `"${order.phone || ''}"`,
-            `"${order.paymentMethod || ''}"`
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/generate-text`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'homepage',
+                    context: {
+                        key: editingConfig.key,
+                        title: editingConfig.title,
+                        language: t.langCode || 'zh'
+                    }
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.text) {
+                    setEditingConfig((prev: any) => ({
+                        ...prev,
+                        description: data.text
+                    }));
+                }
+            } else {
+                const err = await res.json();
+                alert("AI generation failed: " + (err.error || "Unknown error"));
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Connection error to AI story copywriter node.");
+        } finally {
+            setIsGeneratingHomeDesc(false);
+        }
+    };
+
+    // Calculate aggregated metrics for Requirement 5
+    const getDailySummary = () => {
+        const dailyMap: Record<string, { count: number, revenue: number, paidCount: number }> = {};
+        orders.forEach(o => {
+            if (!o.date) return;
+            // Parse and format YYYY-MM-DD
+            const d = new Date(o.date);
+            const dateStr = d.toISOString().split('T')[0];
+            if (!dailyMap[dateStr]) {
+                dailyMap[dateStr] = { count: 0, revenue: 0, paidCount: 0 };
+            }
+            dailyMap[dateStr].count += 1;
+            dailyMap[dateStr].revenue += o.total || 0;
+            if (o.status === 'paid') dailyMap[dateStr].paidCount += 1;
+        });
+
+        return Object.entries(dailyMap)
+            .map(([date, val]) => ({ date, ...val }))
+            .sort((a, b) => b.date.localeCompare(a.date));
+    };
+
+    const getMonthlySummary = () => {
+        const monthlyMap: Record<string, { count: number, revenue: number, paidCount: number }> = {};
+        orders.forEach(o => {
+            if (!o.date) return;
+            const d = new Date(o.date);
+            const mStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            if (!monthlyMap[mStr]) {
+                monthlyMap[mStr] = { count: 0, revenue: 0, paidCount: 0 };
+            }
+            monthlyMap[mStr].count += 1;
+            monthlyMap[mStr].revenue += o.total || 0;
+            if (o.status === 'paid') monthlyMap[mStr].paidCount += 1;
+        });
+
+        return Object.entries(monthlyMap)
+            .map(([month, val]) => ({ month, ...val }))
+            .sort((a, b) => b.month.localeCompare(a.month));
+    };
+
+    const totalSalesRevenue = orders.reduce((acc, current) => acc + (current.status === 'paid' ? current.total : 0), 0);
+    const paidOrdersLength = orders.filter(o => o.status === 'paid').length;
+    const averageOrderValue = paidOrdersLength > 0 ? (totalSalesRevenue / paidOrdersLength) : 0;
+
+    const downloadCSV = () => {
+        const headers = ["Order ID", "Date", "Customer Name", "Items Purchased", "Amount Paid", "Status", "Email", "Phone"];
+        const rows = orders.map(o => [
+            o.id,
+            o.date,
+            `"${o.customerName || ''}"`,
+            `"${o.items || ''}"`,
+            o.total,
+            o.status,
+            o.email || '',
+            o.phone || ''
         ]);
-
-        // Combine (add BOM for Excel/WPS Chinese characters support)
-        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
-            + headers.join(",") + "\n" 
-            + rows.map(e => e.join(",")).join("\n");
-
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
         const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
         link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `orders_export_${new Date().toISOString().slice(0,10)}.csv`);
+        link.setAttribute("download", `mystic_face_orders_${new Date().toISOString().split('T')[0]}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -166,64 +349,101 @@ export const AdminPage = ({ t }: { t: any }) => {
 
     if (!isAuthenticated) {
         return (
-            <div style={{...styles.glassPanel, maxWidth: '400px', margin: '50px auto'}}>
-                <h2 style={{color: theme.gold, textAlign: 'center', fontFamily: 'Cinzel, serif'}}>{t.adminLogin}</h2>
+            <div style={{...styles.glassPanel, maxWidth: '420px', margin: '60px auto', padding: '30px', border: `1px solid ${theme.gold}`}}>
+                <div style={{textAlign: 'center', marginBottom: '20px'}}>
+                    <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.6rem', margin: '0 0 5px 0'}}>Admin Login</h2>
+                    <p style={{color: '#aaa', fontSize: '0.85rem', margin: 0}}>Metaphysics Management Console</p>
+                </div>
                 <form onSubmit={handleLogin} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
-                    <input 
-                        type="text" 
-                        placeholder={t.username} 
-                        style={styles.formInput} 
-                        value={username} 
-                        onChange={e => setUsername(e.target.value)} 
-                    />
-                    <input 
-                        type="password" 
-                        placeholder={t.password} 
-                        style={styles.formInput} 
-                        value={password} 
-                        onChange={e => setPassword(e.target.value)} 
-                    />
+                    <div>
+                        <label style={{display: 'block', color: theme.gold, fontSize: '0.8rem', marginBottom: '4px'}}>Username</label>
+                        <input 
+                            type="text" 
+                            style={styles.formInput} 
+                            placeholder="admin" 
+                            value={username} 
+                            onChange={e => setUsername(e.target.value)} 
+                        />
+                    </div>
+                    <div>
+                        <label style={{display: 'block', color: theme.gold, fontSize: '0.8rem', marginBottom: '4px'}}>Password</label>
+                        <input 
+                            type="password" 
+                            style={styles.formInput} 
+                            placeholder="admin123" 
+                            value={password} 
+                            onChange={e => setPassword(e.target.value)} 
+                        />
+                    </div>
                     <button type="submit" style={styles.button}>{t.login}</button>
+                    <div style={{ marginTop: '10px', fontSize: '0.85rem', color: theme.gold, opacity: 0.8, textAlign: 'center', background: 'rgba(212, 175, 55, 0.08)', padding: '8px', border: `1px dashed ${theme.darkGold}`, borderRadius: '4px' }}>
+                        <strong>[管理登录凭证]</strong><br />
+                        账号 (Username): <code style={{ color: '#fff' }}>admin</code><br />
+                        密码 (Password): <code style={{ color: '#fff' }}>admin123</code>
+                    </div>
                 </form>
             </div>
         );
     }
 
+    const dailyStats = getDailySummary();
+    const monthlyStats = getMonthlySummary();
+
     return (
         <div style={{width: '95%', maxWidth: '1200px', margin: '0 auto', paddingBottom: '3rem'}}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '1rem', flexWrap: 'wrap', gap: '10px'}}>
-                <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', margin: 0}}>{t.adminDashboard}</h2>
-                <div style={{display: 'flex', gap: '10px'}}>
+            {/* Header Tabs with Mobile Compatibility styling */}
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '1rem', flexWrap: 'wrap', gap: '12px'}}>
+                <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', margin: 0, fontSize: '1.5rem'}}>{t.adminDashboard}</h2>
+                <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}} className="admin-tabs">
                     <button 
                         onClick={() => setActiveTab('orders')} 
-                        style={{...styles.secondaryButton, background: activeTab === 'orders' ? theme.gold : 'transparent', color: activeTab === 'orders' ? '#000' : theme.gold, marginTop: 0}}
+                        style={{...styles.secondaryButton, background: activeTab === 'orders' ? theme.gold : 'transparent', color: activeTab === 'orders' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         {t.historyTitle}
                     </button>
                     <button 
+                        onClick={() => setActiveTab('analytics')} 
+                        style={{...styles.secondaryButton, background: activeTab === 'analytics' ? theme.gold : 'transparent', color: activeTab === 'analytics' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                    >
+                        📊 数据汇总 (Analytics)
+                    </button>
+                    <button 
                         onClick={() => setActiveTab('products')} 
-                        style={{...styles.secondaryButton, background: activeTab === 'products' ? theme.gold : 'transparent', color: activeTab === 'products' ? '#000' : theme.gold, marginTop: 0}}
+                        style={{...styles.secondaryButton, background: activeTab === 'products' ? theme.gold : 'transparent', color: activeTab === 'products' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         {t.productManagement}
                     </button>
                     <button 
                         onClick={() => setActiveTab('homepage')} 
-                        style={{...styles.secondaryButton, background: activeTab === 'homepage' ? theme.gold : 'transparent', color: activeTab === 'homepage' ? '#000' : theme.gold, marginTop: 0}}
+                        style={{...styles.secondaryButton, background: activeTab === 'homepage' ? theme.gold : 'transparent', color: activeTab === 'homepage' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         {t.homepageManagement || "Homepage"}
                     </button>
-                    <button onClick={handleLogout} style={{...styles.secondaryButton, marginTop: 0}}>Logout</button>
+                    <button 
+                        onClick={() => setActiveTab('settings')} 
+                        style={{...styles.secondaryButton, background: activeTab === 'settings' ? theme.gold : 'transparent', color: activeTab === 'settings' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                    >
+                        SETTING & PIXEL
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('payments')} 
+                        style={{...styles.secondaryButton, background: activeTab === 'payments' ? theme.gold : 'transparent', color: activeTab === 'payments' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                    >
+                        💳 收款设置
+                    </button>
+                    <button onClick={handleLogout} style={{...styles.secondaryButton, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}>Logout</button>
                 </div>
             </div>
 
-            {activeTab === 'orders' ? (
+            {/* TAB CONTENT: 1. ORDERS */}
+            {activeTab === 'orders' && (
                 <>
                     <div style={{display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem'}}>
-                        <button onClick={downloadCSV} style={{...styles.button, marginTop: 0, padding: '8px 15px', fontSize: '0.9rem', minWidth: 'auto'}}>
-                            <i className="fas fa-file-excel" style={{marginRight: '8px'}}></i> {t.exportBtn || "Export CSV"}
+                        <button onClick={downloadCSV} style={{...styles.button, marginTop: 0, padding: '8px 15px', fontSize: '0.9rem', minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                            <i className="fas fa-file-excel"></i> {t.exportBtn || "Export CSV"}
                         </button>
                     </div>
-                    <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden', width: '100%', maxWidth: '100%'}}>
+                    <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden', width: '100%'}}>
                         <div style={{overflowX: 'auto'}}>
                             <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', minWidth: '1000px'}}>
                                 <thead>
@@ -245,18 +465,18 @@ export const AdminPage = ({ t }: { t: any }) => {
                                     ) : (
                                         orders.map((order, index) => (
                                             <tr key={index} style={{borderBottom: '1px solid rgba(255,255,255,0.1)', background: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.03)'}}>
-                                                <td style={{padding: '12px 15px', fontSize: '0.9rem', fontFamily: 'monospace'}}>{order.id}</td>
-                                                <td style={{padding: '12px 15px', fontSize: '0.9rem'}}>{order.date}</td>
+                                                <td style={{padding: '12px 15px', fontSize: '0.85rem', fontFamily: 'monospace'}}>{order.id}</td>
+                                                <td style={{padding: '12px 15px', fontSize: '0.85rem'}}>{order.date ? new Date(order.date).toLocaleString() : 'N/A'}</td>
                                                 <td style={{padding: '12px 15px'}}>{order.customerName}</td>
-                                                <td style={{padding: '12px 15px', fontSize: '0.9rem'}}>{order.items}</td>
-                                                <td style={{padding: '12px 15px', fontWeight: 'bold', color: theme.gold}}>${order.total.toFixed(2)}</td>
+                                                <td style={{padding: '12px 15px', fontSize: '0.85rem'}}>{order.items}</td>
+                                                <td style={{padding: '12px 15px', fontWeight: 'bold', color: theme.gold}}>${(order.total || 0).toFixed(2)}</td>
                                                 <td style={{padding: '12px 15px'}}>
                                                     <span style={{
                                                         background: order.status === 'paid' ? 'rgba(46, 204, 113, 0.2)' : 'rgba(231, 76, 60, 0.2)',
                                                         color: order.status === 'paid' ? '#2ecc71' : '#e74c3c',
                                                         padding: '3px 8px',
                                                         borderRadius: '4px',
-                                                        fontSize: '0.8rem',
+                                                        fontSize: '0.75rem',
                                                         fontWeight: 'bold'
                                                     }}>
                                                         {order.status.toUpperCase()}
@@ -264,7 +484,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                                                 </td>
                                                 <td style={{padding: '12px 15px', fontSize: '0.8rem'}}>
                                                     <div>{order.email}</div>
-                                                    <div>{order.phone}</div>
+                                                    {order.phone && <div>{order.phone}</div>}
                                                 </td>
                                             </tr>
                                         ))
@@ -274,82 +494,463 @@ export const AdminPage = ({ t }: { t: any }) => {
                         </div>
                     </div>
                 </>
-            ) : activeTab === 'products' ? (
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px'}} className="responsive-grid">
-                    <div style={styles.glassPanel}>
-                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif'}}>{editingProduct?.id ? t.editProduct : t.addProduct}</h3>
-                        <form onSubmit={handleSaveProduct} style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                            <input 
-                                type="text" placeholder="Product ID (Auto if empty)" style={styles.formInput} 
-                                value={editingProduct?.id || ''} onChange={e => setEditingProduct({...editingProduct, id: e.target.value})} 
-                            />
-                            <input 
-                                type="text" placeholder="Default Name" style={styles.formInput} 
-                                value={editingProduct?.defaultName || ''} onChange={e => setEditingProduct({...editingProduct, defaultName: e.target.value})} 
-                            />
-                            <input 
-                                type="text" placeholder={t.productPrice} style={styles.formInput} 
-                                value={editingProduct?.price || ''} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} 
-                            />
-                            <input 
-                                type="number" placeholder="Numeric Price" style={styles.formInput} 
-                                value={editingProduct?.numericPrice || 0} onChange={e => setEditingProduct({...editingProduct, numericPrice: parseFloat(e.target.value)})} 
-                            />
-                            <select 
-                                style={styles.formInput} value={editingProduct?.category || 'bracelet'} 
-                                onChange={e => setEditingProduct({...editingProduct, category: e.target.value as any})}
-                            >
-                                <option value="bracelet">Bracelet</option>
-                                <option value="pendant">Pendant</option>
-                                <option value="amulet">Amulet</option>
-                                <option value="other">Other</option>
-                            </select>
-                            <input 
-                                type="text" placeholder={t.productZodiac} style={styles.formInput} 
-                                value={editingProduct?.zodiac || ''} onChange={e => setEditingProduct({...editingProduct, zodiac: e.target.value})} 
-                            />
-                            <input 
-                                type="text" placeholder={t.productElement} style={styles.formInput} 
-                                value={editingProduct?.element || ''} onChange={e => setEditingProduct({...editingProduct, element: e.target.value})} 
-                            />
-                            <input 
-                                type="text" placeholder={t.productImage} style={styles.formInput} 
-                                value={editingProduct?.imageUrl || ''} onChange={e => setEditingProduct({...editingProduct, imageUrl: e.target.value})} 
-                            />
-                            <textarea 
-                                placeholder={t.productDesc} style={{...styles.formInput, height: '100px'}} 
-                                value={editingProduct?.defaultDescription || ''} onChange={e => setEditingProduct({...editingProduct, defaultDescription: e.target.value})} 
-                            />
-                            <div style={{display: 'flex', gap: '10px'}}>
-                                <button type="submit" style={{...styles.button, flex: 1}}>Save</button>
-                                <button type="button" onClick={() => setEditingProduct(null)} style={{...styles.secondaryButton, flex: 1}}>Clear</button>
+            )}
+
+            {/* TAB CONTENT: 2. ANALYTICS (Site Dynamics, Registrations & Subscriptions) */}
+            {activeTab === 'analytics' && (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '30px'}}>
+                    
+                    {/* General metrics cards row */}
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px'}}>
+                        <div style={{...styles.glassPanel, padding: '20px', textAlign: 'center'}}>
+                            <div style={{color: '#888', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '8px'}}>付费总销售额 (Total Sales)</div>
+                            <div style={{color: theme.gold, fontSize: '2rem', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>${totalSalesRevenue.toFixed(2)}</div>
+                        </div>
+                        <div style={{...styles.glassPanel, padding: '20px', textAlign: 'center'}}>
+                            <div style={{color: '#888', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '8px'}}>付费总订单数 (Paid Orders)</div>
+                            <div style={{color: theme.gold, fontSize: '2rem', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{paidOrdersLength}</div>
+                        </div>
+                        <div style={{...styles.glassPanel, padding: '20px', textAlign: 'center'}}>
+                            <div style={{color: '#888', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '8px'}}>平均客单价 (AOV)</div>
+                            <div style={{color: theme.gold, fontSize: '2rem', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>${averageOrderValue.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    {/* Daily and Monthly tables side-by-side or stacked */}
+                    <div style={{display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(280px, 1fr)', gap: '20px'}} className="responsive-grid">
+                        
+                        {/* Daily analytics box */}
+                        <div style={styles.glassPanel}>
+                            <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', marginBottom: '15px'}}>按日订单分析 (Daily Orders Breakdown)</h3>
+                            <div style={{overflowY: 'auto', maxHeight: '350px'}}>
+                                <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', fontSize: '0.85rem'}}>
+                                    <thead>
+                                        <tr style={{background: 'rgba(212, 175, 55, 0.1)', borderBottom: `1px solid ${theme.darkGold}`}}>
+                                            <th style={{padding: '10px', textAlign: 'left', color: theme.gold}}>日期 (Date)</th>
+                                            <th style={{padding: '10px', textAlign: 'center', color: theme.gold}}>成交单数 (Orders)</th>
+                                            <th style={{padding: '10px', textAlign: 'right', color: theme.gold}}>当日销售额 (Sales)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {dailyStats.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={3} style={{padding: '15px', textAlign: 'center', color: '#888'}}>暂无按日合算数据</td>
+                                            </tr>
+                                        ) : (
+                                            dailyStats.map((item, idx) => (
+                                                <tr key={idx} style={{borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
+                                                    <td style={{padding: '10px'}}>{item.date}</td>
+                                                    <td style={{padding: '10px', textAlign: 'center'}}>{item.count} <span style={{fontSize: '0.75rem', color: '#2ecc71'}}>({item.paidCount} paid)</span></td>
+                                                    <td style={{padding: '10px', textAlign: 'right', fontWeight: 'bold', color: theme.gold}}>${item.revenue.toFixed(2)}</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
+                        </div>
+
+                        {/* Monthly analytics box */}
+                        <div style={styles.glassPanel}>
+                            <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', marginBottom: '15px'}}>按月订单汇总 (Monthly Orders Summary)</h3>
+                            <div style={{overflowY: 'auto', maxHeight: '350px'}}>
+                                <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', fontSize: '0.85rem'}}>
+                                    <thead>
+                                        <tr style={{background: 'rgba(212, 175, 55, 0.1)', borderBottom: `1px solid ${theme.darkGold}`}}>
+                                            <th style={{padding: '10px', textAlign: 'left', color: theme.gold}}>月份 (Month)</th>
+                                            <th style={{padding: '10px', textAlign: 'center', color: theme.gold}}>成交单数 (Orders)</th>
+                                            <th style={{padding: '10px', textAlign: 'right', color: theme.gold}}>每月销售额 (Sales)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {monthlyStats.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={3} style={{padding: '15px', textAlign: 'center', color: '#888'}}>暂无按月汇总数据</td>
+                                            </tr>
+                                        ) : (
+                                            monthlyStats.map((item, idx) => (
+                                                <tr key={idx} style={{borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
+                                                    <td style={{padding: '10px', fontWeight: 'bold'}}>{item.month}</td>
+                                                    <td style={{padding: '10px', textAlign: 'center'}}>{item.count} <span style={{fontSize: '0.75rem', color: '#2ecc71'}}>({item.paidCount} paid)</span></td>
+                                                    <td style={{padding: '10px', textAlign: 'right', fontWeight: 'bold', color: theme.gold}}>${item.revenue.toFixed(2)}</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Registered users section */}
+                    <div style={styles.glassPanel}>
+                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', marginBottom: '15px'}}>
+                            <i className="fas fa-users" style={{marginRight: '8px'}}></i> 用户注册和订阅信息 (Registrations & Subscriptions)
+                        </h3>
+                        <div style={{overflowX: 'auto'}}>
+                            <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', fontSize: '0.85rem'}}>
+                                <thead>
+                                    <tr style={{background: 'rgba(212, 175, 55, 0.15)', borderBottom: `1px solid ${theme.darkGold}`}}>
+                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.gold}}>用户名 / 姓名 (Name)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.gold}}>电子邮箱 (Email)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'center', color: theme.gold}}>注册通道 (Auth)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.gold}}>注册时间 (Registered At)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'center', color: theme.gold}}>订阅状态 (Subscription)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.gold}}>到期时间 (Expires At)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {usersList.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={6} style={{padding: '20px', textAlign: 'center', color: '#888'}}>暂无注册用户记录</td>
+                                        </tr>
+                                    ) : (
+                                        usersList.map((user, idx) => (
+                                            <tr key={idx} style={{borderBottom: '1px solid rgba(255,255,255,0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'}}>
+                                                <td style={{padding: '10px', fontWeight: '500'}}>{user.name || user.firstName || 'N/A'}</td>
+                                                <td style={{padding: '10px'}}>{user.email}</td>
+                                                <td style={{padding: '10px', textAlign: 'center', textTransform: 'capitalize'}}>{user.authType || 'email'}</td>
+                                                <td style={{padding: '10px'}}>{user.registeredAt ? new Date(user.registeredAt).toLocaleString() : 'N/A'}</td>
+                                                <td style={{padding: '10px', textAlign: 'center'}}>
+                                                    <span style={{
+                                                        background: user.isSubscribed ? 'rgba(46, 204, 113, 0.2)' : 'rgba(255,255,255,0.05)',
+                                                        color: user.isSubscribed ? '#2ecc71' : '#aaa',
+                                                        padding: '3px 8px',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 'bold'
+                                                    }}>
+                                                        {user.isSubscribed ? `SUBSCRIBED (${user.subscriptionPlan || 'Premium'})` : 'FREE USER'}
+                                                    </span>
+                                                </td>
+                                                <td style={{padding: '10px', fontSize: '0.8rem', color: '#bbb'}}>
+                                                    {user.subscriptionExpiresAt ? new Date(user.subscriptionExpiresAt).toLocaleDateString() : '—'}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            )}
+
+            {/* TAB CONTENT: 3. PRODUCTS (Requirement 1 - Stacking vertically, labels for every field, base64 images uploads, Gemini description) */}
+            {activeTab === 'products' && (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '30px'}}>
+                    
+                    {/* Top part: Product Form */}
+                    <div style={{...styles.glassPanel, border: `1px solid ${editingProduct ? theme.gold : 'rgba(255,255,255,0.08)'}`}}>
+                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '8px', marginBottom: '20px'}}>
+                            {editingProduct?.id ? `✏️ 编辑商品属性 (${t.editProduct})` : `✨ 添加全新神佛圣物 (${t.addProduct})`}
+                        </h3>
+                        
+                        <form onSubmit={handleSaveProduct} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                            
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px'}}>
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        商品编号 (Product ID) <span style={{color: '#ff4d4d'}}>*</span>
+                                    </label>
+                                    <input 
+                                        type="text" placeholder="例如: prod-agate (不填将自动生成)" style={styles.formInput} 
+                                        value={editingProduct?.id || ''} onChange={e => setEditingProduct({...editingProduct, id: e.target.value})} 
+                                    />
+                                    <span style={{fontSize: '0.75rem', color: '#888'}}>商品的唯一标示代码 (唯一不可重复)</span>
+                                </div>
+
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        产品多语言包健 (Name Tranlation Key)
+                                    </label>
+                                    <input 
+                                        type="text" placeholder="例如: prod_agate_name" style={styles.formInput} 
+                                        value={editingProduct?.nameKey || ''} onChange={e => setEditingProduct({...editingProduct, nameKey: e.target.value})} 
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        产品名称/标题 (Product Title) <span style={{color: '#ff4d4d'}}>*</span>
+                                    </label>
+                                    <input 
+                                        type="text" placeholder="例如: 极品红玛瑙辟邪项链" style={styles.formInput} 
+                                        value={editingProduct?.defaultName || ''} onChange={e => setEditingProduct({...editingProduct, defaultName: e.target.value})} 
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px'}}>
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        专属唯一商品 SKU <span style={{color: '#ff4d4d'}}>*</span>
+                                    </label>
+                                    <input 
+                                        type="text" placeholder="例如: AGT-BRC-001" style={styles.formInput} 
+                                        value={editingProduct?.sku || ''} onChange={e => setEditingProduct({...editingProduct, sku: e.target.value})} 
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        价格显示 (Display Price Style) <span style={{color: '#ff4d4d'}}>*</span>
+                                    </label>
+                                    <input 
+                                        type="text" placeholder="例如: $39.99" style={styles.formInput} 
+                                        value={editingProduct?.price || ''} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} 
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        结算数值价格 (Numeric Price) <span style={{color: '#ff4d4d'}}>*</span>
+                                    </label>
+                                    <input 
+                                        type="number" step="0.01" placeholder="例如: 39.99" style={styles.formInput} 
+                                        value={editingProduct?.numericPrice || 0} onChange={e => setEditingProduct({...editingProduct, numericPrice: parseFloat(e.target.value) || 0})} 
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px'}}>
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        集合分类 (Collection Category)
+                                    </label>
+                                    <select 
+                                        style={styles.formInput} value={editingProduct?.category || 'bracelet'} 
+                                        onChange={e => setEditingProduct({...editingProduct, category: e.target.value as any})}
+                                    >
+                                        <option value="bracelet">法力手链 (Bracelet)</option>
+                                        <option value="pendant">开光吊坠 (Pendant)</option>
+                                        <option value="amulet">辟邪护身符 (Amulet)</option>
+                                        <option value="crystal">能量水晶球 (Crystal)</option>
+                                        <option value="other">其他玄学物 (Other)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        产品上架状态 (Status)
+                                    </label>
+                                    <select 
+                                        style={styles.formInput} value={editingProduct?.status || 'active'} 
+                                        onChange={e => setEditingProduct({...editingProduct, status: e.target.value as 'active' | 'inactive'})}
+                                    >
+                                        <option value="active">上架销售中 (Listed/Active)</option>
+                                        <option value="inactive">下架维护中 (Delisted/Inactive)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        适用生肖属性 (Zodiac Alignment)
+                                    </label>
+                                    <input 
+                                        type="text" placeholder="例如: Dragon, Tiger (生肖龙, 虎)" style={styles.formInput} 
+                                        value={editingProduct?.zodiac || ''} onChange={e => setEditingProduct({...editingProduct, zodiac: e.target.value})} 
+                                    />
+                                </div>
+
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                        五行核心属性 (Elemental Alignment)
+                                    </label>
+                                    <input 
+                                        type="text" placeholder="例如: Fire (生旺火行能量)" style={styles.formInput} 
+                                        value={editingProduct?.element || ''} onChange={e => setEditingProduct({...editingProduct, element: e.target.value})} 
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Image File upload and Preview container */}
+                            <div style={{border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '4px'}}>
+                                <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px'}}>
+                                    本地图片上传 & 实时预览 (Upload Product Image & Preview)
+                                </label>
+                                <div style={{display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap'}}>
+                                    <div style={{
+                                        width: '100px', 
+                                        height: '100px', 
+                                        borderRadius: '6px', 
+                                        border: `1px dashed ${theme.gold}`, 
+                                        background: '#04040c', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        overflow: 'hidden'
+                                    }}>
+                                        {editingProduct?.imageUrl ? (
+                                            <img src={editingProduct.imageUrl} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                                        ) : (
+                                            <span style={{color: '#444', fontSize: '0.75rem', textAlign: 'center', padding: '5px'}}>No Image</span>
+                                        )}
+                                    </div>
+                                    <div style={{flex: 1}}>
+                                        <input 
+                                            type="file" accept="image/*" 
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setEditingProduct(prev => ({ ...prev, imageUrl: reader.result as string }));
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                            style={{color: '#ccc', fontSize: '0.85rem', cursor: 'pointer', background: 'transparent', border: 'none'}}
+                                        />
+                                        <p style={{color: '#888', fontSize: '0.75rem', margin: '5px 0 0 0'}}>支持 JPEG, PNG, WEBP 本地拖拽上传或文件点选。加载后将自动转储预览。</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Descriptions in Vertical Alignment with AI writing */}
+                            <div>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
+                                    <label style={{color: theme.gold, fontSize: '0.85rem', fontWeight: '600'}}>
+                                        基础宣传描述 (Basic Product Description)
+                                    </label>
+                                    <button 
+                                        type="button" 
+                                        disabled={isGeneratingProdDesc}
+                                        onClick={() => handleAIGenerateDesc('defaultDescription')} 
+                                        style={{
+                                            background: 'rgba(212, 175, 55, 0.1)', 
+                                            borderColor: theme.gold, 
+                                            color: theme.gold, 
+                                            padding: '4px 8px', 
+                                            fontSize: '0.75rem', 
+                                            cursor: 'pointer', 
+                                            border: `1px solid ${theme.gold}`,
+                                            borderRadius: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '5px',
+                                            margin: 0
+                                        }}
+                                    >
+                                        <i className={`fas ${isGeneratingProdDesc ? 'fa-spinner fa-spin' : 'fa-magic'}`}></i>
+                                        {isGeneratingProdDesc ? "Drafting with AI..." : "🔮 AI智能一键撰写文案"}
+                                    </button>
+                                </div>
+                                <textarea 
+                                    placeholder="输入简要的基础描述文案，或点击AI魔法棒一键生成精美玄学物卖点文案..." style={{...styles.formInput, height: '100px'}} 
+                                    value={editingProduct?.defaultDescription || ''} onChange={e => setEditingProduct({...editingProduct, defaultDescription: e.target.value})} 
+                                />
+                            </div>
+
+                            <div>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
+                                    <label style={{color: theme.gold, fontSize: '0.85rem', fontWeight: '600'}}>
+                                        商品高级排版详情参数 (Detailed Long Description)
+                                    </label>
+                                    <button 
+                                        type="button" 
+                                        disabled={isGeneratingProdLongDesc}
+                                        onClick={() => handleAIGenerateDesc('longDescription')} 
+                                        style={{
+                                            background: 'rgba(212, 175, 55, 0.1)', 
+                                            borderColor: theme.gold, 
+                                            color: theme.gold, 
+                                            padding: '4px 8px', 
+                                            fontSize: '0.75rem', 
+                                            cursor: 'pointer', 
+                                            border: `1px solid ${theme.gold}`,
+                                            borderRadius: '4px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '5px',
+                                            margin: 0
+                                        }}
+                                    >
+                                        <i className={`fas ${isGeneratingProdLongDesc ? 'fa-spinner fa-spin' : 'fa-magic'}`}></i>
+                                        {isGeneratingProdLongDesc ? "Drafting Detail with AI..." : "🔮 AI智能一键撰写产品详情"}
+                                    </button>
+                                </div>
+                                <textarea 
+                                    placeholder="输入产品的详细典籍记载、风水禁忌、佩戴讲究等全方位细节，亦可由AI一键深度代笔..." style={{...styles.formInput, height: '140px'}} 
+                                    value={editingProduct?.longDescription || ''} onChange={e => setEditingProduct({...editingProduct, longDescription: e.target.value})} 
+                                />
+                            </div>
+
+                            {/* Buttons conforming to multi-platform optimization constraint */}
+                            <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap', width: '100%'}}>
+                                <button type="submit" style={{...styles.button, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.95rem'}}>
+                                    <i className="fas fa-save" style={{marginRight: '8px'}}></i> 保存商品 (Save Product)
+                                </button>
+                                <button type="button" onClick={() => setEditingProduct(null)} style={{...styles.secondaryButton, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.95rem'}}>
+                                    <i className="fas fa-undo" style={{marginRight: '8px'}}></i> 重置表单 (Reset Form)
+                                </button>
+                            </div>
+
                         </form>
                     </div>
+
+                    {/* Bottom part: Products Table List */}
                     <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden'}}>
+                        <div style={{padding: '15px 20px', borderBottom: `1px solid ${theme.darkGold}`, background: 'rgba(255,255,255,0.01)'}}>
+                            <h4 style={{color: theme.gold, fontFamily: 'Cinzel, serif', margin: 0, fontSize: '1.1rem'}}>
+                                <i className="fas fa-cubes" style={{marginRight: '8px'}}></i> 在售商品库一览 (Database Products Inventory)
+                            </h4>
+                        </div>
                         <div style={{overflowX: 'auto'}}>
                             <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0'}}>
                                 <thead>
                                     <tr style={{background: 'rgba(212, 175, 55, 0.2)', borderBottom: `1px solid ${theme.darkGold}`}}>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Image</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Name</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Price</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Category</th>
-                                        <th style={{padding: '15px', textAlign: 'right', color: theme.gold}}>Actions</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>图片 (Image)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>商品名称与SKU</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>价格 (Price)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>集合与命理 (Tag)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>销售状态 (Status)</th>
+                                        <th style={{padding: '15px', textAlign: 'right', color: theme.gold}}>操作栏 (Actions)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {products.map((p) => (
-                                        <tr key={p.id} style={{borderBottom: '1px solid rgba(255,255,255,0.1)'}}>
+                                        <tr key={p.id} style={{borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'transparent'}}>
                                             <td style={{padding: '10px 15px'}}>
-                                                <img src={p.imageUrl || `https://picsum.photos/seed/${p.id}/50/50`} style={{width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover'}} />
+                                                <img src={p.imageUrl || `https://picsum.photos/seed/${p.id}/100/100`} style={{width: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover', border: `1px solid ${theme.darkGold}`}} />
                                             </td>
-                                            <td style={{padding: '10px 15px'}}>{p.defaultName}</td>
-                                            <td style={{padding: '10px 15px', color: theme.gold}}>{p.price}</td>
-                                            <td style={{padding: '10px 15px', textTransform: 'capitalize'}}>{p.category}</td>
+                                            <td style={{padding: '10px 15px'}}>
+                                                <div style={{fontWeight: 'bold', fontSize: '0.95rem'}}>{p.defaultName}</div>
+                                                <div style={{fontSize: '0.75rem', color: '#999'}}>SKU: <code style={{color: theme.gold}}>{p.sku || 'N/A'}</code> | ID: {p.id}</div>
+                                            </td>
+                                            <td style={{padding: '10px 15px', color: theme.gold, fontWeight: 'bold'}}>{p.price}</td>
+                                            <td style={{padding: '10px 15px'}}>
+                                                <span style={{fontSize: '0.75rem', padding: '2px 6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', textTransform: 'capitalize', marginRight: '5px'}}>分类: {p.category}</span>
+                                                {p.element && <span style={{fontSize: '0.75rem', padding: '2px 6px', background: 'rgba(212, 175, 55, 0.1)', color: theme.gold, borderRadius: '3px'}}>{p.element}行</span>}
+                                            </td>
+                                            <td style={{padding: '10px 15px'}}>
+                                                <span style={{
+                                                    background: p.status === 'inactive' ? 'rgba(230, 126, 34, 0.2)' : 'rgba(46, 204, 113, 0.2)',
+                                                    color: p.status === 'inactive' ? '#e67e22' : '#2ecc71',
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {p.status === 'inactive' ? 'DELISTED (已下架)' : 'LISTED (销售中)'}
+                                                </span>
+                                            </td>
                                             <td style={{padding: '10px 15px', textAlign: 'right'}}>
-                                                <button onClick={() => setEditingProduct(p)} style={{background: 'none', border: 'none', color: theme.gold, cursor: 'pointer', marginRight: '10px'}}><i className="fas fa-edit"></i></button>
-                                                <button onClick={() => handleDeleteProduct(p.id)} style={{background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer'}}><i className="fas fa-trash"></i></button>
+                                                <button onClick={() => {
+                                                    setEditingProduct(p);
+                                                    window.scrollTo({ top: 120, behavior: 'smooth' });
+                                                }} style={{background: 'none', border: 'none', color: theme.gold, cursor: 'pointer', marginRight: '15px', fontSize: '1.05rem'}} title="编辑商品">
+                                                    <i className="fas fa-edit"></i>
+                                                </button>
+                                                <button onClick={() => handleDeleteProduct(p.id)} style={{background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: '1.05rem'}} title="删除商品">
+                                                    <i className="fas fa-trash"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
@@ -357,64 +958,153 @@ export const AdminPage = ({ t }: { t: any }) => {
                             </table>
                         </div>
                     </div>
+
                 </div>
-            ) : (
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px'}} className="responsive-grid">
-                    <div style={styles.glassPanel}>
-                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif'}}>{t.editHomepage || "Edit Homepage Content"}</h3>
-                        <form onSubmit={handleSaveConfig} style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                            <input 
-                                type="text" placeholder="Key" style={{...styles.formInput, opacity: 0.7}} 
-                                value={editingConfig?.key || ''} readOnly 
-                            />
-                            <input 
-                                type="text" placeholder="Title" style={styles.formInput} 
-                                value={editingConfig?.title || ''} onChange={e => setEditingConfig({...editingConfig, title: e.target.value})} 
-                            />
-                            <textarea 
-                                placeholder="Description" style={{...styles.formInput, height: '120px'}} 
-                                value={editingConfig?.description || ''} onChange={e => setEditingConfig({...editingConfig, description: e.target.value})} 
-                            />
-                            <input 
-                                type="text" placeholder="Image URL (Manual)" style={styles.formInput} 
-                                value={editingConfig?.imageUrl || ''} onChange={e => setEditingConfig({...editingConfig, imageUrl: e.target.value})} 
-                            />
-                            <div style={{marginBottom: '10px'}}>
-                                <label style={{display: 'block', color: theme.gold, fontSize: '0.8rem', marginBottom: '5px'}}>Upload Image (Replaces URL)</label>
-                                <input 
-                                    type="file" accept="image/*" 
-                                    onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            const reader = new FileReader();
-                                            reader.onloadend = () => {
-                                                setEditingConfig({...editingConfig, imageUrl: reader.result as string});
-                                            };
-                                            reader.readAsDataURL(file);
-                                        }
-                                    }}
-                                    style={{color: '#888', fontSize: '0.8rem'}}
+            )}
+
+            {/* TAB CONTENT: 4. HOMEPAGE MANAGEMENT (Requirement 2 - Vertical flow, local upload preview, AI descriptions, responsive button adapts to PC/Tablet/iOS/Android) */}
+            {activeTab === 'homepage' && (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '30px'}}>
+                    
+                    {/* Top Part: Homepage config form */}
+                    <div style={{...styles.glassPanel, border: `1px solid ${editingConfig ? theme.gold : 'rgba(255,255,255,0.08)'}`}}>
+                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '8px', marginBottom: '20px'}}>
+                            {editingConfig ? `✍️ 优化主页板块: ${editingConfig.key}` : '💡 选择下方主页模块进行重修或文案撰写'}
+                        </h3>
+                        
+                        <form onSubmit={handleSaveConfig} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px'}}>
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>板块标识代号 (Section / Key)</label>
+                                    <input 
+                                        type="text" style={{...styles.formInput, opacity: 0.6}} 
+                                        value={editingConfig?.key || '未选定模版'} readOnly 
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>展示大标题 (Title)</label>
+                                    <input 
+                                        type="text" placeholder="板块大标题" style={styles.formInput} 
+                                        value={editingConfig?.title || ''} onChange={e => setEditingConfig({...editingConfig, title: e.target.value})} 
+                                        disabled={!editingConfig}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Local Image upload and preview for Homepage config */}
+                            <div style={{border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '4px'}}>
+                                <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px'}}>板块卡片图本地上传与实时预览 (Banner / Illustration Upload & Preview)</label>
+                                <div style={{display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap'}}>
+                                    <div style={{
+                                        width: '140px', 
+                                        height: '90px', 
+                                        borderRadius: '6px', 
+                                        border: `1px dashed ${theme.gold}`, 
+                                        background: '#04040c', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center',
+                                        overflow: 'hidden'
+                                    }}>
+                                        {editingConfig?.imageUrl ? (
+                                            <img src={editingConfig.imageUrl} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                                        ) : (
+                                            <span style={{color: '#444', fontSize: '0.75rem', textAlign: 'center'}}>No Image</span>
+                                        )}
+                                    </div>
+                                    <div style={{flex: 1}}>
+                                        <input 
+                                            type="file" accept="image/*" 
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setEditingConfig((prev: any) => ({ ...prev, imageUrl: reader.result as string }));
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                            disabled={!editingConfig}
+                                            style={{color: '#ccc', fontSize: '0.85rem', cursor: editingConfig ? 'pointer' : 'not-allowed'}}
+                                        />
+                                        <p style={{color: '#888', fontSize: '0.75rem', margin: '5px 0 0 0'}}>玄学大图或者配图上传区。此操作将彻底剔除并覆盖原网络URL。</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* AI Write description text */}
+                            <div>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
+                                    <label style={{color: theme.gold, fontSize: '0.85rem', fontWeight: '600'}}>板块引介描述文案 (Introduction & Narrative)</label>
+                                    <button 
+                                        type="button" 
+                                        disabled={!editingConfig || isGeneratingHomeDesc}
+                                        onClick={handleAIGenerateHomeDesc} 
+                                        style={{
+                                            background: 'rgba(212, 175, 55, 0.1)', 
+                                            borderColor: theme.gold, 
+                                            color: theme.gold, 
+                                            padding: '4px 8px', 
+                                            fontSize: '0.75rem', 
+                                            border: `1px solid ${theme.gold}`,
+                                            borderRadius: '4px',
+                                            cursor: editingConfig ? 'pointer' : 'not-allowed',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '5px',
+                                            margin: 0
+                                        }}
+                                    >
+                                        <i className={`fas ${isGeneratingHomeDesc ? 'fa-spinner fa-spin' : 'fa-magic'}`}></i>
+                                        {isGeneratingHomeDesc ? "AI Writing copy..." : "🔮 AI智能润雕板块文案"}
+                                    </button>
+                                </div>
+                                <textarea 
+                                    placeholder="输入板块的精美推介词，或点击上方魔法按钮让AI为你量身编撰..." style={{...styles.formInput, height: '110px'}} 
+                                    value={editingConfig?.description || ''} onChange={e => setEditingConfig({...editingConfig, description: e.target.value})} 
+                                    disabled={!editingConfig}
                                 />
                             </div>
-                            <input 
-                                type="text" placeholder="AI Image Prompt (Fallback)" style={styles.formInput} 
-                                value={editingConfig?.imagePrompt || ''} onChange={e => setEditingConfig({...editingConfig, imagePrompt: e.target.value})} 
-                            />
-                            <div style={{display: 'flex', gap: '10px'}}>
-                                <button type="submit" style={{...styles.button, flex: 1}} disabled={!editingConfig}>Save Changes</button>
-                                <button type="button" onClick={() => setEditingConfig(null)} style={{...styles.secondaryButton, flex: 1}}>Cancel</button>
+
+                            {/* AI Image prompt (just kept/updated silently) */}
+                            <div>
+                                <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>备用 AI 出图提示词 (Fallback Image Generation Prompt)</label>
+                                <input 
+                                    type="text" placeholder="AI Prompt for backup image generation" style={styles.formInput} 
+                                    value={editingConfig?.imagePrompt || ''} onChange={e => setEditingConfig({...editingConfig, imagePrompt: e.target.value})} 
+                                    disabled={!editingConfig}
+                                />
+                            </div>
+
+                            {/* Buttons and actions with highly fluid container sizing to fit PC/Tablet/iPhone */}
+                            <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap', width: '100%'}}>
+                                <button type="submit" disabled={!editingConfig} style={{...styles.button, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.9rem', cursor: editingConfig ? 'pointer' : 'not-allowed'}}>
+                                    <i className="fas fa-check-circle" style={{marginRight: '8px'}}></i> 保存板块修改 (Save Changes)
+                                </button>
+                                <button type="button" onClick={() => setEditingConfig(null)} style={{...styles.secondaryButton, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.9rem'}}>
+                                    <i className="fas fa-times" style={{marginRight: '8px'}}></i> 取消编辑 (Cancel)
+                                </button>
                             </div>
                         </form>
                     </div>
+
+                    {/* Bottom Part: Configs list layout */}
                     <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden'}}>
+                        <div style={{padding: '15px 20px', borderBottom: `1px solid ${theme.darkGold}`, background: 'rgba(255,255,255,0.01)'}}>
+                            <h4 style={{color: theme.gold, fontFamily: 'Cinzel, serif', margin: 0, fontSize: '1.1rem'}}>
+                                <i className="fas fa-th-list" style={{marginRight: '8px'}}></i> 现有主页板块模组 (Homepage Main Sections)
+                            </h4>
+                        </div>
                         <div style={{overflowX: 'auto'}}>
                             <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0'}}>
                                 <thead>
                                     <tr style={{background: 'rgba(212, 175, 55, 0.2)', borderBottom: `1px solid ${theme.darkGold}`}}>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Type</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Section/Key</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Title</th>
-                                        <th style={{padding: '15px', textAlign: 'right', color: theme.gold}}>Actions</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>类型 (Type)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>主健 (Section Key)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>前台标题 (Title)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>配图预览</th>
+                                        <th style={{padding: '15px', textAlign: 'right', color: theme.gold}}>修改 (Actions)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -423,8 +1113,20 @@ export const AdminPage = ({ t }: { t: any }) => {
                                             <td style={{padding: '10px 15px', textTransform: 'capitalize', fontSize: '0.8rem'}}>{c.type}</td>
                                             <td style={{padding: '10px 15px', fontWeight: 'bold'}}>{c.key}</td>
                                             <td style={{padding: '10px 15px'}}>{c.title}</td>
+                                            <td style={{padding: '10px 15px'}}>
+                                                {c.imageUrl ? (
+                                                    <img src={c.imageUrl} style={{width: '60px', height: '35px', borderRadius: '3px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)'}} />
+                                                ) : (
+                                                    <span style={{color: '#555', fontSize: '0.75rem'}}>No Image</span>
+                                                )}
+                                            </td>
                                             <td style={{padding: '10px 15px', textAlign: 'right'}}>
-                                                <button onClick={() => setEditingConfig(c)} style={{background: 'none', border: 'none', color: theme.gold, cursor: 'pointer'}}><i className="fas fa-edit"></i></button>
+                                                <button onClick={() => {
+                                                    setEditingConfig(c);
+                                                    window.scrollTo({ top: 120, behavior: 'smooth' });
+                                                }} style={{background: 'none', border: 'none', color: theme.gold, cursor: 'pointer', fontSize: '1.05rem'}}>
+                                                    <i className="fas fa-edit"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
@@ -432,11 +1134,163 @@ export const AdminPage = ({ t }: { t: any }) => {
                             </table>
                         </div>
                     </div>
+
                 </div>
             )}
+
+            {/* TAB CONTENT: 5. SETTING & PIXEL (Requirement 3 - Only keep FB Pixel and Google Analytics Pixel, Cancel any home page settings here) */}
+            {activeTab === 'settings' && (
+                <div style={{...styles.glassPanel, maxWidth: '850px', margin: '0 auto', padding: '2.5rem'}}>
+                    <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.4rem', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '10px', marginBottom: '20px'}}>
+                        <i className="fas fa-chart-line" style={{marginRight: '10px'}}></i>
+                        SETTING & PIXEL (网站监控配置)
+                    </h3>
+                    <p style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '2rem'}}>
+                        配置并装配您的 Google Analytics (GTAG) 以及 Facebook-Meta API 追踪像素，为市场引流提供数据赋能。其他系统级设置在此处一律剔除。
+                    </p>
+
+                    <form onSubmit={handleSaveSettings} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                        
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.gold, fontWeight: 'bold', marginBottom: '8px'}}>GOOGLE ANALYTICS / GTAG ID</label>
+                            <input 
+                                type="text" 
+                                placeholder="例如: G-XXXXXXXXXX" 
+                                style={styles.formInput} 
+                                value={settings.googlePixelId || ''} 
+                                onChange={e => setSettings({...settings, googlePixelId: e.target.value})} 
+                            />
+                            <span style={{fontSize: '0.75rem', color: '#888'}}>输入您的全局谷歌流量监控 ID，以便系统收集转化反馈。</span>
+                        </div>
+
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.gold, fontWeight: 'bold', marginBottom: '8px'}}>FACEBOOK PIXEL ID (Meta 像素代号)</label>
+                            <input 
+                                type="text" 
+                                placeholder="例如: 1234567890" 
+                                style={styles.formInput} 
+                                value={settings.facebookPixelId || ''} 
+                                onChange={e => setSettings({...settings, facebookPixelId: e.target.value})} 
+                            />
+                            <span style={{fontSize: '0.75rem', color: '#888'}}>Meta广告精准归因像素代号。</span>
+                        </div>
+
+                        {settingsStatus === 'success' && (
+                            <div style={{padding: '12px', background: 'rgba(46,204,113,0.15)', color: '#2ecc71', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                                <i className="fas fa-check-circle" style={{marginRight: '8px'}}></i> Google & Facebook 流量分析像素参数已保存更新！
+                            </div>
+                        )}
+                        {settingsStatus === 'error' && (
+                            <div style={{padding: '12px', background: 'rgba(231,76,60,0.15)', color: '#e74c3c', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                                <i className="fas fa-times-circle" style={{marginRight: '8px'}}></i> 保存失败，请检查网络后台连接。
+                            </div>
+                        )}
+
+                        <button 
+                            type="submit" 
+                            disabled={isSavingSettings}
+                            style={{...styles.button, width: '100%', marginTop: '10px'}}
+                        >
+                            {isSavingSettings ? "Saving Settings..." : "保存像素监控参数 (Save Pixels)"}
+                        </button>
+                    </form>
+                </div>
+            )}
+
+            {/* TAB CONTENT: 6. PAYMENTS CONFIG (Requirement 4 - Separate Payments Setup for PayPal & Stripe Credit Card integrations) */}
+            {activeTab === 'payments' && (
+                <div style={{...styles.glassPanel, maxWidth: '850px', margin: '0 auto', padding: '2.5rem'}}>
+                    <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.4rem', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '10px', marginBottom: '20px'}}>
+                        <i className="fas fa-wallet" style={{marginRight: '10px'}}></i>
+                        收款设置 (Payment Getaways Setup)
+                    </h3>
+                    <p style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '2rem'}}>
+                        管理前台玄学解签或福物采购所需的底层资金流收取通道。在这里可以自定义 PayPal 沙盒和 Stripe 信用卡的网关秘钥。
+                    </p>
+
+                    <form onSubmit={handleSaveSettings} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                        
+                        {/* PayPal Container */}
+                        <div style={{background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '4px'}}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
+                                <span style={{color: '#fff', fontWeight: 'bold'}}><i className="fab fa-paypal" style={{color: '#003087', marginRight: '8px'}}></i>PayPal Checkout 收款开关</span>
+                                <input 
+                                    type="checkbox" 
+                                    checked={!!settings.paypalEnabled} 
+                                    onChange={e => setSettings({...settings, paypalEnabled: e.target.checked})} 
+                                    style={{width: '20px', height: '20px', cursor: 'pointer', accentColor: theme.gold}}
+                                />
+                            </div>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.gold, marginBottom: '5px', fontWeight: '500'}}>PAYPAL CLIENT ID (沙盒或线上生产商号)</label>
+                            <input 
+                                type="text" 
+                                placeholder="输入 PayPal Client 客户端凭证代码" 
+                                style={styles.formInput} 
+                                value={settings.paypalClientId || ''} 
+                                onChange={e => setSettings({...settings, paypalClientId: e.target.value})} 
+                                disabled={!settings.paypalEnabled}
+                            />
+                        </div>
+
+                        {/* Credit Card Stripe Container */}
+                        <div style={{background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '4px', marginTop: '10px'}}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
+                                <span style={{color: '#fff', fontWeight: 'bold'}}><i className="fab fa-stripe" style={{color: '#6772e5', marginRight: '8px'}}></i>Stripe 信和借记信用卡收款开关</span>
+                                <input 
+                                    type="checkbox" 
+                                    checked={!!settings.stripeEnabled} 
+                                    onChange={e => setSettings({...settings, stripeEnabled: e.target.checked})} 
+                                    style={{width: '20px', height: '20px', cursor: 'pointer', accentColor: theme.gold}}
+                                />
+                            </div>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.gold, marginBottom: '5px', fontWeight: '500'}}>STRIPE PUBLIC KEY (公钥 pk_test_... 或 pk_live_...)</label>
+                            <input 
+                                type="text" 
+                                placeholder="输入 Stripe 网页公钥凭证" 
+                                style={styles.formInput} 
+                                value={settings.stripePublicKey || ''} 
+                                onChange={e => setSettings({...settings, stripePublicKey: e.target.value})} 
+                                disabled={!settings.stripeEnabled}
+                            />
+                        </div>
+
+                        {settingsStatus === 'success' && (
+                            <div style={{padding: '12px', background: 'rgba(46,204,113,0.15)', color: '#2ecc71', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                                <i className="fas fa-check-circle" style={{marginRight: '8px'}}></i> 收款网关密钥设置保存成功！
+                            </div>
+                        )}
+                        {settingsStatus === 'error' && (
+                            <div style={{padding: '12px', background: 'rgba(231,76,60,0.15)', color: '#e74c3c', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                                <i className="fas fa-times-circle" style={{marginRight: '8px'}}></i> 保存失败，请检查网络后台连接。
+                            </div>
+                        )}
+
+                        <button 
+                            type="submit" 
+                            disabled={isSavingSettings}
+                            style={{...styles.button, width: '100%', marginTop: '10px'}}
+                        >
+                            {isSavingSettings ? "Saving Pay Creds..." : "保存收款网关配置 (Save Payment Config)"}
+                        </button>
+                    </form>
+                </div>
+            )}
+
+            {/* Custom Styles for Responsive Tabs & Flex Grids */}
             <style>{`
                 @media (max-width: 900px) {
                     .responsive-grid { grid-template-columns: 1fr !important; }
+                }
+                @media (max-width: 600px) {
+                    .admin-tabs {
+                        justify-content: center;
+                        width: 100%;
+                        margin-top: 10px;
+                    }
+                    .admin-tabs button {
+                        flex: 1 1 calc(50% - 10px);
+                        text-align: center;
+                    }
                 }
             `}</style>
         </div>

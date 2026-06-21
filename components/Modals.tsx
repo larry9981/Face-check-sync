@@ -177,6 +177,12 @@ export const FiveElementsBalanceModal = ({ t, missingElement, aiAdvice, onClose,
 
 export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: () => void, onAddToCart: () => void, onBuyNow: () => void, onSwitchProduct?: (p: Product) => void, isPageMode?: boolean }> = ({ t, product, onClose, onAddToCart, onBuyNow, onSwitchProduct, isPageMode = false }) => {
     const [isAdded, setIsAdded] = useState(false);
+    const isMounted = React.useRef(true);
+
+    React.useEffect(() => {
+        isMounted.current = true;
+        return () => { isMounted.current = false; };
+    }, []);
 
     const zodiacLocal = t[`zodiac${product.zodiac}`] || t[`star${product.zodiac}`] || product.zodiac;
     const name = t[product.nameKey] ? t[product.nameKey].replace('{zodiac}', zodiacLocal) : product.defaultName;
@@ -185,7 +191,9 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
     const handleAddToCartClick = () => {
         onAddToCart();
         setIsAdded(true);
-        setTimeout(() => setIsAdded(false), 2000);
+        setTimeout(() => {
+            if (isMounted.current) setIsAdded(false);
+        }, 2000);
     };
 
     const containerStyle: React.CSSProperties = isPageMode ? {
@@ -218,9 +226,19 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
                     
                     {/* RIGHT: Content */}
                     <div className="product-detail-content">
-                        <h1 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2.5rem', margin: '0 0 10px 0', lineHeight: 1.2}}>{name}</h1>
+                        <h1 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2.5rem', margin: '0 0 5px 0', lineHeight: 1.2}}>{name}</h1>
+                        {product.sku && (
+                            <div style={{color: '#aaa', fontSize: '0.85rem', marginBottom: '15px', fontFamily: 'monospace'}}>SKU: {product.sku}</div>
+                        )}
                         <div style={{fontSize: '2rem', fontWeight: 'bold', color: '#fff', marginBottom: '20px'}}>{product.price}</div>
-                        <p style={{color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem'}}>{desc}</p>
+                        <p style={{color: '#ccc', lineHeight: '1.8', fontSize: '1.1rem', marginBottom: '20px'}}>{desc}</p>
+                        
+                        {product.longDescription && (
+                            <div style={{marginTop: '15px', marginBottom: '25px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px'}}>
+                                <h4 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.1rem', margin: '0 0 10px 0'}}>Sacred Attributes & Details</h4>
+                                <div style={{color: '#b5b5c3', fontSize: '0.95rem', lineHeight: '1.6', whiteSpace: 'pre-line'}}>{product.longDescription}</div>
+                            </div>
+                        )}
                         
                         {/* BUTTONS INTEGRATED HERE */}
                         <div className="product-detail-buttons">
@@ -250,8 +268,23 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
 
 export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: (details: any) => void, userId?: string }) => {
     const [successState, setSuccessState] = useState(false);
+    const [processing, setProcessing] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
+    const isMounted = React.useRef(true);
+
+    React.useEffect(() => {
+        isMounted.current = true;
+        return () => { isMounted.current = false; };
+    }, []);
+
     const [email, setEmail] = useState('');
-    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal' | 'demo'>('stripe');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [cardNumber, setCardNumber] = useState('');
+    const [expiry, setExpiry] = useState('');
+    const [cvc, setCvc] = useState('');
+    const [shippingAddr, setShippingAddr] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal'>('stripe');
 
     let title = '';
 
@@ -273,108 +306,199 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
     }
 
     const priceStr = plan.price.replace(/[^0-9.]/g, '');
-    const priceVal = parseFloat(priceStr);
+    const priceVal = parseFloat(priceStr) || 0;
     
-    const handleSuccess = () => {
-        setSuccessState(true);
-        const paymentDetails = {
-            contact: { email },
-            method: paymentMethod
-        };
-        setTimeout(() => onSuccess(paymentDetails), 2000);
+    const handlePaymentSubmit = async () => {
+        if (!email) {
+            setErrorMsg("Please enter a valid email address.");
+            return;
+        }
+        if (paymentMethod === 'stripe') {
+            if (!firstName || !lastName || !cardNumber || !expiry || !cvc) {
+                setErrorMsg("Please fill out all Credit Card information fields.");
+                return;
+            }
+        }
+
+        setProcessing(true);
+        setErrorMsg('');
+
+        try {
+            const response = await fetch('/api/payments/pay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId,
+                    email,
+                    planId: plan.id,
+                    planTitle: title,
+                    amount: priceVal,
+                    method: paymentMethod === 'stripe' ? 'credit-card' : 'paypal',
+                    shippingAddress: shippingAddr || 'Digital / Virtual Insight',
+                    cardDetails: paymentMethod === 'stripe' ? {
+                        name: `${firstName} ${lastName}`.trim(),
+                        cardNumber,
+                        expiry,
+                        cvc
+                    } : null
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                setSuccessState(true);
+                setTimeout(() => {
+                    if (isMounted.current) {
+                        onSuccess({
+                            email,
+                            orderId: data.orderId,
+                            method: paymentMethod === 'stripe' ? 'credit-card' : 'paypal'
+                        });
+                    }
+                }, 2000);
+            } else {
+                setErrorMsg(data.error || "Payment processing failed. Please check inputs.");
+            }
+        } catch (err: any) {
+            setErrorMsg("Unable to process transaction at this moment. Please try again.");
+        } finally {
+            setProcessing(false);
+        }
     };
 
-    if (successState) return <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}><div style={{...styles.glassPanel, textAlign: 'center', maxWidth: '400px'}}><h2 style={{color: theme.gold}}>{t.success}</h2></div></div>;
+    if (successState) return <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.95)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}><div style={{...styles.glassPanel, textAlign: 'center', maxWidth: '400px'}}><div style={{color: '#2ecc71', fontSize: '4rem', marginBottom: '15px'}}><i className="fas fa-check-circle"></i></div><h2 style={{color: theme.gold, margin: '0 0 10px 0'}}>{t.success}</h2><p style={{color: '#aaa', fontSize: '0.9rem'}}>Transaction authenticated successfully.</p></div></div>;
 
     return (
         <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)'}}>
-          <div style={{...styles.glassPanel, maxWidth: '550px', width: '95%', maxHeight: '90vh', overflowY: 'auto'}}>
+          <div style={{...styles.glassPanel, maxWidth: '550px', width: '95%', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${theme.gold}`}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
                 <h2 style={{color: theme.gold, margin: 0, fontFamily: 'Cinzel, serif'}}>{t.paymentTitle}</h2>
-                <button onClick={onClose} style={{background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer'}}>&times;</button>
+                <button onClick={onClose} style={{background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer', transition: 'color 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.color = theme.gold} onMouseLeave={(e) => e.currentTarget.style.color = '#888'}>&times;</button>
             </div>
             
-            <div style={{marginBottom: '20px', padding: '15px', border: `1px solid ${theme.darkGold}`, borderRadius: '4px', background: 'rgba(212, 175, 55, 0.1)'}}>
+            <div style={{marginBottom: '20px', padding: '15px', border: `1px solid ${theme.darkGold}`, borderRadius: '4px', background: 'rgba(212, 175, 55, 0.08)'}}>
                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                     <span style={{fontWeight: 'bold'}}>{title}</span>
+                     <span style={{fontWeight: 'bold', fontSize: '1.1rem'}}>{title}</span>
                      <span style={{fontSize: '1.2rem', fontWeight: 'bold', color: theme.gold}}>${priceVal.toFixed(2)}</span>
                  </div>
             </div>
+
+            {errorMsg && (
+                <div style={{marginBottom: '20px', padding: '12px', borderRadius: '4px', background: 'rgba(231, 76, 60, 0.15)', color: '#e74c3c', fontSize: '0.9rem', border: '1px solid #e74c3c'}}>
+                    <i className="fas fa-exclamation-circle" style={{marginRight: '8px'}}></i> {errorMsg}
+                </div>
+            )}
             
             <div style={{marginBottom: '20px'}}>
-                <h3 style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '10px', textTransform: 'uppercase'}}>Contact Info</h3>
+                <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>Contact Info</h3>
                 <div>
                     <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>
-                        {t.emailLabel}
+                        Email Address
                     </label>
-                    <input type="email" placeholder="you@example.com" style={styles.cardInput} value={email} onChange={e => setEmail(e.target.value)} />
+                    <input type="email" placeholder="you@example.com" style={styles.cardInput} value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
             </div>
 
             <div style={{marginBottom: '20px'}}>
-                <h3 style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '10px', textTransform: 'uppercase'}}>Payment Method</h3>
+                <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>Shipping Address (Optional for Physical Goods)</h3>
+                <div>
+                    <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>
+                        Delivery details
+                    </label>
+                    <input type="text" placeholder="First & Last Name, Country, Full street address, suite, ZIP etc..." style={styles.cardInput} value={shippingAddr} onChange={e => setShippingAddr(e.target.value)} />
+                </div>
+            </div>
+
+            <div style={{marginBottom: '20px'}}>
+                <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>Payment Method</h3>
                 <div style={{display: 'flex', gap: '10px'}}>
                     <button 
+                        type="button"
                         onClick={() => setPaymentMethod('stripe')}
                         style={{
-                            flex: 1, padding: '15px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'stripe' ? theme.gold : '#333'}`,
-                            background: paymentMethod === 'stripe' ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
-                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
+                            flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'stripe' ? theme.gold : '#333'}`,
+                            background: paymentMethod === 'stripe' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', transition: 'all 0.2s'
                         }}
                     >
-                        <i className="fab fa-stripe" style={{fontSize: '2rem', color: '#6772e5'}}></i>
-                        <span style={{fontSize: '0.8rem', color: paymentMethod === 'stripe' ? theme.gold : '#888'}}>Stripe</span>
+                        <i className="fas fa-credit-card" style={{fontSize: '1.6rem', color: theme.gold}}></i>
+                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'stripe' ? theme.gold : '#888'}}>Credit Card Collection</span>
                     </button>
                     <button 
+                        type="button"
                         onClick={() => setPaymentMethod('paypal')}
                         style={{
-                            flex: 1, padding: '15px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'paypal' ? theme.gold : '#333'}`,
-                            background: paymentMethod === 'paypal' ? 'rgba(212, 175, 55, 0.1)' : 'transparent',
-                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px'
+                            flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'paypal' ? theme.gold : '#333'}`,
+                            background: paymentMethod === 'paypal' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', transition: 'all 0.2s'
                         }}
                     >
-                        <i className="fab fa-paypal" style={{fontSize: '2rem', color: '#003087'}}></i>
-                        <span style={{fontSize: '0.8rem', color: paymentMethod === 'paypal' ? theme.gold : '#888'}}>PayPal</span>
+                        <i className="fab fa-paypal" style={{fontSize: '1.6rem', color: '#003087'}}></i>
+                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'paypal' ? theme.gold : '#888'}}>PayPal Gateway</span>
                     </button>
                 </div>
             </div>
 
             {paymentMethod === 'stripe' && (
-                <div style={{marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', border: '1px solid #333'}}>
+                <div style={{marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid #333'}}>
+                    <div style={{display: 'flex', gap: '10px', marginBottom: '10px'}}>
+                        <div style={{flex: 1}}>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>FIRST NAME</label>
+                            <input type="text" placeholder="John" style={styles.cardInput} value={firstName} onChange={e => setFirstName(e.target.value)} />
+                        </div>
+                        <div style={{flex: 1}}>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>LAST NAME</label>
+                            <input type="text" placeholder="Doe" style={styles.cardInput} value={lastName} onChange={e => setLastName(e.target.value)} />
+                        </div>
+                    </div>
                     <div style={{marginBottom: '10px'}}>
                         <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>CARD NUMBER</label>
-                        <input type="text" placeholder="**** **** **** ****" style={{...styles.cardInput, background: 'transparent', border: 'none', borderBottom: '1px solid #444', borderRadius: 0, paddingLeft: 0}} disabled />
+                        <input type="text" maxLength={19} placeholder="4111 2222 3333 4444" style={styles.cardInput} value={cardNumber} onChange={e => setCardNumber(e.target.value)} />
                     </div>
                     <div style={{display: 'flex', gap: '20px'}}>
                         <div style={{flex: 1}}>
                             <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>EXPIRY</label>
-                            <input type="text" placeholder="MM/YY" style={{...styles.cardInput, background: 'transparent', border: 'none', borderBottom: '1px solid #444', borderRadius: 0, paddingLeft: 0}} disabled />
+                            <input type="text" maxLength={5} placeholder="MM/YY" style={styles.cardInput} value={expiry} onChange={e => setExpiry(e.target.value)} />
                         </div>
                         <div style={{flex: 1}}>
                             <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>CVC</label>
-                            <input type="text" placeholder="***" style={{...styles.cardInput, background: 'transparent', border: 'none', borderBottom: '1px solid #444', borderRadius: 0, paddingLeft: 0}} disabled />
+                            <input type="text" maxLength={4} placeholder="***" style={styles.cardInput} value={cvc} onChange={e => setCvc(e.target.value)} />
                         </div>
                     </div>
                 </div>
             )}
 
             {paymentMethod === 'paypal' && (
-                <div style={{marginBottom: '20px', padding: '20px', textAlign: 'center', background: 'rgba(0,48,135,0.1)', borderRadius: '8px', border: '1px solid #003087'}}>
-                    <i className="fab fa-paypal" style={{fontSize: '3rem', color: '#003087', marginBottom: '10px'}}></i>
-                    <p style={{fontSize: '0.9rem', color: '#ccc'}}>You will be redirected to PayPal to complete your purchase safely.</p>
+                <div style={{marginBottom: '20px', padding: '20px', textAlign: 'center', background: 'rgba(0,48,135,0.06)', borderRadius: '8px', border: '1px solid rgba(0,48,135,0.3)'}}>
+                    <i className="fab fa-paypal" style={{fontSize: '3rem', color: '#0070ba', marginBottom: '10px'}}></i>
+                    <p style={{fontSize: '0.9rem', color: '#ccc', margin: '0 0 10px 0'}}>Pay securely with your PayPal account or linked bank sources.</p>
+                    <p style={{fontSize: '0.75rem', color: '#777', margin: 0}}>Redirecting protocol initiates upon clicking continue.</p>
                 </div>
             )}
 
             <button 
-                style={{...styles.button, width: '100%', marginTop: '10px'}} 
-                onClick={handleSuccess}
-                disabled={!email}
+                type="button"
+                style={{
+                    ...styles.button, 
+                    width: '100%', 
+                    marginTop: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px'
+                }} 
+                onClick={handlePaymentSubmit}
+                disabled={processing}
             >
-                {paymentMethod === 'paypal' ? 'Continue to PayPal' : t.payNow} (Demo)
+                {processing ? (
+                    <><i className="fas fa-spinner fa-spin"></i> Processing...</>
+                ) : (
+                    paymentMethod === 'paypal' ? 'Continue with PayPal' : 'Pay Safely & Secure Checkout'
+                )}
             </button>
             
-            <p style={{marginTop: '15px', fontSize: '0.8rem', color: '#888', textAlign: 'center'}}>
-                This is a demo payment interface. No real transaction will occur.
+            <p style={{marginTop: '15px', fontSize: '0.75rem', color: '#666', textAlign: 'center', margin: '15px 0 0 0'}}>
+                <i className="fas fa-lock" style={{marginRight: '5px'}}></i> 256-bit SSL secured transaction processing container environment.
             </p>
           </div>
         </div>

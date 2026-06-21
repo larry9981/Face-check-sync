@@ -39,7 +39,7 @@ export const LoadingSpinner = ({ t, progress, message }: { t: any, progress?: nu
   </div>
 );
 
-export const RenderStartView = ({ t, freeTrials, onStart }: { t: any, freeTrials: number, onStart: (type: 'face' | 'palm') => void }) => {
+export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, freeFaceRemaining, freePalmRemaining }: { t: any, freeTrials: number, onStart: (type: 'face' | 'palm') => void, isLoggedIn?: boolean, freeFaceRemaining?: number, freePalmRemaining?: number }) => {
     const boxSize = '200px'; 
     const imageBoxStyle = {
         width: boxSize, 
@@ -57,89 +57,111 @@ export const RenderStartView = ({ t, freeTrials, onStart }: { t: any, freeTrials
     };
 
     return (
-    <div style={{...styles.glassPanel, border: `1px solid ${theme.darkGold}`, boxShadow: `0 0 20px rgba(212, 175, 55, 0.15)`}} className="glass-panel-mobile">
-      <div style={{...styles.baguaContainer, margin: '0 auto 1.5rem', filter: 'drop-shadow(0 0 10px #d4af37)'}}>
+    <div style={{...styles.glassPanel, border: `1px solid ${theme.darkGold}`, padding: '3.5rem 2rem', boxShadow: `0px 10px 40px rgba(0, 0, 0, 0.6), inset 0px 1px 0px rgba(255, 255, 255, 0.1)`, borderRadius: '12px'}} className="glass-panel-mobile">
+      <div style={{...styles.baguaContainer, margin: '0 auto 2rem', filter: 'drop-shadow(0 0 15px rgba(212, 175, 55, 0.6))', width: '90px', height: '90px'}}>
          {BaguaSVG}
       </div>
-      <h1 style={{fontSize: '2.5rem', marginBottom: '1rem', color: theme.gold}}>{t.heroTitle}</h1>
-      <p style={{color: '#ccc', marginBottom: '2rem', fontSize: '1.1rem'}}>{t.heroDesc}</p>
+      <h1 style={{fontSize: '2.8rem', fontWeight: 700, marginBottom: '1.2rem', color: theme.gold, fontFamily: 'Cinzel, Georgia, serif', letterSpacing: '2px', textShadow: '0 2px 10px rgba(0,0,0,0.8)'}}>{t.heroTitle}</h1>
+      <p style={{color: '#dfdfd5', marginBottom: '2.5rem', fontSize: '1.15rem', maxWidth: '700px', margin: '0 auto 2.5rem auto', lineHeight: '1.6', letterSpacing: '0.5px'}}>{t.heroDesc}</p>
       
-      <div className="home-cards-container">
+      <div className="home-cards-container" style={{display: 'flex', gap: '2.50rem', justifyContent: 'center', flexWrap: 'wrap', width: '100%'}}>
           
           {/* FACE READING CARD */}
           <div style={{
-              flex: '1 1 280px', 
-              maxWidth: '320px',
-              background: 'rgba(5, 5, 20, 0.6)', 
-              border: `1px solid ${theme.darkGold}`, 
-              borderRadius: '8px', 
-              padding: '30px', 
+              flex: '1 1 290px', 
+              maxWidth: '330px',
+              background: 'linear-gradient(135deg, rgba(20, 15, 10, 0.8) 0%, rgba(5, 5, 15, 0.95) 100%)', 
+              border: `1.5px solid ${theme.darkGold}`, 
+              borderRadius: '10px', 
+              padding: '35px 25px', 
               cursor: 'pointer',
-              transition: 'all 0.3s',
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center'
+              alignItems: 'center',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
           }} 
           onClick={() => onStart('face')}
           onMouseOver={(e) => {
               e.currentTarget.style.borderColor = theme.gold;
-              e.currentTarget.style.transform = 'translateY(-5px)';
+              e.currentTarget.style.transform = 'translateY(-8px)';
+              e.currentTarget.style.boxShadow = `0 12px 40px rgba(212, 175, 55, 0.25)`;
           }}
           onMouseOut={(e) => {
               e.currentTarget.style.borderColor = theme.darkGold;
               e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)';
           }}
           >
               <div style={imageBoxStyle}>
                   <FaceMapSVG t={t} />
               </div>
-              <h3 style={{color: theme.gold, fontSize: '1.4rem', margin: '0 0 15px 0'}}>{t.startBtn}</h3>
-              <button style={{...styles.button, width: '100%', marginTop: 'auto'}}>{t.scanBtn}</button>
+              <h3 style={{color: theme.gold, fontSize: '1.45rem', fontFamily: 'Cinzel, Georgia, serif', letterSpacing: '1px', margin: '0 0 15px 0', textTransform: 'uppercase'}}>{t.startBtn}</h3>
+              <button style={{...styles.button, width: '100%', marginTop: 'auto', letterSpacing: '1px', fontWeight: 'bold'}}>{t.scanBtn}</button>
           </div>
 
           {/* PALM READING CARD */}
           <div style={{
-              flex: '1 1 280px', 
-              maxWidth: '320px',
-              background: 'rgba(5, 5, 20, 0.6)', 
-              border: `1px solid ${theme.darkGold}`, 
-              borderRadius: '8px', 
-              padding: '30px', 
+              flex: '1 1 290px', 
+              maxWidth: '330px',
+              background: 'linear-gradient(135deg, rgba(20, 15, 10, 0.8) 0%, rgba(5, 5, 15, 0.95) 100%)', 
+              border: `1.5px solid ${theme.darkGold}`, 
+              borderRadius: '10px', 
+              padding: '35px 25px', 
               cursor: 'pointer',
-              transition: 'all 0.3s',
+              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center'
+              alignItems: 'center',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
           }}
           onClick={() => onStart('palm')}
           onMouseOver={(e) => {
               e.currentTarget.style.borderColor = theme.gold;
-              e.currentTarget.style.transform = 'translateY(-5px)';
+              e.currentTarget.style.transform = 'translateY(-8px)';
+              e.currentTarget.style.boxShadow = `0 12px 40px rgba(212, 175, 55, 0.25)`;
           }}
           onMouseOut={(e) => {
               e.currentTarget.style.borderColor = theme.darkGold;
               e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)';
           }}
           >
               <div style={imageBoxStyle}>
-                  <i className="fas fa-hand-sparkles" style={{fontSize: '6rem', color: theme.gold, textShadow: '0 0 10px rgba(212,175,55,0.5)', zIndex: 2}}></i>
+                  <i className="fas fa-hand-sparkles" style={{fontSize: '6rem', color: theme.gold, textShadow: '0 0 15px rgba(212,175,55,0.6)', zIndex: 2}}></i>
                   {/* Mystical Pulse Animation */}
                   <div style={{position: 'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width: '120px', height:'120px', borderRadius:'50%', border:`2px solid ${theme.gold}`, animation: 'mysticalPulse 3s infinite', opacity: 0.5}}></div>
               </div>
-              <h3 style={{color: theme.gold, fontSize: '1.4rem', margin: '0 0 15px 0'}}>{t.palmBtn}</h3>
-              <button style={{...styles.button, width: '100%', marginTop: 'auto'}}>{t.scanPalmBtn}</button>
+              <h3 style={{color: theme.gold, fontSize: '1.45rem', fontFamily: 'Cinzel, Georgia, serif', letterSpacing: '1px', margin: '0 0 15px 0', textTransform: 'uppercase'}}>{t.palmBtn}</h3>
+              <button style={{...styles.button, width: '100%', marginTop: 'auto', letterSpacing: '1px', fontWeight: 'bold'}}>{t.scanPalmBtn}</button>
           </div>
 
       </div>
 
-      <div style={{marginTop: '25px', display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'center'}}>
-          <div style={{fontSize: '0.8rem', color: '#888'}}>
-              {t.freeTrialsHint.replace('{count}', freeTrials.toString())}
-          </div>
-          {/* Daily Limit Display */}
-          <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.1)', padding: '5px 15px', borderRadius: '20px', border: `1px solid ${theme.darkGold}`}}>
-              <i className="fas fa-bolt"></i> {t.dailyFreeRemaining.replace('{count}', '3')}
-          </div>
+      <div style={{marginTop: '35px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center'}}>
+          {isLoggedIn ? (
+              <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', marginTop: '10px'}}>
+                  <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.08)', padding: '8px 22px', borderRadius: '25px', border: `1px solid ${theme.darkGold}`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
+                      <i className="fas fa-smile" style={{marginRight: '6px', color: theme.gold}}></i> {t.freeFaceRemainingText || "Free Welcome Face Analyses"}: <span style={{color: '#fff', fontSize: '1.2rem'}}>{freeFaceRemaining !== undefined ? freeFaceRemaining : 3}</span>
+                  </div>
+                  <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.08)', padding: '8px 22px', borderRadius: '25px', border: `1px solid ${theme.darkGold}`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
+                      <i className="fas fa-hand-paper" style={{marginRight: '6px', color: theme.gold}}></i> {t.freePalmRemainingText || "Free Welcome Palm Analyses"}: <span style={{color: '#fff', fontSize: '1.2rem'}}>{freePalmRemaining !== undefined ? freePalmRemaining : 3}</span>
+                  </div>
+              </div>
+          ) : (
+              <>
+                  <div style={{fontSize: '0.85rem', color: '#aaa', letterSpacing: '0.5px'}}>
+                      {t.freeTrialsHint.replace('{count}', freeTrials.toString())}
+                  </div>
+                  {/* Daily Limit Display */}
+                  <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.08)', padding: '6px 20px', borderRadius: '25px', border: `1px solid ${theme.darkGold}`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
+                      <i className="fas fa-bolt" style={{marginRight: '6px'}}></i> {t.dailyFreeRemaining.replace('{count}', '3')}
+                  </div>
+                  <div style={{fontSize: '0.82rem', color: '#888', marginTop: '5px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                      <i className="fas fa-gift" style={{color: theme.gold}}></i> Register a new account to unlock 3 free Face and 3 free Palm data analyses instantly!
+                  </div>
+              </>
+          )}
       </div>
     </div>
   );
@@ -289,9 +311,96 @@ export const RenderSelectionView = ({ t, readingType, gender, dobYear, dobMonth,
     );
 };
 
-export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onBuyProduct, onOpenBalance }: any) => {
+export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onBuyProduct, onOpenBalance, userState, onProfileUpdate, onUnsubscribe, cart, onRemoveFromCart, onCartCheckout, onGoToShop }: any) => {
     // Local state to manage showing detail view inside history tab
     const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
+    const [subTab, setSubTab] = useState<'profile' | 'orders' | 'readings'>('profile');
+
+    // Address draft state, initialized from userState
+    const [firstNameDraft, setFirstNameDraft] = useState(userState?.firstName || '');
+    const [lastNameDraft, setLastNameDraft] = useState(userState?.lastName || '');
+    const [countryDraft, setCountryDraft] = useState(userState?.country || '');
+    const [stateDraft, setStateDraft] = useState(userState?.state || '');
+    const [zipCodeDraft, setZipCodeDraft] = useState(userState?.zipCode || '');
+    const [streetAddressDraft, setStreetAddressDraft] = useState(userState?.streetAddress || '');
+    const [buildingNameDraft, setBuildingNameDraft] = useState(userState?.buildingName || '');
+    const [roomNumberDraft, setRoomNumberDraft] = useState(userState?.roomNumber || '');
+
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveStatus, setSaveStatus] = useState('');
+
+    // Orders state
+    const [orders, setOrders] = useState<any[]>([]);
+    const [loadingOrders, setLoadingOrders] = useState(false);
+
+    useEffect(() => {
+        if (userState) {
+            setFirstNameDraft(userState.firstName || '');
+            setLastNameDraft(userState.lastName || '');
+            setCountryDraft(userState.country || '');
+            setStateDraft(userState.state || '');
+            setZipCodeDraft(userState.zipCode || '');
+            setStreetAddressDraft(userState.streetAddress || '');
+            setBuildingNameDraft(userState.buildingName || '');
+            setRoomNumberDraft(userState.roomNumber || '');
+        }
+    }, [userState]);
+
+    useEffect(() => {
+        if (userState?.isLoggedIn && userState?.userId) {
+            setLoadingOrders(true);
+            fetch(`/api/user/orders/${userState.userId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setOrders(data);
+                    }
+                    setLoadingOrders(false);
+                })
+                .catch(err => {
+                    console.error("Failed to load orders:", err);
+                    setLoadingOrders(false);
+                });
+        }
+    }, [userState?.isLoggedIn, userState?.userId, subTab]);
+
+    const handleSaveAddress = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!userState?.isLoggedIn || !userState?.userId) return;
+        setIsSaving(true);
+        setSaveStatus('');
+        try {
+            const res = await fetch('/api/user/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userState.userId,
+                    firstName: firstNameDraft,
+                    lastName: lastNameDraft,
+                    country: countryDraft,
+                    state: stateDraft,
+                    zipCode: zipCodeDraft,
+                    streetAddress: streetAddressDraft,
+                    buildingName: buildingNameDraft,
+                    roomNumber: roomNumberDraft
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.success && data.user) {
+                setSaveStatus('success');
+                if (onProfileUpdate) {
+                    onProfileUpdate(data.user);
+                }
+            } else {
+                setSaveStatus('error');
+            }
+        } catch (err) {
+            setSaveStatus('error');
+        } finally {
+            setIsSaving(false);
+            setTimeout(() => setSaveStatus(''), 4000);
+        }
+    };
 
     if (selectedRecord) {
         return (
@@ -341,62 +450,367 @@ export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaki
         );
     }
 
+    if (!userState?.isLoggedIn) {
+        return (
+            <div style={{...styles.glassPanel, maxWidth: '800px', width: '95%', textAlign: 'center', padding: '3rem 2rem'}}>
+                <i className="fas fa-user-lock" style={{fontSize: '3rem', color: theme.gold, marginBottom: '1rem'}}></i>
+                <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', marginBottom: '1rem'}}>Access Restricted</h2>
+                <p style={{color: '#aaa', maxWidth: '500px', margin: '0 auto 1.5rem', lineHeight: '1.6'}}>Please log in or sign up to save shipping addresses, manage subscriptions, secure your billing info, and view analytical palm/face reading logs.</p>
+            </div>
+        );
+    }
+
     return (
-        <div style={{...styles.glassPanel, maxWidth: '800px', width: '95%'}}>
-            <h2 style={{color: theme.gold, textAlign: 'center', fontFamily: 'Cinzel, serif', marginBottom: '2rem'}}>{t.historyTitle}</h2>
+        <div style={{...styles.glassPanel, maxWidth: '850px', width: '95%', padding: '2rem'}}>
+            <h2 style={{color: theme.gold, textAlign: 'center', fontFamily: 'Cinzel, serif', marginBottom: '0.5rem'}}>{t.historyTitle || "Personal Dashboard"}</h2>
+            <p style={{color: '#888', textAlign: 'center', fontSize: '0.9rem', marginBottom: '2rem'}}>Control center for your spiritual readings, transactions, and membership settings.</p>
             
-            {history.length === 0 ? (
-                <div style={{textAlign: 'center', color: '#aaa', padding: '2rem'}}>{t.noHistory}</div>
-            ) : (
-                <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
-                    {history.map((record: HistoryRecord) => (
-                        <div key={record.id} style={{
-                            background: 'rgba(0,0,0,0.3)', 
-                            border: `1px solid ${theme.darkGold}`, 
-                            borderRadius: '8px', 
-                            padding: '15px',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            flexWrap: 'wrap',
-                            gap: '10px'
-                        }}>
-                            <div>
-                                <div style={{color: theme.gold, fontWeight: 'bold'}}>{record.name || (record.gender === 'male' ? t.genderMale : t.genderFemale)}</div>
-                                <div style={{fontSize: '0.8rem', color: '#888'}}>{t.dateLabel}: {record.date}</div>
-                                {record.readingType === 'palm' ? (
-                                    <div style={{fontSize: '0.8rem', color: '#aaa'}}>
-                                        <i className="fas fa-hand-sparkles"></i> {t.palmBtn}
-                                    </div>
-                                ) : (
-                                    <div style={{fontSize: '0.8rem', color: '#aaa'}}>
-                                        {record.elements ? (
-                                            <>
-                                                {t.elementMetal}: {record.elements.scores.Metal}% | {t.elementWood}: {record.elements.scores.Wood}%
-                                            </>
-                                        ) : (
-                                            <span>{t.startBtn}</span>
-                                        )}
-                                    </div>
+            {/* Nav tabs bar */}
+            <div style={{display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '5px'}}>
+                <button 
+                    type="button"
+                    onClick={() => setSubTab('profile')}
+                    style={{
+                        padding: '12px 20px', background: 'transparent', border: 'none',
+                        borderBottom: subTab === 'profile' ? `2px solid ${theme.gold}` : 'none',
+                        color: subTab === 'profile' ? theme.gold : '#aaa',
+                        fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontSize: '0.95rem'
+                    }}
+                >
+                    <i className="fas fa-address-card" style={{marginRight: '8px'}}></i>Profile & Shipping Address
+                </button>
+                <button 
+                    type="button"
+                    onClick={() => setSubTab('orders')}
+                    style={{
+                        padding: '12px 20px', background: 'transparent', border: 'none',
+                        borderBottom: subTab === 'orders' ? `2px solid ${theme.gold}` : 'none',
+                        color: subTab === 'orders' ? theme.gold : '#aaa',
+                        fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontSize: '0.95rem'
+                    }}
+                >
+                    <i className="fas fa-receipt" style={{marginRight: '8px'}}></i>Billing & Subscriptions
+                </button>
+                <button 
+                    type="button"
+                    onClick={() => setSubTab('readings')}
+                    style={{
+                        padding: '12px 20px', background: 'transparent', border: 'none',
+                        borderBottom: subTab === 'readings' ? `2px solid ${theme.gold}` : 'none',
+                        color: subTab === 'readings' ? theme.gold : '#aaa',
+                        fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontSize: '0.95rem'
+                    }}
+                >
+                    <i className="fas fa-history" style={{marginRight: '8px'}}></i>Past Readings ({history.length})
+                </button>
+            </div>
+
+            {subTab === 'profile' && (
+                <form onSubmit={handleSaveAddress} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                    <div style={{background: 'rgba(212,175,55,0.05)', padding: '15px', borderLeft: `3px solid ${theme.gold}`, marginBottom: '10px', borderRadius: '4px'}}>
+                        <h4 style={{color: theme.gold, margin: '0 0 5px 0', fontSize: '1rem'}}>Logged In Account Status</h4>
+                        <div style={{color: '#ddd', fontSize: '0.9rem', marginBottom: '4px'}}>Email: {userState.email}</div>
+                        <div style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '8px'}}>Personal Account ID: <span style={{letterSpacing: '1px', fontFamily: 'monospace', background: 'rgba(0,0,0,0.3)', padding: '2px 6px', borderRadius: '4px', color: '#fff'}}>{userState.id || userState.userId}</span></div>
+                        
+                        {/* Welcome Free Quotas */}
+                        <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed rgba(212, 175, 55, 0.2)'}}>
+                            <div style={{fontSize: '0.85rem', color: theme.gold, background: 'rgba(0,0,0,0.2)', padding: '4px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                                <i className="fas fa-smile"></i> {t.freeFaceRemainingText || "Free Welcome Face Readings"}: <span style={{color: '#fff', fontWeight: 'bold'}}>{userState.freeFaceRemaining !== undefined ? userState.freeFaceRemaining : 3}</span>
+                            </div>
+                            <div style={{fontSize: '0.85rem', color: theme.gold, background: 'rgba(0,0,0,0.2)', padding: '4px 10px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                                <i className="fas fa-hand-paper"></i> {t.freePalmRemainingText || "Free Welcome Palm Readings"}: <span style={{color: '#fff', fontWeight: 'bold'}}>{userState.freePalmRemaining !== undefined ? userState.freePalmRemaining : 3}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '5px', marginTop: '10px'}}>Contact Information</h3>
+                    
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}} className="responsive-grid">
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>FIRST NAME</label>
+                            <input 
+                                type="text" placeholder="First Name" style={styles.formInput} 
+                                value={firstNameDraft} onChange={e => setFirstNameDraft(e.target.value)} required 
+                            />
+                        </div>
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>LAST NAME</label>
+                            <input 
+                                type="text" placeholder="Last Name" style={styles.formInput} 
+                                value={lastNameDraft} onChange={e => setLastNameDraft(e.target.value)} required 
+                            />
+                        </div>
+                    </div>
+
+                    <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '5px', marginTop: '15px'}}>Shipping & Delivery Address</h3>
+                    
+                    <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px'}} className="responsive-grid">
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>COUNTRY</label>
+                            <input 
+                                type="text" placeholder="e.g. United States" style={styles.formInput} 
+                                value={countryDraft} onChange={e => setCountryDraft(e.target.value)} required 
+                            />
+                        </div>
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>STATE / PROVINCE</label>
+                            <input 
+                                type="text" placeholder="e.g. California" style={styles.formInput} 
+                                value={stateDraft} onChange={e => setStateDraft(e.target.value)} required 
+                            />
+                        </div>
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>ZIP / POSTAL CODE</label>
+                            <input 
+                                type="text" placeholder="e.g. 90210" style={styles.formInput} 
+                                value={zipCodeDraft} onChange={e => setZipCodeDraft(e.target.value)} required 
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style={{display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>STREET ADDRESS / ROAD ADDRESS</label>
+                        <input 
+                            type="text" placeholder="e.g. 123 Celestial Realm Boulevard" style={styles.formInput} 
+                            value={streetAddressDraft} onChange={e => setStreetAddressDraft(e.target.value)} required 
+                        />
+                    </div>
+
+                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}} className="responsive-grid">
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>BUILDING NAME</label>
+                            <input 
+                                type="text" placeholder="e.g. Jade Tower Alpha (Optional)" style={styles.formInput} 
+                                value={buildingNameDraft} onChange={e => setBuildingNameDraft(e.target.value)} 
+                            />
+                        </div>
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.8rem', color: '#aaa', marginBottom: '5px'}}>ROOM / SUITE NUMBER</label>
+                            <input 
+                                type="text" placeholder="e.g. Suite 888 (Optional)" style={styles.formInput} 
+                                value={roomNumberDraft} onChange={e => setRoomNumberDraft(e.target.value)} 
+                            />
+                        </div>
+                    </div>
+
+                    {saveStatus === 'success' && (
+                        <div style={{padding: '10px', background: 'rgba(46,204,113,0.15)', color: '#2ecc71', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                            <i className="fas fa-check-circle"></i> Shipping profiles & address coordinates updated successfully!
+                        </div>
+                    )}
+                    {saveStatus === 'error' && (
+                        <div style={{padding: '10px', background: 'rgba(231,76,60,0.15)', color: '#e74c3c', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                            <i className="fas fa-times-circle"></i> Error updating database profiles. Try again.
+                        </div>
+                    )}
+
+                    <button 
+                        type="submit" 
+                        disabled={isSaving}
+                        style={{...styles.button, maxWidth: '250px', alignSelf: 'center', marginTop: '10px'}}
+                    >
+                        {isSaving ? "Saving Profiles..." : "Save Delivery Settings"}
+                    </button>
+                </form>
+            )}
+
+            {subTab === 'orders' && (
+                <div style={{display: 'flex', flexDirection: 'column', gap: '25px'}}>
+                    
+                    {/* Active Shopping Cart Overview (Requirement #6) */}
+                    <div>
+                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '5px', margin: '0 0 15px 0'}}>Active Shopping Cart</h3>
+                        {(!cart || cart.length === 0) ? (
+                            <div style={{background: 'rgba(255,255,255,0.01)', border: '1px dashed rgba(255, 255, 255, 0.15)', padding: '20px', borderRadius: '8px', textAlign: 'center', color: '#888'}}>
+                                Your mystical shopping cart is currently empty.
+                                {onGoToShop && (
+                                    <button 
+                                        type="button" 
+                                        onClick={onGoToShop} 
+                                        style={{...styles.secondaryButton, display: 'block', margin: '15px auto 0 auto', padding: '6px 12px', fontSize: '0.8rem'}}
+                                    >
+                                        Browse Amulets Shop
+                                    </button>
                                 )}
                             </div>
-                            <button 
-                                onClick={() => setSelectedRecord(record)} 
-                                style={{
-                                    background: 'transparent', 
-                                    border: `1px solid ${theme.gold}`, 
-                                    color: theme.gold, 
-                                    padding: '5px 15px', 
-                                    borderRadius: '4px', 
-                                    cursor: 'pointer',
-                                    fontSize: '0.9rem'
-                                }}
-                            >
-                                {t.viewResult}
-                            </button>
+                        ) : (
+                            <div style={{background: 'rgba(212,175,55,0.03)', border: `1px solid ${theme.darkGold}`, borderRadius: '8px', padding: '20px'}}>
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px'}}>
+                                    {cart.map((item: any) => (
+                                        <div key={item.product.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '10px'}}>
+                                            <div>
+                                                <span style={{color: '#fff', fontWeight: 'bold'}}>{item.product.defaultName}</span>
+                                                <span style={{color: theme.gold, marginLeft: '10px'}}>x{item.quantity}</span>
+                                            </div>
+                                            <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                                                <span style={{fontWeight: 'bold', color: theme.gold}}>${(item.product.numericPrice * item.quantity).toFixed(2)}</span>
+                                                {onRemoveFromCart && (
+                                                    <button 
+                                                        onClick={() => onRemoveFromCart(item.product.id)}
+                                                        style={{background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: '0.9rem'}}
+                                                        title="Remove item"
+                                                    >
+                                                        <i className="fas fa-trash-alt"></i>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px'}}>
+                                    <div style={{fontSize: '1.1rem', color: '#fff'}}>Total Match: <span style={{color: theme.gold, fontWeight: 'bold'}}>${cart.reduce((total: any, c: any) => total + (c.product.numericPrice * c.quantity), 0).toFixed(2)}</span></div>
+                                    {onCartCheckout && (
+                                        <button 
+                                            onClick={onCartCheckout}
+                                            style={{...styles.button, padding: '10px 20px', minWidth: '150px', fontSize: '0.95rem', marginTop: 0}}
+                                        >
+                                            <i className="fas fa-shopping-bag" style={{marginRight: '8px'}}></i> Checkout Cart
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Subscription Sub-section (Requirement #6) */}
+                    <div>
+                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '5px', margin: '0 0 15px 0'}}>Membership Plan</h3>
+                        <div style={{background: 'rgba(212,175,55,0.03)', border: `1px solid ${theme.darkGold}`, borderRadius: '8px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px'}}>
+                            <div>
+                                <div style={{fontSize: '1.2rem', color: '#fff', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px'}}>
+                                    <i className="fas fa-crown" style={{color: theme.gold}}></i> 
+                                    {userState.isSubscribed ? "Daily Membership Subscription" : "Standard Guest Plan"}
+                                </div>
+                                <div style={{fontSize: '0.85rem', color: '#888', marginTop: '5px'}}>
+                                    {userState.isSubscribed ? `Membership Tier: ${userState.subscriptionPlan || 'Premium Access'}` : "Upgrade to unlimited readings, fast priority AI queues and detailed product discounts."}
+                                </div>
+                            </div>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap'}}>
+                                <span style={{
+                                    background: userState.isSubscribed ? 'rgba(46, 204, 113, 0.2)' : 'rgba(255,255,255,0.05)',
+                                    color: userState.isSubscribed ? '#2ecc71' : '#888',
+                                    padding: '5px 12px',
+                                    borderRadius: '15px',
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem'
+                                }}>
+                                    {userState.isSubscribed ? 'ACTIVE MEMBER' : 'FREE ACCOUNT'}
+                                </span>
+                                {userState.isSubscribed && onUnsubscribe && (
+                                    <button 
+                                        onClick={() => {
+                                            if (confirm("Are you sure you want to manually cancel your active subscription? You will lose premium priority AI benefits.")) {
+                                                onUnsubscribe();
+                                            }
+                                        }}
+                                        style={{...styles.secondaryButton, gridRow: 1, borderColor: '#e74c3c', color: '#e74c3c', marginTop: 0, padding: '5px 10px', fontSize: '0.8rem'}}
+                                    >
+                                        Cancel Subscription
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    ))}
+                    </div>
+
+                    {/* Orders History Sub-section */}
+                    <div>
+                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '5px', margin: '0 0 15px 0'}}>Purchase Transactions Logs</h3>
+                        
+                        {loadingOrders ? (
+                            <div style={{textAlign: 'center', padding: '20px', color: theme.gold}}><i className="fas fa-spinner fa-spin"></i> Retrieving Ledger...</div>
+                        ) : orders.length === 0 ? (
+                            <div style={{textAlign: 'center', padding: '20px', border: '1px dashed #444', borderRadius: '8px', color: '#888'}}>
+                                No transaction invoices registered yet for {userState.email}.
+                            </div>
+                        ) : (
+                            <div style={{overflowX: 'auto', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)'}}>
+                                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: '#ccc'}}>
+                                    <thead>
+                                        <tr style={{background: 'rgba(212,175,55,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)'}}>
+                                            <th style={{padding: '12px 15px', textAlign: 'left', color: theme.gold}}>Invoice ID</th>
+                                            <th style={{padding: '12px 15px', textAlign: 'left', color: theme.gold}}>Item Ordered</th>
+                                            <th style={{padding: '12px 15px', textAlign: 'left', color: theme.gold}}>Total Paid</th>
+                                            <th style={{padding: '12px 15px', textAlign: 'left', color: theme.gold}}>Date</th>
+                                            <th style={{padding: '12px 15px', textAlign: 'left', color: theme.gold}}>Method</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {orders.map((order, idx) => (
+                                            <tr key={idx} style={{borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
+                                                <td style={{padding: '10px 15px', fontWeight: 'bold'}}>{order.orderId}</td>
+                                                <td style={{padding: '10px 15px'}}>{order.items}</td>
+                                                <td style={{padding: '10px 15px', color: theme.gold, fontWeight: 'bold'}}>${parseFloat(order.total || 0).toFixed(2)}</td>
+                                                <td style={{padding: '10px 15px'}}>{new Date(order.date).toLocaleDateString()}</td>
+                                                <td style={{padding: '10px 15px'}}>
+                                                    <span style={{textTransform: 'uppercase', fontSize: '0.75rem', background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: '4px'}}>
+                                                        {order.paymentMethod || 'Credit Card'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
                 </div>
+            )}
+
+            {subTab === 'readings' && (
+                history.length === 0 ? (
+                    <div style={{textAlign: 'center', color: '#aaa', padding: '2rem'}}>{t.noHistory}</div>
+                ) : (
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
+                        {history.map((record: HistoryRecord) => (
+                            <div key={record.id} style={{
+                                background: 'rgba(0,0,0,0.3)', 
+                                border: `1px solid ${theme.darkGold}`, 
+                                borderRadius: '8px', 
+                                padding: '15px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                flexWrap: 'wrap',
+                                gap: '10px'
+                            }}>
+                                <div>
+                                    <div style={{color: theme.gold, fontWeight: 'bold'}}>{record.name || (record.gender === 'male' ? t.genderMale : t.genderFemale)}</div>
+                                    <div style={{fontSize: '0.8rem', color: '#888'}}>{t.dateLabel}: {record.date}</div>
+                                    {record.readingType === 'palm' ? (
+                                        <div style={{fontSize: '0.8rem', color: '#aaa'}}>
+                                            <i className="fas fa-hand-sparkles"></i> {t.palmBtn}
+                                        </div>
+                                    ) : (
+                                        <div style={{fontSize: '0.8rem', color: '#aaa'}}>
+                                            {record.elements ? (
+                                                <>
+                                                    {t.elementMetal}: {record.elements.scores.Metal}% | {t.elementWood}: {record.elements.scores.Wood}%
+                                                </>
+                                            ) : (
+                                                <span>{t.startBtn}</span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <button 
+                                    onClick={() => setSelectedRecord(record)} 
+                                    style={{
+                                        background: 'transparent', 
+                                        border: `1px solid ${theme.gold}`, 
+                                        color: theme.gold, 
+                                        padding: '5px 15px', 
+                                        borderRadius: '4px', 
+                                        cursor: 'pointer',
+                                        fontSize: '0.9rem'
+                                    }}
+                                >
+                                    {t.viewResult}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )
             )}
         </div>
     );

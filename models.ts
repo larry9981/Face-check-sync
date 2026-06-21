@@ -5,11 +5,30 @@ const UserSchema = new mongoose.Schema({
   password: { type: String }, // Hashed
   name: { type: String },
   authType: { type: String, default: 'email' },
-  registeredAt: { type: Date, default: Date.now }
+  registeredAt: { type: Date, default: Date.now },
+  // Address info
+  firstName: { type: String, default: '' },
+  lastName: { type: String, default: '' },
+  country: { type: String, default: '' },
+  state: { type: String, default: '' },
+  zipCode: { type: String, default: '' },
+  streetAddress: { type: String, default: '' },
+  buildingName: { type: String, default: '' },
+  roomNumber: { type: String, default: '' },
+  // Subscription info
+  isSubscribed: { type: Boolean, default: false },
+  subscriptionPlan: { type: String, default: '' },
+  subscribedAt: { type: Date },
+  subscriptionExpiresAt: { type: Date },
+  
+  // Custom free welcome credits for newly registered users (3 Face & 3 Palm scans)
+  freeFaceRemaining: { type: Number, default: 3 },
+  freePalmRemaining: { type: Number, default: 3 }
 });
 
 const OrderSchema = new mongoose.Schema({
   orderId: { type: String, required: true, unique: true },
+  userId: { type: String, index: true },
   email: { type: String, required: true },
   items: { type: String },
   total: { type: Number },
@@ -46,6 +65,9 @@ const ProductSchema = new mongoose.Schema({
   defaultDescription: { type: String },
   imageUrl: { type: String },
   element: { type: String },
+  sku: { type: String, default: '' },
+  status: { type: String, default: 'active' }, // 'active' for listed, 'inactive' for delisted
+  longDescription: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 

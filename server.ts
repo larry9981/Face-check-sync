@@ -1,10 +1,11 @@
-
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { User, Order, History, Product, HomepageConfig } from './models.js';
 
 // =========================================================
@@ -12,27 +13,333 @@ import { User, Order, History, Product, HomepageConfig } from './models.js';
 // =========================================================
 const PORT = 3000;
 
-async function seedHomepage() {
-    const count = await HomepageConfig.countDocuments();
-    if (count === 0) {
-        const initialData = [
-            { key: 'banner1', type: 'banner', title: 'Unlock Your Destiny', description: 'Discover the secrets hidden in your features with our advanced AI analysis.', imagePrompt: 'mystical feng shui landscape, ethereal lighting, ancient Chinese temple in mist, zen atmosphere, cinematic, 8k, soul healing colors', order: 1 },
-            { key: 'banner2', type: 'banner', title: 'Harmonize Your Life', description: 'Balance your five elements and attract positive energy into your space.', imagePrompt: 'peaceful feng shui garden, zen stone path, flowing water, soft morning sunlight, mystical fog, 8k, healing vibes', order: 2 },
-            { key: 'banner3', type: 'banner', title: 'Ancient Wisdom', description: 'Connect with the celestial rhythms and find your true path.', imagePrompt: 'cosmic bagua map in the night sky, glowing constellations, mystical observatory, ethereal energy, 8k, spiritual guidance', order: 3 },
-            { key: 'fengshui', type: 'section', title: 'The Art of Energy', description: 'Feng Shui (风水) is the ancient Chinese philosophical system of harmonizing everyone with the surrounding environment.', imagePrompt: 'harmonious feng shui interior, balanced elements, zen living space with bamboo and water, 8k, peaceful energy', order: 4 },
-            { key: 'face', type: 'section', title: 'The Mirror of the Soul', description: 'Physiognomy, or Mianxiang, is the ancient Chinese art of reading a person\'s character and future from their facial features.', imagePrompt: 'mystical face reading illustration, ethereal glowing facial features, soul reflection in water, 8k, spiritual insight', order: 5 },
-            { key: 'palm', type: 'section', title: 'The Language of Palms', description: 'Palmistry, also known as Chiromancy, is the art of characterization and foretelling the future through the study of the palm.', imagePrompt: 'mystical palmistry, glowing destiny lines on a hand, ancient parchment background, 8k, divine knowledge', order: 6 },
-            { key: 'wuxing', type: 'section', title: 'Balance of Five Elements', description: 'The Five Elements, or Wu Xing, are Wood, Fire, Earth, Metal, and Water.', imagePrompt: 'five elements cosmic balance, wood fire earth metal water symbols glowing, ethereal energy flow, 8k', order: 7 },
-            { key: 'zodiac', type: 'section', title: 'Celestial Alignment', description: 'The study of celestial bodies and their influence on human affairs is a cornerstone of both Western and Eastern mysticism.', imagePrompt: 'chinese zodiac celestial wheel, glowing animal signs in the stars, mystical astrology, 8k, cosmic destiny', order: 8 },
-            { key: 'iching', type: 'section', title: 'I Ching: Book of Changes', description: 'The I Ching is one of the oldest Chinese texts, providing a map of the universe\'s ever-changing patterns.', imagePrompt: 'ancient iching hexagrams glowing on stone, mystical symbols, ethereal lighting, 8k', order: 9 },
-            { key: 'bazi', type: 'section', title: 'Bazi: Four Pillars', description: 'Bazi analysis reveals the blueprint of your life based on your birth time.', imagePrompt: 'bazi four pillars of destiny chart, glowing chinese characters, mystical energy, 8k', order: 10 },
-            { key: 'ziwei', type: 'section', title: 'Zi Wei Dou Shu', description: 'Purple Star Astrology is a sophisticated system that maps your destiny through the stars.', imagePrompt: 'zi wei dou shu star map, purple glowing constellations, mystical astrology, 8k', order: 11 },
-            { key: 'qimen', type: 'section', title: 'Qi Men Dun Jia', description: 'The Mystical Gates is an ancient form of divination used for strategic planning.', imagePrompt: 'qi men dun jia mystical gates, ancient strategic map, glowing symbols, ethereal energy, 8k', order: 12 },
-            { key: 'plum', type: 'section', title: 'Plum Blossom Divination', description: 'A spontaneous and poetic form of divination that finds meaning in the natural world.', imagePrompt: 'plum blossom branch in winter, mystical glowing petals, zen atmosphere, 8k', order: 13 },
-        ];
-        await HomepageConfig.insertMany(initialData);
-        console.log("[Backend] Seeded initial homepage config.");
+// =========================================================
+// 🗄️ LOCAL JSON DATABASE ADAPTER (LOCAL SERVER STORAGE & FALLBACKS)
+// =========================================================
+const LOCAL_DB_DIR = path.resolve(process.cwd(), 'local_db');
+if (!fs.existsSync(LOCAL_DB_DIR)) {
+    fs.mkdirSync(LOCAL_DB_DIR, { recursive: true });
+}
+
+function readJSONFile(filename: string, defaultData: any = []) {
+    const filePath = path.join(LOCAL_DB_DIR, filename);
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, JSON.stringify(defaultData, null, 2), 'utf-8');
+        return defaultData;
     }
+    try {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        return JSON.parse(content);
+    } catch (e) {
+        console.error(`Error reading database file: ${filename}`, e);
+        return defaultData;
+    }
+}
+
+function writeJSONFile(filename: string, data: any) {
+    const filePath = path.join(LOCAL_DB_DIR, filename);
+    try {
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+    } catch (e) {
+        console.error(`Error writing database file: ${filename}`, e);
+    }
+}
+
+const isMongoConnected = () => {
+    return mongoose.connection.readyState === 1;
+};
+
+// Unified Database Helper
+const DbHelper = {
+    // --- USER ---
+    findUserByEmail: async (email: string) => {
+        if (isMongoConnected()) {
+            try { return await User.findOne({ email }); } catch (e) { console.error("Mongo search user by email error:", e); }
+        }
+        const users = readJSONFile('users.json');
+        return users.find((u: any) => u.email === email) || null;
+    },
+    findUserById: async (id: string) => {
+        if (isMongoConnected()) {
+            try { return await User.findById(id); } catch (e) { console.error("Mongo search user ID error:", e); }
+        }
+        const users = readJSONFile('users.json');
+        const user = users.find((u: any) => u._id === id || u.id === id);
+        return user ? { _id: user._id, ...user, toObject: () => user } : null;
+    },
+    createUser: async (userData: any) => {
+        // We ALWAYS duplicate user registration metadata to local storage file to fulfill user request #1:
+        // "所有用户注册信息需要保存到当地服务器上" (All user registration information needs to be saved to the local server).
+        const users = readJSONFile('users.json');
+        const _id = `u_${Date.now()}`;
+        const finalUserData = { 
+            _id, 
+            id: _id, 
+            registeredAt: new Date().toISOString(), 
+            freeFaceRemaining: 3, 
+            freePalmRemaining: 3, 
+            ...userData 
+        };
+        users.push(finalUserData);
+        writeJSONFile('users.json', users);
+
+        if (isMongoConnected()) {
+            try {
+                const newUser = new User({ 
+                    _id, 
+                    freeFaceRemaining: 3, 
+                    freePalmRemaining: 3, 
+                    ...userData 
+                });
+                await newUser.save();
+                return newUser;
+            } catch (e) {
+                console.error("Duplicate register error in Mongo. Swallowing as we saved to local file system:", e);
+            }
+        }
+        return { _id, ...finalUserData, toObject: () => finalUserData };
+    },
+    updateUser: async (id: string, updateData: any) => {
+        const users = readJSONFile('users.json');
+        const index = users.findIndex((u: any) => u._id === id || u.id === id);
+        let localUser = null;
+        if (index !== -1) {
+            users[index] = { ...users[index], ...updateData };
+            writeJSONFile('users.json', users);
+            localUser = users[index];
+        }
+
+        if (isMongoConnected()) {
+            try {
+                const user = await User.findByIdAndUpdate(id, updateData, { new: true });
+                if (user) return user;
+            } catch (e) { console.error("Mongo update profile error:", e); }
+        }
+        return localUser ? { _id: localUser._id, ...localUser, toObject: () => localUser } : null;
+    },
+
+    // --- HISTORY ---
+    createHistory: async (historyData: any) => {
+        const histories = readJSONFile('histories.json');
+        const _id = `h_${Date.now()}`;
+        const newHist = { _id, id: _id, date: new Date().toISOString(), ...historyData };
+        histories.push(newHist);
+        writeJSONFile('histories.json', histories);
+
+        if (isMongoConnected()) {
+            try {
+                const hist = new History(historyData);
+                await hist.save();
+                return hist;
+            } catch (e) { console.error("Mongo save history error:", e); }
+        }
+        return newHist;
+    },
+    getHistoriesByUser: async (userId: string) => {
+        if (isMongoConnected()) {
+            try { return await History.find({ userId }).sort({ date: -1 }).limit(10); } catch (e) { console.error("Mongo load history error:", e); }
+        }
+        const histories = readJSONFile('histories.json');
+        return histories
+            .filter((h: any) => h.userId === userId)
+            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+            .slice(0, 10);
+    },
+
+    // --- ORDERS ---
+    createOrder: async (orderData: any) => {
+        const orders = readJSONFile('orders.json');
+        const _id = `o_${Date.now()}`;
+        const newOrd = { _id, id: _id, date: new Date().toISOString(), ...orderData };
+        orders.push(newOrd);
+        writeJSONFile('orders.json', orders);
+
+        if (isMongoConnected()) {
+            try {
+                const ord = new Order(orderData);
+                await ord.save();
+                return ord;
+            } catch (e) { console.error("Mongo save order error:", e); }
+        }
+        return newOrd;
+    },
+    getOrdersByUser: async (userId: string, email?: string) => {
+        if (isMongoConnected()) {
+            try {
+                const query: any = { $or: [{ userId: userId }] };
+                if (email) query.$or.push({ email: email });
+                return await Order.find(query).sort({ date: -1 });
+            } catch (e) { console.error("Mongo load orders error:", e); }
+        }
+        const orders = readJSONFile('orders.json');
+        return orders
+            .filter((o: any) => o.userId === userId || (email && o.email === email))
+            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    },
+    getAllOrders: async () => {
+        if (isMongoConnected()) {
+            try { return await Order.find().sort({ date: -1 }); } catch (e) { console.error("Mongo load all orders error:", e); }
+        }
+        const orders = readJSONFile('orders.json');
+        return orders.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    },
+
+    // --- PRODUCTS ---
+    getAllProducts: async () => {
+        const defaultProd = [
+              {
+                id: 'prod-jade',
+                nameKey: 'prod_jade_name',
+                defaultName: 'Premium Lucky Jade Imperial Bracelet',
+                price: '$49.99',
+                numericPrice: 49.99,
+                category: 'Bracelet',
+                zodiac: 'Dragon, Rabbit',
+                imagePrompt: 'ancient imperial jade bracelet on dark black silk cushion, mysterious golden highlights, editorial catalog photo, 8k',
+                descKey: 'prod_jade_desc',
+                defaultDescription: 'Attract immense fortune, harmony, and protective ancestral energies with this high-grade natural Hetian Jade bracelet.',
+                imageUrl: 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?auto=format&fit=crop&q=80&w=600',
+                element: 'Wood',
+                sku: 'JDB-001',
+                status: 'active',
+                longDescription: 'This imperial-grade Jade bracelet is hand-threaded with genuine natural Hetian green jade beads. Each bead is selected for its purity and vibrant earthly luster. Styled perfectly to balance weak Wood energies and enhance personal fortune in year-round cycles.'
+              },
+              {
+                id: 'prod-obsidian',
+                nameKey: 'prod_obsidian_name',
+                defaultName: 'Sacred Feng Shui Obsidian Wealth PIXIE Pendant',
+                price: '$39.99',
+                numericPrice: 39.99,
+                category: 'Pendant',
+                zodiac: 'Rat, Snake, Pig',
+                imagePrompt: 'carved volcanic black obsidian pendant with mythical dragon creature, rich macro detailed shot, moody atmospheric lighting, 8k',
+                descKey: 'prod_obsidian_desc',
+                defaultDescription: 'Banish negative aura waves and unlock deep financial abundance. Perfect for restoring unaligned Water pathways.',
+                imageUrl: 'https://images.unsplash.com/photo-1626782874136-1e66c6de59df?auto=format&fit=crop&q=80&w=600',
+                element: 'Water',
+                sku: 'OBP-002',
+                status: 'active',
+                longDescription: 'Crafted from black obsidian formed from cooling lava, this wealth-attracting pendant features detailed engraving of the mythical Pixie creature. It cleanses toxic psychic fog and shields you against external dynamic stressors.'
+              },
+              {
+                id: 'prod-pyrite',
+                nameKey: 'prod_pyrite_name',
+                defaultName: 'Natural Pyrite Cluster of Abundance',
+                price: '$59.00',
+                numericPrice: 59.00,
+                category: 'Crystal',
+                zodiac: 'Ox, Rooster, Dog',
+                imagePrompt: 'sparkling golden chalcopyrite crystal cluster on solid slate desktop, luxurious architectural accessory, sharp direct light, 8k',
+                descKey: 'prod_pyrite_desc',
+                defaultDescription: 'A pure solar dynamo of luxury. Perfect for balancing deficient Earth and Metal elements.',
+                imageUrl: 'https://images.unsplash.com/photo-1601121141461-9d6647bca1ed?auto=format&fit=crop&q=80&w=600',
+                element: 'Earth',
+                sku: 'PYC-003',
+                status: 'active',
+                longDescription: "Also known as Fool's Gold, Pyrite is a beautiful mineral of luck and determination. This sparkling cluster radiates strong grounding vibes and acts as an energetic solar powerhouse in your study room or home workspace."
+              }
+        ];
+
+        if (isMongoConnected()) {
+            try {
+                const products = await Product.find().sort({ createdAt: -1 });
+                if (products.length > 0) return products;
+            } catch (e) { console.error("Mongo load products error:", e); }
+        }
+        return readJSONFile('products.json', defaultProd);
+    },
+    saveOrUpdateProduct: async (productData: any) => {
+        if (!productData._id && !productData.id) {
+            productData.id = `PROD-${Date.now()}`;
+        }
+        const products = await DbHelper.getAllProducts();
+        const index = products.findIndex((p: any) => p.id === productData.id);
+        if (index !== -1) {
+            products[index] = { ...products[index], ...productData };
+        } else {
+            products.push({ _id: `p_${Date.now()}`, id: productData.id, createdAt: new Date().toISOString(), ...productData });
+        }
+        writeJSONFile('products.json', products);
+
+        if (isMongoConnected()) {
+            try {
+                await Product.findOneAndUpdate(
+                    { id: productData.id },
+                    productData,
+                    { upsert: true, new: true }
+                );
+            } catch (e) { console.error("Mongo save product error:", e); }
+        }
+        return productData;
+    },
+    deleteProduct: async (id: string) => {
+        let products = await DbHelper.getAllProducts();
+        products = products.filter((p: any) => p.id !== id);
+        writeJSONFile('products.json', products);
+
+        if (isMongoConnected()) {
+            try { await Product.findOneAndDelete({ id }); } catch (e) { console.error("Mongo delete product error:", e); }
+        }
+        return { success: true };
+    },
+
+    // --- HOMEPAGE CONFIGS ---
+    getHomepageConfigs: async () => {
+        const initialData = [
+            { key: 'banner_title', type: 'text', title: 'Mystic Face AI Reading', description: 'Unlock the ancient codes of your destiny with advanced Computer Vision and deep astrological matrices.', order: 1 },
+            { key: 'banner_subtitle', type: 'text', title: 'Discover Your Golden Destiny', description: 'Fusing the ancient secrets of Physiognomy and Palmistry with deep-learning neural insights.', order: 2 },
+            { key: 'sec_face', type: 'section', title: 'Physiognomy Reading (Face Analysis)', description: 'Map your life path, core character, and five-element balances by reading the 12 ancestral palaces of your premium facial alignment.', imagePrompt: 'beautiful human face 3d topological mapping lines, golden facial grids, high-tech holographic analysis, luxury aesthetic, 8k', order: 3 },
+            { key: 'sec_palm', type: 'section', title: 'Palmistry Reading (Hand Analysis)', description: 'Decode your life line, destiny line, heart line, and Mounts of the Moon & Sun with pristine topological vision.', imagePrompt: 'open human hand mapping lines glow, mystical palmistry lines highlighted, dark astronomical backdrops, glowing constellations, 8k', order: 4 },
+            { key: 'sec_horoscope', type: 'section', title: 'Chinese Astrological Alignment', description: 'Analyze the precise astronomical interactions of your birth hour, planetary forces, and year of the animal.', imagePrompt: 'glowing celestial sphere, gold and emerald ancient astronomical chart, stellar ring systems, 8k', order: 5 },
+            { key: 'sec_fengshui', type: 'section', title: 'Bespoke Feng Shui Audit', description: 'Harness the cosmic wind and water flows of your living space to clear bottlenecks, attract liquid fortune, and secure absolute well-being.', imagePrompt: 'chinese feng shui golden compass luopan resting on polished dark wood table, dynamic wind and water light spirals, 8k', order: 6 },
+        ];
+
+        if (isMongoConnected()) {
+            try {
+                const configs = await HomepageConfig.find().sort({ order: 1 });
+                if (configs.length > 0) return configs;
+            } catch (e) { console.error("Mongo load homepage configs error:", e); }
+        }
+        return readJSONFile('homepageconfigs.json', initialData);
+    },
+    updateHomepageConfigs: async (configData: any) => {
+        const configs = await DbHelper.getHomepageConfigs();
+        if (Array.isArray(configData)) {
+            for (const item of configData) {
+                const idx = configs.findIndex((c: any) => c.key === item.key);
+                if (idx !== -1) {
+                    configs[idx] = { ...configs[idx], ...item };
+                } else {
+                    configs.push(item);
+                }
+            }
+        } else {
+            const idx = configs.findIndex((c: any) => c.key === configData.key);
+            if (idx !== -1) {
+                configs[idx] = { ...configs[idx], ...configData };
+            } else {
+                configs.push(configData);
+            }
+        }
+        writeJSONFile('homepageconfigs.json', configs);
+
+        if (isMongoConnected()) {
+            try {
+                if (Array.isArray(configData)) {
+                    for (const item of configData) {
+                        await HomepageConfig.findOneAndUpdate({ key: item.key }, item, { upsert: true });
+                    }
+                } else {
+                    await HomepageConfig.findOneAndUpdate({ key: configData.key }, configData, { upsert: true });
+                }
+            } catch (e) { console.error("Mongo update homepage config error:", e); }
+        }
+    }
+};
+
+async function seedHomepage() {
+    // Handled seamlessly by DbHelper getHomepageConfigs initialisation
+    await DbHelper.getHomepageConfigs();
 }
 
 async function startServer() {
@@ -52,7 +359,7 @@ async function startServer() {
             })
             .catch(err => console.error("[Backend] MongoDB Connection Error:", err));
     } else {
-        console.warn("[Backend] MONGODB_URI not found. Database features will be limited.");
+        console.warn("[Backend] MONGODB_URI not found. Database features fallback to local storage files.");
     }
 
     // =========================================================
@@ -61,195 +368,486 @@ async function startServer() {
 
     // --- AUTH ROUTES ---
 
-// 1. Sign Up
-app.post('/api/auth/signup', async (req, res) => {
-    const { email, password, name } = req.body;
-    
-    if (!email || !password) return res.status(400).json({ error: "Email and Password are required." });
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) return res.status(400).json({ error: "Invalid email format." });
-
-    if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters." });
-    
-    try {
-        const existingUser = await User.findOne({ email });
-        if (existingUser) return res.status(400).json({ error: "Email already registered." });
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({
-            email,
-            password: hashedPassword,
-            name: name || email.split('@')[0],
-            authType: 'email'
-        });
+    // 1. Sign Up (Failsafed user registration on local server storage)
+    app.post('/api/auth/signup', async (req, res) => {
+        const { email, password, name } = req.body;
         
-        await newUser.save();
-        const userObj = newUser.toObject();
-        const userSafe = { ...userObj, id: userObj._id.toString() };
-        delete (userSafe as any).password;
-        res.json({ success: true, user: userSafe });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
+        if (!email || !password) return res.status(400).json({ error: "Email and Password are required." });
 
-// 2. Login
-app.post('/api/auth/login', async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "Missing credentials." });
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) return res.status(400).json({ error: "Invalid email format." });
 
-    try {
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ error: "Account not found.", code: 'USER_NOT_FOUND' });
+        if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters." });
+        
+        try {
+            const existingUser = await DbHelper.findUserByEmail(email);
+            if (existingUser) return res.status(400).json({ error: "Email already registered." });
 
-        const isMatch = await bcrypt.compare(password, user.password || '');
-        if (!isMatch) return res.status(401).json({ error: "Invalid password.", code: 'INVALID_CREDENTIALS' });
-
-        const userObj = user.toObject();
-        const userSafe = { ...userObj, id: userObj._id.toString() };
-        delete (userSafe as any).password;
-        res.json({ success: true, user: userSafe });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 4. Forgot Password
-app.post('/api/auth/forgot-password', (req, res) => {
-    const { email } = req.body;
-    console.log(`[Mock Email] Sending password reset to ${email}`);
-    res.json({ success: true, message: "If account exists, email sent." });
-});
-
-// --- APP ROUTES ---
-
-// 1. Save History Endpoint (Frontend calls AI, then saves result)
-app.post('/api/history', async (req, res) => {
-    try {
-        const { userId, resultText, gender, name, birthDate, readingType, elements } = req.body;
-        if (userId) {
-            const historyRecord = new History({
-                userId,
-                resultText,
-                gender,
-                name,
-                birthDate,
-                readingType,
-                elements,
-                summary: "AI Analysis Result" 
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const newUser = await DbHelper.createUser({
+                email,
+                password: hashedPassword,
+                name: name || email.split('@')[0],
+                authType: 'email'
             });
-            await historyRecord.save();
-            return res.json({ success: true });
+            
+            const userObj = typeof newUser.toObject === 'function' ? newUser.toObject() : newUser;
+            const userSafe = { ...userObj, id: userObj._id.toString() };
+            delete (userSafe as any).password;
+            res.json({ success: true, user: userSafe });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
         }
-        res.status(400).json({ error: "User ID required" });
-    } catch (error: any) {
-        res.status(500).json({ error: error.message });
-    }
-});
+    });
 
-// 2. Create Order Endpoint (Simplified)
-app.post('/api/orders', async (req, res) => {
-    const orderData = req.body;
-    const orderId = `ORD-${Date.now().toString().slice(-6)}`;
-    
-    try {
-        const newOrder = new Order({ ...orderData, orderId });
-        await newOrder.save();
-        res.json({ success: true, orderId });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
+    // 2. Login
+    app.post('/api/auth/login', async (req, res) => {
+        const { email, password } = req.body;
+        if (!email || !password) return res.status(400).json({ error: "Missing credentials." });
 
-// 4. Get Orders Endpoint (Admin)
-app.get('/api/admin/orders', async (req, res) => {
-    try {
-        const orders = await Order.find().sort({ date: -1 });
-        res.json(orders);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
+        try {
+            const user = await DbHelper.findUserByEmail(email);
+            if (!user) return res.status(404).json({ error: "Account not found.", code: 'USER_NOT_FOUND' });
 
-// 5. Get User History Endpoint
-app.get('/api/history/:userId', async (req, res) => {
-    const { userId } = req.params;
-    try {
-        const history = await History.find({ userId }).sort({ date: -1 }).limit(10);
-        res.json(history);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
+            const isMatch = await bcrypt.compare(password, user.password || '');
+            if (!isMatch) return res.status(401).json({ error: "Invalid password.", code: 'INVALID_CREDENTIALS' });
 
-// --- PRODUCT ROUTES ---
+            const userObj = typeof user.toObject === 'function' ? user.toObject() : user;
+            const userSafe = { ...userObj, id: userObj._id.toString() };
+            delete (userSafe as any).password;
+            res.json({ success: true, user: userSafe });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
 
-// 1. Get All Products
-app.get('/api/products', async (req, res) => {
-    try {
-        const products = await Product.find().sort({ createdAt: -1 });
-        res.json(products);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
+    // Mock Forgot Password
+    app.post('/api/auth/forgot-password', (req, res) => {
+        const { email } = req.body;
+        console.log(`[Mock Email] Sending password reset to ${email}`);
+        res.json({ success: true, message: "If account exists, email sent." });
+    });
 
-// 2. Create/Update Product (Admin)
-app.post('/api/admin/products', async (req, res) => {
-    const productData = req.body;
-    try {
-        if (!productData.id) productData.id = `PROD-${Date.now()}`;
-        
-        const product = await Product.findOneAndUpdate(
-            { id: productData.id },
-            productData,
-            { upsert: true, new: true }
-        );
-        res.json(product);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
+    // --- APP ROUTES ---
 
-// 3. Delete Product (Admin)
-app.delete('/api/admin/products/:id', async (req, res) => {
-    try {
-        await Product.findOneAndDelete({ id: req.params.id });
-        res.json({ success: true });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
+    // AI Proxy Analyze Endpoint
+    app.post('/api/analyze', async (req, res) => {
+        try {
+            const { prompt, base64Image, provider, config } = req.body;
+            let targetProvider = provider || config?.textProvider || 'Google';
 
-// --- HOMEPAGE CONFIG ROUTES ---
-
-// 1. Get Homepage Config
-app.get('/api/homepage', async (req, res) => {
-    try {
-        const configs = await HomepageConfig.find().sort({ order: 1 });
-        res.json(configs);
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// 2. Update Homepage Config (Admin)
-app.post('/api/admin/homepage', async (req, res) => {
-    const configData = req.body;
-    try {
-        if (Array.isArray(configData)) {
-            for (const item of configData) {
-                await HomepageConfig.findOneAndUpdate({ key: item.key }, item, { upsert: true });
+            if (base64Image && targetProvider === 'DeepSeek') {
+                targetProvider = 'Google';
             }
-        } else {
-            await HomepageConfig.findOneAndUpdate({ key: configData.key }, configData, { upsert: true });
+
+            if (targetProvider === 'Google') {
+                const apiKey = config?.googleKey || process.env.GEMINI_API_KEY;
+                if (!apiKey) {
+                    return res.status(400).json({ error: "Google API Key missing." });
+                }
+
+                const ai = new GoogleGenAI({ apiKey });
+                const safetySettings = [
+                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+                ];
+
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: {
+                        parts: [
+                            base64Image ? { inlineData: { mimeType: 'image/jpeg', data: base64Image } } : null,
+                            { text: prompt }
+                        ].filter(Boolean) as any
+                    },
+                    config: { safetySettings }
+                });
+
+                return res.json({ text: response.text });
+            } else {
+                // General OpenAI/DeepSeek Handler
+                const isDeepSeek = targetProvider === 'DeepSeek';
+                const apiKey = isDeepSeek ? config?.deepseekKey : config?.openaiKey;
+                const apiUrl = isDeepSeek ? 'https://api.deepseek.com/chat/completions' : 'https://api.openai.com/v1/chat/completions';
+                const model = isDeepSeek ? 'deepseek-chat' : 'gpt-4o';
+
+                if (!apiKey) {
+                    return res.status(400).json({ error: `${targetProvider} API Key missing.` });
+                }
+
+                const messages: any[] = [{ role: "user", content: [] }];
+
+                if (base64Image && !isDeepSeek) {
+                    messages[0].content.push({ type: "text", text: prompt });
+                    messages[0].content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } });
+                } else {
+                    messages[0].content = prompt;
+                }
+
+                const apiResponse = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+                    body: JSON.stringify({ model: model, messages: messages, stream: false })
+                });
+
+                if (!apiResponse.ok) {
+                    const err = await apiResponse.json();
+                    return res.status(apiResponse.status).json({ error: err.error?.message || `${targetProvider} API Error` });
+                }
+                const data = await apiResponse.json();
+                return res.json({ text: data.choices[0].message.content });
+            }
+        } catch (err: any) {
+            console.error("AI Analysis proxy error:", err);
+            res.status(500).json({ error: err.message });
         }
-        res.json({ success: true });
-    } catch (err: any) {
-        res.status(500).json({ error: err.message });
-    }
-});
+    });
+
+    // 1. Save History Endpoint (Frontend calls AI, then saves result)
+    app.post('/api/history', async (req, res) => {
+        try {
+            const { userId, resultText, gender, name, birthDate, readingType, elements } = req.body;
+            if (userId) {
+                // Save history item
+                await DbHelper.createHistory({
+                    userId,
+                    resultText,
+                    gender,
+                    name,
+                    birthDate,
+                    readingType,
+                    elements,
+                    summary: "AI Analysis Result" 
+                });
+
+                // ALSO: update user remaining free counts (3 free face & 3 free palm scans welcome promotion)
+                const user = await DbHelper.findUserById(userId);
+                let userSafe: any = null;
+                if (user) {
+                    const updateData: any = {};
+                    if (readingType === 'palm') {
+                        const currentVal = user.freePalmRemaining !== undefined ? user.freePalmRemaining : 3;
+                        if (currentVal > 0) {
+                            updateData.freePalmRemaining = currentVal - 1;
+                        }
+                    } else {
+                        const currentVal = user.freeFaceRemaining !== undefined ? user.freeFaceRemaining : 3;
+                        if (currentVal > 0) {
+                            updateData.freeFaceRemaining = currentVal - 1;
+                        }
+                    }
+
+                    if (Object.keys(updateData).length > 0) {
+                        const updatedUser = await DbHelper.updateUser(userId, updateData);
+                        if (updatedUser) {
+                            const userObj = typeof updatedUser.toObject === 'function' ? updatedUser.toObject() : updatedUser;
+                            userSafe = { ...userObj, id: userObj._id.toString() };
+                            delete (userSafe as any).password;
+                        }
+                    }
+                }
+
+                return res.json({ success: true, user: userSafe });
+            }
+            res.status(400).json({ error: "User ID required" });
+        } catch (error: any) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+    // 2. Create Order Endpoint (Simplified)
+    app.post('/api/orders', async (req, res) => {
+        const orderData = req.body;
+        const orderId = `ORD-${Date.now().toString().slice(-6)}`;
+        
+        try {
+            await DbHelper.createOrder({ ...orderData, orderId });
+            res.json({ success: true, orderId });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 6. Get User Profile (including address & subscription info)
+    app.get('/api/user/profile/:userId', async (req, res) => {
+        try {
+            const user = await DbHelper.findUserById(req.params.userId);
+            if (!user) return res.status(404).json({ error: "User not found." });
+            const userObj = typeof user.toObject === 'function' ? user.toObject() : user;
+            const userSafe = { ...userObj, id: userObj._id.toString() };
+            delete (userSafe as any).password;
+            res.json(userSafe);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 7. Update User Profile Address Info
+    app.post('/api/user/profile', async (req, res) => {
+        const { userId, firstName, lastName, country, state, zipCode, streetAddress, buildingName, roomNumber } = req.body;
+        try {
+            const user = await DbHelper.updateUser(
+                userId,
+                { firstName, lastName, country, state, zipCode, streetAddress, buildingName, roomNumber }
+            );
+            if (!user) return res.status(404).json({ error: "User not found." });
+            const userObj = typeof user.toObject === 'function' ? user.toObject() : user;
+            const userSafe = { ...userObj, id: userObj._id.toString() };
+            delete (userSafe as any).password;
+            res.json({ success: true, user: userSafe });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 8. Get User Purchases and Orders History
+    app.get('/api/user/orders/:userId', async (req, res) => {
+        const { userId } = req.params;
+        try {
+            const user = await DbHelper.findUserById(userId);
+            const email = user ? user.email : '';
+            const userOrders = await DbHelper.getOrdersByUser(userId, email);
+            res.json(userOrders);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 9. Payment Integration endpoint for PayPal & Credit Card
+    app.post('/api/payments/pay', async (req, res) => {
+        const { userId, email, planId, planTitle, amount, method, shippingAddress, cardDetails } = req.body;
+        const orderId = `PAY-${Date.now().toString().slice(-6)}`;
+        
+        try {
+            // Create order
+            await DbHelper.createOrder({
+                orderId,
+                userId: userId || 'guest',
+                email: email || 'guest@mysticface.com',
+                items: planTitle || planId,
+                total: parseFloat(amount),
+                status: 'paid',
+                customerName: cardDetails?.name || `${cardDetails?.firstName || ''} ${cardDetails?.lastName || ''}`.trim() || 'Customer',
+                shippingAddress: shippingAddress || 'Digital Product',
+                paymentMethod: method, // 'paypal' or 'credit-card'
+                phone: ''
+            });
+
+            // If it's subscription, update the user subscription status
+            const isSubPlan = planId.includes('month') || planId.includes('year') || planId === 'sub' || planId.includes('pass') || planId.includes('plan');
+            if (isSubPlan && userId) {
+                let monthsToAdd = 1;
+                if (planId.includes('year')) monthsToAdd = 12;
+                const expireDate = new Date();
+                expireDate.setMonth(expireDate.getMonth() + monthsToAdd);
+
+                await DbHelper.updateUser(userId, {
+                    isSubscribed: true,
+                    subscriptionPlan: planId,
+                    subscribedAt: new Date().toISOString(),
+                    subscriptionExpiresAt: expireDate.toISOString()
+                });
+            }
+            
+            res.json({ success: true, orderId });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 10. Manual Unsubscribe endpoint (Requirement #6)
+    app.post('/api/user/unsubscribe', async (req, res) => {
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ error: "User ID required." });
+        try {
+            await DbHelper.updateUser(userId, {
+                isSubscribed: false,
+                subscriptionPlan: '',
+                subscribedAt: null,
+                subscriptionExpiresAt: null
+            });
+            res.json({ success: true, message: "Subscription manually cancelled successfully." });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // --- ADMIN SETTINGS ROUTES (Requirement #5) ---
+    app.get('/api/admin/settings', (req, res) => {
+        try {
+            const settings = readJSONFile('settings.json', {
+                googlePixelId: 'GT-ANALYTICS888',
+                facebookPixelId: 'FB-PIXEL-7772188',
+                paypalClientId: 'sb-paypal-client',
+                paypalEnabled: true,
+                stripePublicKey: 'pk_test_mock_stripe_key',
+                stripeEnabled: true
+            });
+            res.json(settings);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    app.post('/api/admin/settings', (req, res) => {
+        try {
+            const settings = req.body;
+            writeJSONFile('settings.json', settings);
+            res.json({ success: true, settings });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 4. Get Orders Endpoint (Admin)
+    app.get('/api/admin/orders', async (req, res) => {
+        try {
+            const orders = await DbHelper.getAllOrders();
+            res.json(orders);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 4a. Get Registered Users Endpoint (Admin)
+    app.get('/api/admin/users', async (req, res) => {
+        try {
+            if (isMongoConnected()) {
+                const users = await User.find().sort({ registeredAt: -1 });
+                const safeUsers = users.map((u: any) => {
+                    const obj = u.toObject();
+                    delete obj.password;
+                    return { ...obj, id: obj._id.toString() };
+                });
+                return res.json(safeUsers);
+            } else {
+                const users = readJSONFile('users.json', []);
+                const safeUsers = users.map((u: any) => {
+                    const copy = { ...u };
+                    delete copy.password;
+                    return copy;
+                });
+                return res.json(safeUsers);
+            }
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 4b. AI text copywriting assistant for admin (Admin)
+    app.post('/api/admin/generate-text', async (req, res) => {
+        try {
+            const { type, context } = req.body;
+            const apiKey = process.env.GEMINI_API_KEY;
+            
+            if (!apiKey) {
+                return res.status(400).json({ error: "Gemini API key is not configured on the server." });
+            }
+
+            const ai = new GoogleGenAI({ apiKey });
+            let systemPrompt = "";
+
+            if (type === 'product') {
+                systemPrompt = `You are a professional crystal and spiritual product copywriter for a metaphysical brand called 'Mystic Face' (selling items like Lucky Jade bracelets, Obsidian wealth pendants, crystals aligned with face readings, palmistry, and Chinese Zodiac).
+Draft a concise, compelling, premium product description (around 100 words) for:
+- Product Title: ${context.name || ''}
+- SKU: ${context.sku || ''}
+- Price: ${context.price || ''}
+- Category: ${context.category || ''}
+- Associated Elements/Zodiac: ${context.element || ''} / ${context.zodiac || ''}
+
+Focus on spiritual/metaphysical benefits, elemental balance (such as Fire/Water/Wood/Metal/Earth), elegant craftsmanship, and lucky energies. Respond in traditional Chinese, simplified Chinese, or English depending on context. Default to elegant Simplified Chinese (${context.language === 'zh' ? '简体中文' : '英文'}). Avoid markdown formatting like headers, write as a clean paragraph.`;
+            } else if (type === 'homepage') {
+                systemPrompt = `You are an expert brand storyteller for 'Mystic Face', an elite platform fusing computer vision face readings, palmistry, Bazi, Feng Shui, I Ching, and purple star astrology.
+Draft an elegant, atmospheric and welcoming introductory text (around 80 words) for our homepage section:
+- Section Key: ${context.key || ''}
+- Section Title: ${context.title || ''}
+
+Describe the mystical depth of this section, inviting readers to explore their destiny and celestial alignment. Respond in Simplified Chinese (${context.language === 'zh' ? '简体中文' : '英文'}). Avoid headers or markdown formatting.`;
+            } else {
+                systemPrompt = `Write a short elegant copywriting paragraph for: ${JSON.stringify(context)}`;
+            }
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash',
+                contents: systemPrompt,
+            });
+
+            res.json({ text: response.text });
+        } catch (err: any) {
+            console.error("AI copywriting generation failed:", err);
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 5. Get User History Endpoint
+    app.get('/api/history/:userId', async (req, res) => {
+        const { userId } = req.params;
+        try {
+            const history = await DbHelper.getHistoriesByUser(userId);
+            res.json(history);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // --- PRODUCT ROUTES ---
+
+    // 1. Get All Products
+    app.get('/api/products', async (req, res) => {
+        try {
+            const xmlProducts = await DbHelper.getAllProducts();
+            res.json(xmlProducts);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 2. Create/Update Product (Admin)
+    app.post('/api/admin/products', async (req, res) => {
+        const productData = req.body;
+        try {
+            const product = await DbHelper.saveOrUpdateProduct(productData);
+            res.json(product);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 3. Delete Product (Admin)
+    app.delete('/api/admin/products/:id', async (req, res) => {
+        try {
+            await DbHelper.deleteProduct(req.params.id);
+            res.json({ success: true });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // --- HOMEPAGE CONFIG ROUTES ---
+
+    // 1. Get Homepage Config
+    app.get('/api/homepage', async (req, res) => {
+        try {
+            const configs = await DbHelper.getHomepageConfigs();
+            res.json(configs);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 2. Update Homepage Config (Admin)
+    app.post('/api/admin/homepage', async (req, res) => {
+        const configData = req.body;
+        try {
+            await DbHelper.updateHomepageConfigs(configData);
+            res.json({ success: true });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
 
     // Start Server
     if (process.env.NODE_ENV !== 'production') {

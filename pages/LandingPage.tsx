@@ -41,11 +41,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
   const palm = getSection('palm', t.landingPalmTitle, t.landingPalmDesc, 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=800');
   const wuxing = getSection('wuxing', t.landingWuXingTitle, t.landingWuXingDesc, 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800');
   const zodiac = getSection('zodiac', t.landingZodiacTitle, t.landingZodiacDesc, 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800');
-  const iching = getSection('iching', t.landingIChingTitle, t.landingIChingDesc, 'https://images.unsplash.com/photo-1515890435782-59a5bb6ec191?auto=format&fit=crop&q=80&w=800');
-  const bazi = getSection('bazi', t.landingBaziTitle, t.landingBaziDesc, 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&q=80&w=800');
-  const ziwei = getSection('ziwei', t.landingZiWeiTitle, t.landingZiWeiDesc, 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=800');
-  const qimen = getSection('qimen', t.landingQiMenTitle, t.landingQiMenDesc, 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=800');
-  const plum = getSection('plum', t.landingPlumTitle, t.landingPlumDesc, 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&q=80&w=800');
+  const iching = getSection('iching', t.landingIChingTitle, t.landingIChingDesc, 'https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?auto=format&fit=crop&q=80&w=800');
+  const bazi = getSection('bazi', t.landingBaziTitle, t.landingBaziDesc, 'https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80&w=800');
+  const ziwei = getSection('ziwei', t.landingZiWeiTitle, t.landingZiWeiDesc, 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&q=80&w=800');
+  const qimen = getSection('qimen', t.landingQiMenTitle, t.landingQiMenDesc, 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&q=80&w=800');
+  const plum = getSection('plum', t.landingPlumTitle, t.landingPlumDesc, 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800');
 
   React.useEffect(() => {
     if (banners.length <= 1) return;
@@ -195,38 +195,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
         </motion.div>
       </section>
 
-      {/* Feng Shui Section - Mixed Layout */}
-      <section style={{ padding: '100px 20px', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Feng Shui & Mystic Methods Sections - Mixed Alternating Layout */}
+      <section style={{ padding: '80px 20px', maxWidth: '1200px', margin: '0 auto' }}>
+        
+        {/* Row 1: Feng Shui (Text Left, Image Right) */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
+          gap: '48px', 
           alignItems: 'center',
-          marginBottom: '120px'
+          marginBottom: '90px'
         }} className="responsive-grid">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="desk-order-1 order-mobile-2"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <Wind size={32} color={theme.gold} />
-              <Droplets size={32} color={theme.gold} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <Wind size={26} color={theme.gold} />
+              <Droplets size={26} color={theme.gold} />
               <h2 style={{ 
                 fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
+                fontSize: '2rem', 
                 color: theme.gold, 
+                letterSpacing: '1px',
                 margin: 0 
               }}>
                 {fengshui.title}
               </h2>
             </div>
             <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
             }}>
               {fengshui.desc}
             </p>
@@ -237,6 +243,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
             style={{ position: 'relative' }}
+            className="desk-order-2 order-mobile-1"
           >
             <img 
               src={fengshui.img} 
@@ -244,17 +251,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 border: `1px solid ${theme.darkGold}`
               }} 
             />
             <div style={{
               position: 'absolute',
-              top: '-20px',
-              right: '-20px',
-              width: '100px',
-              height: '100px',
+              top: '-15px',
+              right: '-15px',
+              width: '80px',
+              height: '80px',
               border: `2px solid ${theme.gold}`,
               borderRadius: '50%',
               zIndex: -1
@@ -262,21 +269,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
           </motion.div>
         </div>
 
-        {/* Face Reading Section - Inverted Mixed Layout */}
+        {/* Row 2: Face Reading (Image Left, Text Right) */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
+          gap: '48px', 
           alignItems: 'center',
-          marginBottom: '120px'
+          marginBottom: '90px'
         }} className="responsive-grid">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            style={{ order: 2 }}
-            className="order-mobile-1"
+            className="desk-order-1 order-mobile-1"
           >
             <img 
               src={face.img} 
@@ -284,8 +290,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 border: `1px solid ${theme.darkGold}`
               }} 
             />
@@ -295,62 +301,68 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            style={{ order: 1 }}
-            className="order-mobile-2"
+            className="desk-order-2 order-mobile-2"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <Eye size={32} color={theme.gold} />
-              <Sparkles size={32} color={theme.gold} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <Eye size={26} color={theme.gold} />
+              <Sparkles size={26} color={theme.gold} />
               <h2 style={{ 
                 fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
+                fontSize: '2rem', 
                 color: theme.gold, 
+                letterSpacing: '1px',
                 margin: 0 
               }}>
                 {face.title}
               </h2>
             </div>
             <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
             }}>
               {face.desc}
             </p>
           </motion.div>
         </div>
 
-        {/* Palmistry Section */}
+        {/* Row 3: Palmistry (Text Left, Image Right) */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
+          gap: '48px', 
           alignItems: 'center',
-          marginBottom: '120px'
+          marginBottom: '90px'
         }} className="responsive-grid">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="desk-order-1 order-mobile-2"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <Hand size={32} color={theme.gold} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <Hand size={26} color={theme.gold} />
               <h2 style={{ 
                 fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
+                fontSize: '2rem', 
                 color: theme.gold, 
+                letterSpacing: '1px',
                 margin: 0 
               }}>
                 {palm.title}
               </h2>
             </div>
             <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
             }}>
               {palm.desc}
             </p>
@@ -360,6 +372,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="desk-order-2 order-mobile-1"
           >
             <img 
               src={palm.img} 
@@ -367,29 +380,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 border: `1px solid ${theme.darkGold}`
               }} 
             />
           </motion.div>
         </div>
 
-        {/* Five Elements Section */}
+        {/* Row 4: Five Elements (Image Left, Text Right) */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
+          gap: '48px', 
           alignItems: 'center',
-          marginBottom: '120px'
+          marginBottom: '90px'
         }} className="responsive-grid">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            style={{ order: 2 }}
-            className="order-mobile-1"
+            className="desk-order-1 order-mobile-1"
           >
             <img 
               src={wuxing.img} 
@@ -397,8 +409,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 border: `1px solid ${theme.darkGold}`
               }} 
             />
@@ -408,60 +420,67 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            style={{ order: 1 }}
-            className="order-mobile-2"
+            className="desk-order-2 order-mobile-2"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <CircleDot size={32} color={theme.gold} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <CircleDot size={26} color={theme.gold} />
               <h2 style={{ 
                 fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
+                fontSize: '2rem', 
                 color: theme.gold, 
+                letterSpacing: '1px',
                 margin: 0 
               }}>
                 {wuxing.title}
               </h2>
             </div>
             <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
             }}>
               {wuxing.desc}
             </p>
           </motion.div>
         </div>
 
-        {/* Zodiac Section */}
+        {/* Row 5: Zodiac (Text Left, Image Right) */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
-          alignItems: 'center'
+          gap: '48px', 
+          alignItems: 'center',
+          marginBottom: '90px'
         }} className="responsive-grid">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="desk-order-1 order-mobile-2"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <MoonStar size={32} color={theme.gold} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <MoonStar size={26} color={theme.gold} />
               <h2 style={{ 
                 fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
+                fontSize: '2rem', 
                 color: theme.gold, 
+                letterSpacing: '1px',
                 margin: 0 
               }}>
                 {zodiac.title}
               </h2>
             </div>
             <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
             }}>
               {zodiac.desc}
             </p>
@@ -471,6 +490,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="desk-order-2 order-mobile-1"
           >
             <img 
               src={zodiac.img} 
@@ -478,53 +498,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 border: `1px solid ${theme.darkGold}`
               }} 
             />
           </motion.div>
         </div>
 
-        {/* I Ching Section */}
+        {/* Row 6: I Ching (Image Left, Text Right) */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
+          gap: '48px', 
           alignItems: 'center',
-          marginBottom: '120px'
+          marginBottom: '90px'
         }} className="responsive-grid">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <Sparkles size={32} color={theme.gold} />
-              <h2 style={{ 
-                fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
-                color: theme.gold, 
-                margin: 0 
-              }}>
-                {iching.title}
-              </h2>
-            </div>
-            <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
-            }}>
-              {iching.desc}
-            </p>
-          </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="desk-order-1 order-mobile-1"
           >
             <img 
               src={iching.img} 
@@ -532,29 +527,88 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 border: `1px solid ${theme.darkGold}`
               }} 
             />
           </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="desk-order-2 order-mobile-2"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <Sparkles size={26} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2rem', 
+                color: theme.gold, 
+                letterSpacing: '1px',
+                margin: 0 
+              }}>
+                {iching.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
+            }}>
+              {iching.desc}
+            </p>
+          </motion.div>
         </div>
 
-        {/* Bazi Section */}
+        {/* Row 7: Bazi (Text Left, Image Right) */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
+          gap: '48px', 
           alignItems: 'center',
-          marginBottom: '120px'
+          marginBottom: '90px'
         }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="desk-order-1 order-mobile-2"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <CircleDot size={26} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2rem', 
+                color: theme.gold, 
+                letterSpacing: '1px',
+                margin: 0 
+              }}>
+                {bazi.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
+            }}>
+              {bazi.desc}
+            </p>
+          </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            style={{ order: 2 }}
-            className="order-mobile-1"
+            className="desk-order-2 order-mobile-1"
           >
             <img 
               src={bazi.img} 
@@ -562,81 +616,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 border: `1px solid ${theme.darkGold}`
               }} 
             />
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            style={{ order: 1 }}
-            className="order-mobile-2"
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <CircleDot size={32} color={theme.gold} />
-              <h2 style={{ 
-                fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
-                color: theme.gold, 
-                margin: 0 
-              }}>
-                {bazi.title}
-              </h2>
-            </div>
-            <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
-            }}>
-              {bazi.desc}
-            </p>
-          </motion.div>
         </div>
 
-        {/* Zi Wei Section */}
+        {/* Row 8: Zi Wei (Image Left, Text Right) */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
+          gap: '48px', 
           alignItems: 'center',
-          marginBottom: '120px'
+          marginBottom: '90px'
         }} className="responsive-grid">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <MoonStar size={32} color={theme.gold} />
-              <h2 style={{ 
-                fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
-                color: theme.gold, 
-                margin: 0 
-              }}>
-                {ziwei.title}
-              </h2>
-            </div>
-            <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
-            }}>
-              {ziwei.desc}
-            </p>
-          </motion.div>
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="desk-order-1 order-mobile-1"
           >
             <img 
               src={ziwei.img} 
@@ -644,38 +645,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                border: `1px solid ${theme.darkGold}`
-              }} 
-            />
-          </motion.div>
-        </div>
-
-        {/* Qi Men Section */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
-          alignItems: 'center',
-          marginBottom: '120px'
-        }} className="responsive-grid">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            style={{ order: 2 }}
-            className="order-mobile-1"
-          >
-            <img 
-              src={qimen.img} 
-              alt="Qi Men" 
-              referrerPolicy="no-referrer"
-              style={{ 
-                width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 border: `1px solid ${theme.darkGold}`
               }} 
             />
@@ -685,62 +656,69 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
-            style={{ order: 1 }}
-            className="order-mobile-2"
+            className="desk-order-2 order-mobile-2"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <Wind size={32} color={theme.gold} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <MoonStar size={26} color={theme.gold} />
               <h2 style={{ 
                 fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
+                fontSize: '2rem', 
                 color: theme.gold, 
+                letterSpacing: '1px',
                 margin: 0 
               }}>
-                {qimen.title}
+                {ziwei.title}
               </h2>
             </div>
             <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
             }}>
-              {qimen.desc}
+              {ziwei.desc}
             </p>
           </motion.div>
         </div>
 
-        {/* Plum Blossom Section */}
+        {/* Row 9: Qi Men (Text Left, Image Right) */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '60px', 
-          alignItems: 'center'
+          gap: '48px', 
+          alignItems: 'center',
+          marginBottom: '90px'
         }} className="responsive-grid">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="desk-order-1 order-mobile-2"
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-              <Sparkles size={32} color={theme.gold} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <Wind size={26} color={theme.gold} />
               <h2 style={{ 
                 fontFamily: 'Cinzel, serif', 
-                fontSize: '2.5rem', 
+                fontSize: '2rem', 
                 color: theme.gold, 
+                letterSpacing: '1px',
                 margin: 0 
               }}>
-                {plum.title}
+                {qimen.title}
               </h2>
             </div>
             <p style={{ 
-              fontSize: '1.1rem', 
-              lineHeight: '1.8', 
-              color: '#bbb',
-              textAlign: 'justify'
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
             }}>
-              {plum.desc}
+              {qimen.desc}
             </p>
           </motion.div>
           <motion.div
@@ -748,6 +726,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
+            className="desk-order-2 order-mobile-1"
+          >
+            <img 
+              src={qimen.img} 
+              alt="Qi Men" 
+              referrerPolicy="no-referrer"
+              style={{ 
+                width: '100%', 
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
+                border: `1px solid ${theme.darkGold}`
+              }} 
+            />
+          </motion.div>
+        </div>
+
+        {/* Row 10: Plum Blossom (Image Left, Text Right) */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr 1fr', 
+          gap: '48px', 
+          alignItems: 'center',
+          marginBottom: '90px'
+        }} className="responsive-grid">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="desk-order-1 order-mobile-1"
           >
             <img 
               src={plum.img} 
@@ -755,43 +763,145 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               referrerPolicy="no-referrer"
               style={{ 
                 width: '100%', 
-                borderRadius: '20px', 
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                borderRadius: '12px', 
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 border: `1px solid ${theme.darkGold}`
               }} 
             />
           </motion.div>
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="desk-order-2 order-mobile-2"
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+              <Sparkles size={26} color={theme.gold} />
+              <h2 style={{ 
+                fontFamily: 'Cinzel, serif', 
+                fontSize: '2rem', 
+                color: theme.gold, 
+                letterSpacing: '1px',
+                margin: 0 
+              }}>
+                {plum.title}
+              </h2>
+            </div>
+            <p style={{ 
+              fontSize: '1rem', 
+              lineHeight: '1.6', 
+              color: '#ccc',
+              textAlign: 'justify',
+              margin: 0,
+              letterSpacing: '0.02em'
+            }}>
+              {plum.desc}
+            </p>
+          </motion.div>
         </div>
+
       </section>
 
       {/* Call to Action */}
       <section style={{ 
-        padding: '120px 20px', 
+        padding: '160px 20px', 
         textAlign: 'center',
-        background: 'linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.05))'
+        background: 'linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.08))',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
+        {/* Decorative background elements */}
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '600px',
+          height: '600px',
+          background: 'radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%)',
+          zIndex: 0
+        }} />
+
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          style={{ position: 'relative', zIndex: 1, maxWidth: '1000px', margin: '0 auto' }}
         >
-          <h2 style={{ fontFamily: 'Cinzel, serif', fontSize: '3rem', color: theme.gold, marginBottom: '2rem' }}>
+          <h2 style={{ 
+            fontFamily: 'Cinzel, serif', 
+            fontSize: 'clamp(2.5rem, 5vw, 4rem)', 
+            color: theme.gold, 
+            marginBottom: '1.5rem',
+            letterSpacing: '0.1em'
+          }}>
             {t.exploreDestiny}
           </h2>
-          <button
+          <p style={{ 
+            fontSize: '1.2rem', 
+            color: '#ccc', 
+            marginBottom: '3rem', 
+            maxWidth: '700px', 
+            margin: '0 auto 3rem auto',
+            lineHeight: '1.6'
+          }}>
+            {t.landingSubtitle}. {t.banner1Desc}
+          </p>
+
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+            gap: '30px', 
+            marginBottom: '4rem' 
+          }}>
+            {[
+              { icon: <Eye size={24} />, title: t.landingFaceTitle, desc: t.landingFaceDesc.slice(0, 60) + '...' },
+              { icon: <Hand size={24} />, title: t.landingPalmTitle, desc: t.landingPalmDesc.slice(0, 60) + '...' },
+              { icon: <Sparkles size={24} />, title: t.landingIChingTitle, desc: t.landingIChingDesc.slice(0, 60) + '...' }
+            ].map((feature, i) => (
+              <motion.div
+                key={i}
+                whileHover={{ y: -10 }}
+                style={{
+                  padding: '30px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${theme.darkGold}44`,
+                  borderRadius: '15px',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ color: theme.gold, marginBottom: '15px' }}>{feature.icon}</div>
+                <h3 style={{ color: theme.gold, marginBottom: '10px', fontSize: '1.2rem' }}>{feature.title}</h3>
+                <p style={{ color: '#999', fontSize: '0.9rem', lineHeight: '1.5' }}>{feature.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(212, 175, 55, 0.5)' }}
+            whileTap={{ scale: 0.95 }}
             onClick={onExplore}
             style={{
               ...styles.button,
-              padding: '1rem 4rem',
-              fontSize: '1.2rem'
+              padding: '1.5rem 5rem',
+              fontSize: '1.3rem',
+              borderRadius: '50px', // More modern look for the main CTA
+              background: `linear-gradient(135deg, ${theme.gold}, ${theme.darkGold})`,
+              border: 'none',
+              color: '#000'
             }}
           >
             {t.startBtn}
-          </button>
+          </motion.button>
         </motion.div>
       </section>
 
       <style>{`
+        @media (min-width: 769px) {
+          .desk-order-1 { order: 1 !important; }
+          .desk-order-2 { order: 2 !important; }
+        }
         @media (max-width: 768px) {
           .responsive-grid {
             grid-template-columns: 1fr !important;

@@ -36,9 +36,11 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let isMounted = true;
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-            controller.abort("timeout");
+            if (!isMounted) return;
+            controller.abort();
             console.warn("Shop fetch timed out, falling back to static products");
             setProducts(SHOP_PRODUCTS);
             setLoading(false);
@@ -50,6 +52,7 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
                 return res.json();
             })
             .then(data => {
+                if (!isMounted) return;
                 clearTimeout(timeoutId);
                 if (Array.isArray(data) && data.length > 0) {
                     setProducts(data);
@@ -59,6 +62,7 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
                 setLoading(false);
             })
             .catch(err => {
+                if (!isMounted) return;
                 clearTimeout(timeoutId);
                 if (err.name === 'AbortError' || controller.signal.aborted) return; 
                 console.error("Failed to fetch products:", err);
@@ -67,12 +71,14 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
             });
             
         return () => {
+            isMounted = false;
             clearTimeout(timeoutId);
-            controller.abort("unmount");
+            controller.abort();
         };
     }, []);
 
     const filteredProducts = products.filter(p => {
+        if (p.status === 'inactive') return false;
         if (activeCategory === 'all') return true;
         if (activeCategory === 'chinese') return p.category === 'bracelet' || p.category === 'pendant';
         if (activeCategory === 'western') return p.category === 'amulet';

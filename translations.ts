@@ -1,9 +1,7 @@
 
 
 export const LANGUAGES = [
-  { code: 'zh-CN', label: '简体中文 (Simplified)', voiceCode: 'zh-CN' },
   { code: 'en', label: 'English', voiceCode: 'en-US' },
-  { code: 'zh-TW', label: '繁體中文 (Traditional)', voiceCode: 'zh-TW' },
 ];
 
 const EN_TRANS = {
@@ -69,6 +67,8 @@ const EN_TRANS = {
     productDescAmulet: "Exquisite 18k gold amulet representing {zodiac}. Embedded with crystals to align with the stars and canalize cosmic energy for success.",
     freeTrialsHint: "Free trial active ({count} days remaining)", 
     dailyFreeRemaining: "Free readings today: {count}",
+    freeFaceRemainingText: "Free Welcome Face Readings",
+    freePalmRemainingText: "Free Welcome Palm Readings",
     dailyLimitReached: "Daily free limit reached (3/3). Please subscribe for unlimited access.",
     captureBtn: "Capture Now",
     shippingDetails: "Shipping Address", addressLine: "Street Address", city: "City", zipCode: "Zip / Postal Code", country: "Country", recipientName: "Recipient Name",
@@ -277,6 +277,8 @@ const ZH_CN_TRANS = {
     productDescAmulet: "精美18k金{zodiac}护身符，鑲嵌水晶，汇聚星辰之力，助您心想事成，诸事顺遂。",
     freeTrialsHint: "免费试用期 (剩余: {count}天)", 
     dailyFreeRemaining: "今日免费次数剩余: {count}",
+    freeFaceRemainingText: "免费赠送面相测算次数",
+    freePalmRemainingText: "免费赠送手相测算次数",
     dailyLimitReached: "今日免费次数已用完 (3/3)。请订阅以获取无限次测算。",
     captureBtn: "立即拍照",
     shippingDetails: "收货地址", addressLine: "街道地址", city: "城市", zipCode: "邮编", country: "国家", recipientName: "收件人姓名",
@@ -478,6 +480,8 @@ const ZH_TW_TRANS = {
     productDescAmulet: "精美18k金{zodiac}護身符，鑲嵌水晶，匯聚星辰之力，助您心想事成，諸事順遂。",
     freeTrialsHint: "免費試用期 (剩餘: {count}天)", 
     dailyFreeRemaining: "今日免費次數剩餘: {count}",
+    freeFaceRemainingText: "免費贈送面相測算次數",
+    freePalmRemainingText: "免費贈送手相測算次數",
     dailyLimitReached: "今日免費次數已用完 (3/3)。請訂閱以獲取無限次測算。",
     captureBtn: "立即拍照",
     shippingDetails: "收貨地址", addressLine: "街道地址", city: "城市", zipCode: "郵編", country: "國家", recipientName: "收件人姓名",
@@ -621,6 +625,6 @@ const ZH_TW_TRANS = {
 
 export const TRANSLATIONS: any = {
   'en': EN_TRANS,
-  'zh-CN': ZH_CN_TRANS,
-  'zh-TW': ZH_TW_TRANS,
+  'zh-CN': EN_TRANS,
+  'zh-TW': EN_TRANS,
 };

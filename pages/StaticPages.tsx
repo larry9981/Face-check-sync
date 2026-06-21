@@ -99,8 +99,8 @@ export const AboutPage = ({ t }: { t: any }) => (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', alignItems: 'center' }} className="responsive-grid">
         <div style={{ position: 'relative' }}>
           <img 
-            src="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?auto=format&fit=crop&q=80&w=600" 
-            alt="Spiritual" 
+            src={`https://image.pollinations.ai/prompt/${encodeURIComponent('mystical face reading, ancient Chinese wisdom meets modern AI technology, glowing facial features, ethereal digital energy, 8k, cinematic, spiritual guidance')}?width=600&height=800&nologo=true&seed=about_us_mystic`} 
+            alt="Ancient Wisdom meets AI" 
             referrerPolicy="no-referrer"
             style={{ width: '100%', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: `1px solid ${theme.darkGold}` }}
           />

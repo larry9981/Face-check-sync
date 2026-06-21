@@ -13,6 +13,23 @@ export interface UserState {
   name?: string;
   username?: string;
   authType?: 'email' | 'google' | 'guest';
+  // Profile address fields
+  firstName?: string;
+  lastName?: string;
+  country?: string;
+  state?: string;
+  zipCode?: string;
+  streetAddress?: string;
+  buildingName?: string;
+  roomNumber?: string;
+  // Subscription fields
+  subscriptionPlan?: string;
+  subscribedAt?: string;
+  subscriptionExpiresAt?: string;
+  
+  // Custom welcome free counts (3 face & 3 palm scans)
+  freeFaceRemaining?: number;
+  freePalmRemaining?: number;
 }
 
 export interface AppConfig {
@@ -56,6 +73,9 @@ export interface Product {
   zodiac: string;
   element?: string;
   imageUrl?: string;
+  sku?: string;
+  status?: 'active' | 'inactive';
+  longDescription?: string;
 }
 
 export interface CartItem {

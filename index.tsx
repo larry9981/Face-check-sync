@@ -1,8 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-// RESTORED: Needed for Client-Side Fallback if Server is offline
-import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "@google/genai";
 
 import { theme, styles } from './theme';
 import { LANGUAGES, TRANSLATIONS } from './translations';
@@ -33,76 +31,31 @@ const AMBIENT_MUSIC_URL = "https://cdn.pixabay.com/audio/2022/02/07/audio_191983
 // =========================================================
 
 const AIService = {
-    // Call AI with Dynamic Configuration
+    // Call AI securely through server-side proxy
     callAI: async (prompt: string, base64Image?: string, config?: AppConfig) => {
-        // Default to Google if no config passed or keys missing
-        let provider = config?.textProvider || 'Google';
-        
-        // AUTO-ADAPT: If image is present and provider is DeepSeek (which is text-only usually), force Google or OpenAI
-        if (base64Image && provider === 'DeepSeek') {
-            console.warn("DeepSeek does not support Vision. Falling back to Google for image analysis.");
-            provider = 'Google';
-        }
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
 
-        console.log(`[AIService] Using ${provider}...`);
+        try {
+            const provider = config?.textProvider || 'Google';
+            console.log(`[AIService] Proxying ${provider} request via server...`);
 
-        if (provider === 'Google') {
-            // Use User Key if available, else process.env.GEMINI_API_KEY
-            const apiKey = config?.googleKey || process.env.GEMINI_API_KEY;
-            if (!apiKey) throw new Error("Google API Key missing.");
-
-            const ai = new GoogleGenAI({ apiKey });
-            const safetySettings = [
-                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
-            ];
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: {
-                    parts: [
-                        base64Image ? { inlineData: { mimeType: 'image/jpeg', data: base64Image } } : null,
-                        { text: prompt }
-                    ].filter(Boolean) as any
-                },
-                config: { safetySettings }
-            });
-            return response.text;
-        } else {
-             // Generic OpenAI/DeepSeek Handler
-             const isDeepSeek = provider === 'DeepSeek';
-             const apiKey = isDeepSeek ? config?.deepseekKey : config?.openaiKey;
-             const apiUrl = isDeepSeek ? 'https://api.deepseek.com/chat/completions' : 'https://api.openai.com/v1/chat/completions';
-             const model = isDeepSeek ? 'deepseek-chat' : 'gpt-4o';
-             
-             if (!apiKey) throw new Error(`${provider} API Key missing.`);
-
-             // Construct payload 
-             const messages: any[] = [{ role: "user", content: [] }];
-             
-             if (base64Image && !isDeepSeek) {
-                 messages[0].content.push({ type: "text", text: prompt });
-                 messages[0].content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } });
-             } else {
-                 // Text Only (DeepSeek or just text prompt)
-                 messages[0].content = prompt;
-             }
-
-             const response = await fetch(apiUrl, {
+            const response = await fetch('/api/analyze', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                body: JSON.stringify({ model: model, messages: messages, stream: false })
-             });
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt, base64Image, provider, config }),
+                signal: controller.signal
+            });
 
-             if (!response.ok) {
-                 const err = await response.json();
-                 if (err.error?.message?.includes('Failed to fetch')) throw new Error("CORS/Network Error: Check API Key or Proxy.");
-                 throw new Error(err.error?.message || `${provider} API Error`);
-             }
-             const data = await response.json();
-             return data.choices[0].message.content;
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || `Server Error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.text;
+        } finally {
+            clearTimeout(timeoutId);
         }
     }
 };
@@ -353,11 +306,27 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
 const SettingsModal = ({ t, config, onSave, onClose }: { t: any, config: AppConfig, onSave: (c: AppConfig) => void, onClose: () => void }) => {
     const [localConfig, setLocalConfig] = useState<AppConfig>(config);
     const [msg, setMsg] = useState('');
+    const isMounted = useRef(true);
+    const timeoutRef = useRef<any>(null);
+
+    useEffect(() => {
+        isMounted.current = true;
+        return () => { 
+            isMounted.current = false; 
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        };
+    }, []);
 
     const handleSave = () => {
         onSave(localConfig);
         setMsg(t.configSaved);
-        setTimeout(() => { setMsg(''); onClose(); }, 1000);
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => { 
+            if (isMounted.current) {
+                setMsg(''); 
+                onClose(); 
+            }
+        }, 1000);
     };
 
     return (
@@ -412,6 +381,50 @@ const SettingsModal = ({ t, config, onSave, onClose }: { t: any, config: AppConf
 };
 
 const App = () => {
+  const isMounted = useRef(true);
+  const uploadIntervalRef = useRef<any>(null);
+  const progressIntervalRef = useRef<any>(null);
+  const toastTimeoutRef = useRef<any>(null);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { 
+      isMounted.current = false; 
+      if (uploadIntervalRef.current) clearInterval(uploadIntervalRef.current);
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      
+      // Stop camera if running
+      try {
+        if (videoRef.current && videoRef.current.srcObject) {
+          (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+          videoRef.current.srcObject = null;
+        }
+      } catch (e) {
+        console.warn("Error stopping camera on unmount:", e);
+      }
+
+      // Cancel speech synthesis
+      try {
+        if (window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+      } catch (e) {
+        console.warn("Error canceling speech synthesis on unmount:", e);
+      }
+
+      // Stop ambient music
+      try {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
+      } catch (e) {
+        console.warn("Error pausing ambient music on unmount:", e);
+      }
+    };
+  }, []);
+
   const [isAdminMode, setIsAdminMode] = useState(window.location.hash === '#admin');
 
   useEffect(() => {
@@ -421,12 +434,42 @@ const App = () => {
   }, []);
 
   const [currentPage, setCurrentPage] = useState<'home' | 'analysis' | 'pricing' | 'shop' | 'product-detail' | 'about' | 'privacy' | 'terms' | 'refund' | 'history' | 'cart'>('home');
+  const [cookieConsent, setCookieConsent] = useState<string | null>(localStorage.getItem('cookieConsent'));
+
+  useEffect(() => {
+    const gaId = (import.meta as any).env.VITE_GA_MEASUREMENT_ID || 'G-DEFAULGAID';
+    if (cookieConsent === 'accepted') {
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+      document.head.appendChild(script);
+
+      const scriptConfig = document.createElement('script');
+      scriptConfig.innerHTML = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${gaId}', { 'anonymize_ip': true });
+      `;
+      document.head.appendChild(scriptConfig);
+    }
+  }, [cookieConsent]);
+
+  const handleAcceptCookies = () => {
+    localStorage.setItem('cookieConsent', 'accepted');
+    setCookieConsent('accepted');
+  };
+
+  const handleDeclineCookies = () => {
+    localStorage.setItem('cookieConsent', 'declined');
+    setCookieConsent('declined');
+  };
   
   // Configuration State
   const [appConfig, setAppConfig] = useState<AppConfig>({
       textProvider: 'Google',
       imageProvider: 'Pollinations',
-      googleKey: process.env.GEMINI_API_KEY || '',
+      googleKey: '',
       openaiKey: '',
       deepseekKey: ''
   });
@@ -447,20 +490,12 @@ const App = () => {
 
   // Language Logic
   const detectLanguage = () => {
-     try {
-         const browserLang = navigator.language.split('-')[0];
-         const supportedCodes = LANGUAGES.map(l => l.code);
-         if (supportedCodes.includes(navigator.language)) return navigator.language;
-         if (supportedCodes.includes(browserLang)) return browserLang;
-         if (navigator.language === 'zh-HK') return 'zh-TW';
-         if (browserLang === 'zh') return 'zh-CN';
-         return 'en';
-     } catch (e) { return 'en'; }
+      return 'en';
   };
 
-  const [language, setLanguage] = useState(detectLanguage());
+  const [language, setLanguage] = useState('en');
   // IMPORTANT: Ensure t updates correctly. If translations are missing, this fallback prevents crashes.
-  const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
+  const t = TRANSLATIONS['en'];
   
   const [homepageConfigs, setHomepageConfigs] = useState<HomepageConfig[]>([]);
 
@@ -468,7 +503,7 @@ const App = () => {
       const fetchHomepage = async () => {
           try {
               const data = await callBackendAPI('/homepage', {}, 'GET');
-              if (Array.isArray(data)) setHomepageConfigs(data);
+              if (isMounted.current && Array.isArray(data)) setHomepageConfigs(data);
           } catch (e) {
               console.warn("Could not fetch homepage config", e);
           }
@@ -522,7 +557,10 @@ const App = () => {
           // Sync Subscription Status from Server DB
           isSubscribed: user.isSubscribed || false,
           trialStartDate: user.trialStartDate || prev.trialStartDate,
-          hasPaidSingle: user.hasPaidSingle || false
+          hasPaidSingle: user.hasPaidSingle || false,
+          // Welcome free remains: defaulting to 3
+          freeFaceRemaining: user.freeFaceRemaining !== undefined ? user.freeFaceRemaining : 3,
+          freePalmRemaining: user.freePalmRemaining !== undefined ? user.freePalmRemaining : 3
       }));
   };
 
@@ -675,6 +713,14 @@ const App = () => {
         
         // Wait for next tick/render to ensure ref is populated
         setTimeout(async () => {
+            if (!isMounted.current) {
+                try {
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (e) {
+                    console.error("Stop tracks error", e);
+                }
+                return;
+            }
             if (videoRef.current) { 
                 videoRef.current.srcObject = stream; 
                 try {
@@ -698,6 +744,14 @@ const App = () => {
              // Fallback to basic constraint if facingMode fails
              const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); 
              setTimeout(async () => {
+                 if (!isMounted.current) {
+                     try {
+                         stream.getTracks().forEach(track => track.stop());
+                     } catch (e) {
+                         console.error("Stop tracks error", e);
+                     }
+                     return;
+                 }
                  if (videoRef.current) { 
                      videoRef.current.srcObject = stream; 
                      try { await videoRef.current.play(); } catch(e) { console.error(e); }
@@ -751,12 +805,26 @@ const App = () => {
       setUploadProgress(0); 
       const reader = new FileReader(); 
       let progress = 0;
-      const interval = setInterval(() => { progress += 10; setUploadProgress(Math.min(progress, 99)); }, 30);
+      if (uploadIntervalRef.current) clearInterval(uploadIntervalRef.current);
+      uploadIntervalRef.current = setInterval(() => { 
+          progress += 10; 
+          if (isMounted.current) setUploadProgress(Math.min(progress, 99)); 
+      }, 30);
       reader.onloadend = async () => { 
-          clearInterval(interval); setUploadProgress(100); 
+          if (uploadIntervalRef.current) {
+              clearInterval(uploadIntervalRef.current);
+              uploadIntervalRef.current = null;
+          }
+          if (isMounted.current) setUploadProgress(100); 
           let dataUrl = reader.result as string; 
           dataUrl = await resizeImage(dataUrl);
-          setTimeout(() => { setImage(dataUrl); setUploadProgress(0); processImage(dataUrl); }, 300);
+          setTimeout(() => { 
+              if (isMounted.current) {
+                  setImage(dataUrl); 
+                  setUploadProgress(0); 
+                  processImage(dataUrl); 
+              }
+          }, 300);
       };
       reader.readAsDataURL(file);
     }
@@ -789,25 +857,40 @@ This is a demonstration of the result layout.
     const now = new Date();
     const today = now.toISOString().split('T')[0];
 
-    // 1. Check Daily Limit (3 times per day)
-    if (!userState.isSubscribed && !userState.hasPaidSingle) {
+    // Welcome Quota or Standard Checks
+    let hasWelcomeQuota = false;
+    if (userState.isLoggedIn) {
+        if (readingType === 'palm') {
+            const palmRem = userState.freePalmRemaining !== undefined ? userState.freePalmRemaining : 3;
+            if (palmRem > 0) hasWelcomeQuota = true;
+        } else {
+            const faceRem = userState.freeFaceRemaining !== undefined ? userState.freeFaceRemaining : 3;
+            if (faceRem > 0) hasWelcomeQuota = true;
+        }
+    }
+
+    // Checking limits only if the user does NOT have active Welcome Free Scan Quota and has NOT subscribed/paid
+    if (!hasWelcomeQuota && !userState.isSubscribed && !userState.hasPaidSingle) {
+        // 1. Check Daily Limit (3 times per day)
         const dailyCount = (userState.dailyGenerations && userState.dailyGenerations[today]) || 0;
         if (dailyCount >= 3) {
-            alert(t.dailyLimitReached);
+            alert(t.dailyLimitReached || "Daily limit reached. Please view plans.");
             setShowPaywall(true);
             setView('start');
             return;
         }
-    }
 
-    // 2. 3-Day Free Trial Logic (Legacy fallback check)
-    if (!userState.isSubscribed && !userState.hasPaidSingle) {
+        // 2. 3-Day Free Trial Logic (Legacy fallback check)
         if (!userState.trialStartDate) {
             setUserState(prev => ({ ...prev, trialStartDate: now.toISOString() }));
         } else {
             const start = new Date(userState.trialStartDate);
             const daysPassed = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-            if (daysPassed > 3) { setShowPaywall(true); setView('start'); return; }
+            if (daysPassed > 3) { 
+                setShowPaywall(true); 
+                setView('start'); 
+                return; 
+            }
         }
     }
     if (userState.hasPaidSingle) { setUserState(prev => ({ ...prev, hasPaidSingle: false })); }
@@ -830,7 +913,15 @@ This is a demonstration of the result layout.
     setAnalysisProgress(0);
     
     // Faster progress bar: reach 90% in ~5 seconds
-    const progressInterval = setInterval(() => { 
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    progressIntervalRef.current = setInterval(() => { 
+        if (!isMounted.current) { 
+            if (progressIntervalRef.current) {
+                clearInterval(progressIntervalRef.current);
+                progressIntervalRef.current = null;
+            }
+            return; 
+        }
         setAnalysisProgress(prev => {
             const next = prev < 30 ? prev + 3 : (prev < 70 ? prev + 1.5 : (prev < 95 ? prev + 0.5 : prev));
             
@@ -908,13 +999,20 @@ This is a demonstration of the result layout.
           }
       }
 
-      // CALL AI DIRECTLY FROM FRONTEND
-      const result = await callWithRetry(() => AIService.callAI(prompt, base64Data, appConfig), 2, 1500, (retryMsg) => setLoadingMessage(retryMsg));
+      const result = await callWithRetry(() => AIService.callAI(prompt, base64Data, appConfig), 2, 1500, (retryMsg) => {
+          if (isMounted.current) setLoadingMessage(retryMsg);
+      });
       
-      clearInterval(progressInterval);
+      if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current);
+          progressIntervalRef.current = null;
+      }
+      if (!isMounted.current) return;
+
       setAnalysisProgress(100);
       setLoadingMessage("");
       await new Promise(resolve => setTimeout(resolve, 600));
+      if (!isMounted.current) return;
       
       const newResultText = result || "Destiny unclear.";
       setResultText(newResultText);
@@ -922,7 +1020,7 @@ This is a demonstration of the result layout.
       // Save to History via Backend
       if (userState.userId) {
           try {
-              await callBackendAPI('/history', {
+              const responseData = await callBackendAPI('/history', {
                   userId: userState.userId,
                   resultText: newResultText,
                   gender,
@@ -931,6 +1029,13 @@ This is a demonstration of the result layout.
                   readingType,
                   elements: wuXingResult
               });
+              if (responseData && responseData.user) {
+                  setUserState(prev => ({
+                      ...prev,
+                      freeFaceRemaining: responseData.user.freeFaceRemaining,
+                      freePalmRemaining: responseData.user.freePalmRemaining
+                  }));
+              }
           } catch (e) {
               console.warn("Failed to save history to backend", e);
           }
@@ -963,7 +1068,10 @@ This is a demonstration of the result layout.
       
       setView('result');
     } catch (error: any) { 
-        clearInterval(progressInterval);
+        if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+        }
         setAnalysisProgress(0);
         setLoadingMessage("");
         
@@ -995,6 +1103,32 @@ This is a demonstration of the result layout.
       // Logic handled inside RenderHistoryView now, this might not be needed or just reused
   };
 
+  const handleUnsubscribe = async () => {
+      try {
+          const response = await fetch('/api/user/unsubscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: userState.id })
+          });
+          const data = await response.json();
+          if (response.ok) {
+              setUserState(prev => ({
+                  ...prev,
+                  isSubscribed: false,
+                  subscriptionPlan: '',
+                  subscribedAt: null,
+                  subscriptionExpiresAt: null
+              }));
+              alert("Your active subscription has been manually cancelled successfully!");
+          } else {
+              alert(data.error || "Failed to cancel subscription.");
+          }
+      } catch (err: any) {
+          console.error("Unsubscribe error:", err);
+          alert("Failed to connect to the server: " + err.message);
+      }
+  };
+
   const handleOpenBalance = (aiAdvice?: string) => {
       const daysRemaining = getDaysRemaining();
       if (daysRemaining > 0 || userState.isSubscribed) { 
@@ -1004,7 +1138,20 @@ This is a demonstration of the result layout.
       }
   };
 
-  const handleAddToCart = (product: Product) => { setCart(prev => { const existing = prev.find(item => item.product.id === product.id); if (existing) { return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item); } return [...prev, { product, quantity: 1 }]; }); setShowToast(true); setTimeout(() => setShowToast(false), 2000); };
+  const handleAddToCart = (product: Product) => { 
+      setCart(prev => { 
+          const existing = prev.find(item => item.product.id === product.id); 
+          if (existing) { 
+              return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item); 
+          } 
+          return [...prev, { product, quantity: 1 }]; 
+      }); 
+      setShowToast(true); 
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = setTimeout(() => {
+          if (isMounted.current) setShowToast(false);
+      }, 2000);
+  };
   const handleRemoveFromCart = (productId: string) => { setCart(prev => prev.filter(item => item.product.id !== productId)); };
   
   const handleCartCheckout = (total: number) => {
@@ -1116,8 +1263,36 @@ This is a demonstration of the result layout.
   if (isAdminMode) {
       return (
           <div style={styles.appContainer}>
-               <div style={{padding: '20px', textAlign: 'center', borderBottom: `1px solid ${theme.darkGold}`}}>
-                    <h1 style={{color: theme.gold, fontFamily: 'Cinzel, serif'}}>Mystic Face Admin</h1>
+               <div style={{
+                    padding: '20px', 
+                    borderBottom: `1px solid ${theme.darkGold}`,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    maxWidth: '1200px',
+                    margin: '0 auto',
+                    width: '100%',
+                    boxSizing: 'border-box'
+               }}>
+                    <div style={{width: '120px'}} />{/* Spacer */}
+                    <h1 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2rem', margin: 0, textAlign: 'center'}}>Mystic Admin</h1>
+                    <button 
+                         onClick={() => { window.location.hash = ''; setIsAdminMode(false); }} 
+                         style={{
+                              ...styles.secondaryButton, 
+                              margin: 0,
+                              borderColor: theme.gold,
+                              color: theme.gold,
+                              padding: '8px 16px',
+                              fontSize: '0.9rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              cursor: 'pointer'
+                         }}
+                    >
+                        <i className="fas fa-arrow-left"></i> Back to Site
+                    </button>
                </div>
                <div style={styles.heroSection}>
                     <AdminPage t={t} />
@@ -1138,15 +1313,12 @@ This is a demonstration of the result layout.
             <div style={{width: '30px', height: '30px'}}>{BaguaSVG}</div>
             <span style={{color: theme.gold}}>{t.title}</span>
           </div>
-          <div className="nav-links">
+           <div className="nav-links">
              <span style={getNavLinkStyle('home')} onClick={() => { setCurrentPage('home'); setView('start'); }}>{t.home}</span>
              <span style={getNavLinkStyle('analysis')} onClick={() => { setCurrentPage('analysis'); setView('start'); }}>{t.navAnalysis}</span>
              <span style={getNavLinkStyle('pricing')} onClick={() => { setCurrentPage('pricing'); setView('start'); }}>{t.pricing}</span>
              <span style={getNavLinkStyle('shop')} onClick={() => { setCurrentPage('shop'); setView('start'); }}>{t.shop}</span>
              <span style={getNavLinkStyle('about')} onClick={() => { setCurrentPage('about'); setView('start'); }}>{t.about}</span>
-             <span style={getNavLinkStyle('history')} onClick={() => { setCurrentPage('history'); setView('start'); }}>
-                 <i className="fas fa-history" style={{marginRight: '5px'}}></i>{t.history}
-             </span>
              <div style={{position: 'relative', cursor: 'pointer', marginLeft: '10px', marginRight: '5px'}} onClick={() => { setCurrentPage('cart'); setView('start'); }}>
                  <i className="fas fa-shopping-cart" style={{color: theme.gold}}></i>
                  {cart.length > 0 && <span style={{position: 'absolute', top: '-8px', right: '-8px', background: '#c0392b', color: '#fff', borderRadius: '50%', width: '16px', height: '16px', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>{cart.reduce((a,c) => a + c.quantity, 0)}</span>}
@@ -1154,9 +1326,41 @@ This is a demonstration of the result layout.
              
              {/* LOGIN BUTTON / USER INFO */}
              {userState.isLoggedIn ? (
-                 <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '10px'}}>
-                     <span style={{color: theme.gold, fontSize: '0.8rem'}}>{userState.name || 'User'}</span>
-                     <i className="fas fa-sign-out-alt" style={{cursor: 'pointer', color: '#888'}} onClick={handleLogout} title={t.logout}></i>
+                 <div style={{display: 'flex', alignItems: 'center', gap: '5px', marginLeft: '10px'}}>
+                     <div 
+                         onClick={() => { setCurrentPage('history'); setView('start'); }}
+                         style={{
+                             display: 'flex', 
+                             alignItems: 'center', 
+                             gap: '8px', 
+                             cursor: 'pointer', 
+                             background: 'rgba(212, 175, 55, 0.12)', 
+                             border: `1px solid ${theme.darkGold}`, 
+                             borderRadius: '20px', 
+                             padding: '4px 12px',
+                             transition: 'background 0.3s'
+                         }}
+                         title="My Account: View ID, Cart, Orders, & Address Info"
+                     >
+                         <div style={{
+                             width: '22px', 
+                             height: '22px', 
+                             borderRadius: '50%', 
+                             background: theme.gold, 
+                             color: '#000', 
+                             display: 'flex', 
+                             alignItems: 'center', 
+                             justifyContent: 'center', 
+                             fontWeight: 'bold', 
+                             fontSize: '0.8rem'
+                         }}>
+                             {(userState.name || 'U')[0].toUpperCase()}
+                         </div>
+                         <span style={{color: theme.gold, fontSize: '0.82rem', fontWeight: '500'}}>
+                             {userState.name || 'Account'}
+                         </span>
+                     </div>
+                     <i className="fas fa-sign-out-alt" style={{cursor: 'pointer', color: '#999', marginLeft: '5px', padding: '5px'}} onClick={handleLogout} title={t.logout}></i>
                  </div>
              ) : (
                  <span style={{...styles.navLink, marginLeft: '10px', color: theme.gold}} onClick={() => setShowAuthModal(true)}>
@@ -1195,7 +1399,7 @@ This is a demonstration of the result layout.
 
         {currentPage === 'analysis' && (
              <div style={{...styles.heroSection, paddingTop: '1rem'}}>
-                {view === 'start' && <RenderStartView t={t} freeTrials={getDailyFreeRemaining()} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
+                {view === 'start' && <RenderStartView t={t} freeTrials={getDailyFreeRemaining()} isLoggedIn={userState.isLoggedIn} freeFaceRemaining={userState.freeFaceRemaining} freePalmRemaining={userState.freePalmRemaining} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
                 {view === 'selection' && <RenderSelectionView 
                     t={t} readingType={readingType} gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
                     uploadProgress={uploadProgress} userName={userName} onSetUserName={setUserName} onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
@@ -1243,6 +1447,18 @@ This is a demonstration of the result layout.
                     onToggleSpeech={toggleSpeech}
                     onBuyProduct={handleBuyProduct}
                     onOpenBalance={handleOpenBalance}
+                    userState={userState}
+                    onProfileUpdate={(updatedUser: any) => {
+                        setUserState(prev => ({
+                            ...prev,
+                            ...updatedUser
+                        }));
+                    }}
+                    onUnsubscribe={handleUnsubscribe}
+                    cart={cart}
+                    onRemoveFromCart={handleRemoveFromCart}
+                    onCartCheckout={() => handleCartCheckout(cart.reduce((total, c) => total + (c.product.numericPrice * c.quantity), 0))}
+                    onGoToShop={() => setCurrentPage('shop')}
                 />
             </div>
         )}
@@ -1253,10 +1469,33 @@ This is a demonstration of the result layout.
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('privacy'); setView('start');}}>{t.privacy}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('terms'); setView('start');}}>{t.terms}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('refund'); setView('start');}}>{t.refundTitle}</span>
-            <span style={{cursor: 'pointer', color: '#666', fontSize: '0.8rem'}} onClick={() => setShowSettings(true)}><i className="fas fa-cog"></i></span>
+            <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => { window.location.hash = '#admin'; setIsAdminMode(true); }}>
+                <i className="fas fa-user-shield" style={{marginRight: '5px'}}></i>Admin Portal
+            </span>
         </div>
         <div>&copy; {new Date().getFullYear()} {t.title}. {t.footerRight}</div>
       </footer>
+
+      {!cookieConsent && (
+          <div style={{
+              position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999,
+              maxWidth: '430px', width: '90%', padding: '20px',
+              background: 'rgba(5, 5, 17, 0.98)', border: `1px solid ${theme.gold}`,
+              borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)',
+              color: '#fff', fontSize: '0.85rem', lineHeight: '1.5'
+          }} className="fade-in">
+              <h4 style={{color: theme.gold, margin: '0 0 10px 0', fontFamily: 'Cinzel, serif', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem'}}>
+                  <i className="fas fa-cookie-bite"></i> Cookie Consent & Google Analytics
+              </h4>
+              <p style={{margin: '0 0 15px 0', color: '#ccc', fontSize: '0.8rem'}}>
+                  We use cookies and Google Analytics to analyze our site traffic and enhance your mystic personalized reading experience. By clicking "Accept All", you agree to our privacy standards.
+              </p>
+              <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
+                  <button onClick={handleDeclineCookies} style={{background: 'transparent', border: '1px solid #555', color: '#aaa', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem'}}>Decline</button>
+                  <button onClick={handleAcceptCookies} style={{background: theme.gold, border: `1px solid ${theme.gold}`, color: '#000', fontWeight: 'bold', padding: '6px 15px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem'}}>Accept All</button>
+              </div>
+          </div>
+      )}
     </div>
   );
 };
