@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: mystic-face
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: GEMINI_API_KEY
+        sync: false
+        description: "Your Google Gemini API Key for Face/Palmistry Analysis"
+      - key: MONGODB_URI
+        sync: false
+        description: "MongoDB connection string (optional - falls back to local JSON database if empty)"
+      - key: STRIPE_SECRET_KEY
+        sync: false
+        description: "Your Stripe Secret API Key (starts with sk_)"
+      - key: VITE_STRIPE_PUBLISHABLE_KEY
+        sync: false
+        description: "Your Stripe Publishable API Key (starts with pk_)"
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+        description: "Your PayPal Client ID"
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+        description: "Your PayPal Client Secret"
+      - key: PAYPAL_MODE
+        value: sandbox
+        description: "PayPal Mode: sandbox or production"

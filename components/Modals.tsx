@@ -346,6 +346,10 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
 
             const data = await response.json();
             if (response.ok && data.success) {
+                if (data.redirectUrl) {
+                    window.location.href = data.redirectUrl;
+                    return;
+                }
                 setSuccessState(true);
                 setTimeout(() => {
                     if (isMounted.current) {

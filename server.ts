@@ -5,6 +5,7 @@ import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import Stripe from 'stripe';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
 import { User, Order, History, Product, HomepageConfig } from './models.js';
 
@@ -441,9 +442,20 @@ async function startServer() {
             }
 
             if (targetProvider === 'Google') {
-                const apiKey = config?.googleKey || process.env.GEMINI_API_KEY;
-                if (!apiKey) {
-                    return res.status(400).json({ error: "Google API Key missing." });
+                let apiKey = config?.googleKey || process.env.GEMINI_API_KEY;
+                if (apiKey) apiKey = apiKey.trim();
+
+                const isPlaceholder = !apiKey || 
+                                      apiKey === "" || 
+                                      apiKey.includes("YOUR_") || 
+                                      apiKey.includes("placeholder") || 
+                                      apiKey === "undefined" || 
+                                      apiKey.length < 15;
+
+                if (isPlaceholder) {
+                    return res.status(400).json({ 
+                        error: "Google Gemini API Key is missing or invalid. Please configure a valid API Key (starts with 'AIzaSy') in your Server Environment Variables or the Settings panel." 
+                    });
                 }
 
                 const ai = new GoogleGenAI({ apiKey });
@@ -618,26 +630,151 @@ async function startServer() {
     // 9. Payment Integration endpoint for PayPal & Credit Card
     app.post('/api/payments/pay', async (req, res) => {
         const { userId, email, planId, planTitle, amount, method, shippingAddress, cardDetails } = req.body;
-        const orderId = `PAY-${Date.now().toString().slice(-6)}`;
+        let orderId = `PAY-${Date.now().toString().slice(-6)}`;
+        let status = 'paid';
         
         try {
-            // Create order
+            // --- STRIPE CREDIT CARD PROCESSING ---
+            if (method === 'credit-card') {
+                const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+                if (stripeSecretKey && stripeSecretKey.startsWith('sk_')) {
+                    try {
+                        const stripe = new Stripe(stripeSecretKey);
+
+                        // Parse MM/YY Expiry
+                        const expParts = (cardDetails?.expiry || '12/29').split('/');
+                        const expMonth = parseInt(expParts[0]) || 12;
+                        const expYear = parseInt(expParts[1] ? `20${expParts[1]}` : '2029') || 2029;
+
+                        // Create PaymentMethod securely
+                        const paymentMethod = await stripe.paymentMethods.create({
+                            type: 'card',
+                            card: {
+                                number: (cardDetails?.cardNumber || '').replace(/\s/g, ''),
+                                exp_month: expMonth,
+                                exp_year: expYear,
+                                cvc: cardDetails?.cvc || '123',
+                            },
+                        });
+
+                        // Create and confirm PaymentIntent (single-step transaction)
+                        const paymentIntent = await stripe.paymentIntents.create({
+                            amount: Math.round(parseFloat(amount) * 100),
+                            currency: 'usd',
+                            payment_method: paymentMethod.id,
+                            confirm: true,
+                            automatic_payment_methods: {
+                                enabled: true,
+                                allow_redirects: 'never'
+                            },
+                            metadata: {
+                                userId: userId || 'guest',
+                                email: email || 'guest@mysticface.com',
+                                planId: planId || '',
+                                planTitle: planTitle || ''
+                            }
+                        });
+
+                        orderId = paymentIntent.id;
+                        status = paymentIntent.status === 'succeeded' ? 'paid' : 'pending';
+                    } catch (stripeErr: any) {
+                        console.error('[Stripe Payment Error]:', stripeErr);
+                        return res.status(400).json({ error: `Credit Card processing error: ${stripeErr.message}` });
+                    }
+                } else {
+                    console.warn("[Stripe Warning] STRIPE_SECRET_KEY is empty or invalid. Running in sandbox demo mode.");
+                }
+            }
+
+            // --- PAYPAL TRANSACTION INITIALISATION ---
+            if (method === 'paypal') {
+                const paypalClientId = process.env.PAYPAL_CLIENT_ID;
+                const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET;
+                if (paypalClientId && paypalClientSecret) {
+                    try {
+                        const isSandbox = process.env.PAYPAL_MODE !== 'production';
+                        const tokenUrl = isSandbox ? 'https://api-m.sandbox.paypal.com/v1/oauth2/token' : 'https://api-m.paypal.com/v1/oauth2/token';
+                        const auth = Buffer.from(`${paypalClientId}:${paypalClientSecret}`).toString('base64');
+                        
+                        // Get Access Token
+                        const tokenResponse = await fetch(tokenUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Basic ${auth}`,
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: 'grant_type=client_credentials'
+                        });
+
+                        if (!tokenResponse.ok) {
+                            throw new Error('Failed to retrieve PayPal authentication token');
+                        }
+                        const tokenData = await tokenResponse.json() as any;
+                        const accessToken = tokenData.access_token;
+
+                        const paypalOrderUrl = isSandbox ? 'https://api-m.sandbox.paypal.com/v2/checkout/orders' : 'https://api-m.paypal.com/v2/checkout/orders';
+                        
+                        const returnUrl = `${req.protocol}://${req.get('host')}/api/payments/paypal/success?userId=${userId || 'guest'}&planId=${planId || ''}&amount=${amount}&title=${encodeURIComponent(planTitle || planId || '')}&email=${encodeURIComponent(email || '')}&shippingAddress=${encodeURIComponent(shippingAddress || '')}`;
+                        const cancelUrl = `${req.protocol}://${req.get('host')}/pricing`;
+
+                        const paypalResponse = await fetch(paypalOrderUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                intent: 'CAPTURE',
+                                purchase_units: [{
+                                    amount: {
+                                        currency_code: 'USD',
+                                        value: parseFloat(amount).toFixed(2)
+                                    },
+                                    description: planTitle || planId
+                                }],
+                                application_context: {
+                                    return_url: returnUrl,
+                                    cancel_url: cancelUrl
+                                }
+                            })
+                        });
+
+                        if (!paypalResponse.ok) {
+                            const paypalErr = await paypalResponse.json() as any;
+                            throw new Error(paypalErr.message || 'PayPal order instantiation failed');
+                        }
+
+                        const paypalOrder = await paypalResponse.json() as any;
+                        const approveLink = paypalOrder.links.find((l: any) => l.rel === 'approve');
+                        if (approveLink) {
+                            return res.json({ success: true, redirectUrl: approveLink.href, orderId: paypalOrder.id });
+                        }
+                    } catch (paypalErr: any) {
+                        console.error('[PayPal Payment Error]:', paypalErr);
+                        return res.status(400).json({ error: `PayPal Checkout error: ${paypalErr.message}` });
+                    }
+                } else {
+                    console.warn("[PayPal Warning] PayPal credentials are empty. Running in sandbox demo mode.");
+                }
+            }
+
+            // Create local/Mongo order representation
             await DbHelper.createOrder({
                 orderId,
                 userId: userId || 'guest',
                 email: email || 'guest@mysticface.com',
                 items: planTitle || planId,
                 total: parseFloat(amount),
-                status: 'paid',
+                status,
                 customerName: cardDetails?.name || `${cardDetails?.firstName || ''} ${cardDetails?.lastName || ''}`.trim() || 'Customer',
                 shippingAddress: shippingAddress || 'Digital Product',
                 paymentMethod: method, // 'paypal' or 'credit-card'
                 phone: ''
             });
 
-            // If it's subscription, update the user subscription status
-            const isSubPlan = planId.includes('month') || planId.includes('year') || planId === 'sub' || planId.includes('pass') || planId.includes('plan');
-            if (isSubPlan && userId) {
+            // If subscription, update user's premium privileges
+            const isSubPlan = planId && (planId.includes('month') || planId.includes('year') || planId === 'sub' || planId.includes('pass') || planId.includes('plan'));
+            if (isSubPlan && userId && userId !== 'guest') {
                 let monthsToAdd = 1;
                 if (planId.includes('year')) monthsToAdd = 12;
                 const expireDate = new Date();
@@ -653,7 +790,93 @@ async function startServer() {
             
             res.json({ success: true, orderId });
         } catch (err: any) {
+            console.error('[Payment Handler Failure]:', err);
             res.status(500).json({ error: err.message });
+        }
+    });
+
+    // PayPal Success callback & Capture
+    app.get('/api/payments/paypal/success', async (req, res) => {
+        const { token, userId, planId, amount, title, email, shippingAddress } = req.query as any;
+        
+        try {
+            const paypalClientId = process.env.PAYPAL_CLIENT_ID;
+            const paypalClientSecret = process.env.PAYPAL_CLIENT_SECRET;
+            
+            if (paypalClientId && paypalClientSecret && token) {
+                // Get Token
+                const isSandbox = process.env.PAYPAL_MODE !== 'production';
+                const tokenUrl = isSandbox ? 'https://api-m.sandbox.paypal.com/v1/oauth2/token' : 'https://api-m.paypal.com/v1/oauth2/token';
+                const auth = Buffer.from(`${paypalClientId}:${paypalClientSecret}`).toString('base64');
+                const tokenResponse = await fetch(tokenUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Basic ${auth}`,
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: 'grant_type=client_credentials'
+                });
+
+                if (tokenResponse.ok) {
+                    const tokenData = await tokenResponse.json() as any;
+                    const accessToken = tokenData.access_token;
+
+                    const captureUrl = isSandbox 
+                        ? `https://api-m.sandbox.paypal.com/v2/checkout/orders/${token}/capture`
+                        : `https://api-m.paypal.com/v2/checkout/orders/${token}/capture`;
+
+                    const captureResponse = await fetch(captureUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!captureResponse.ok) {
+                        throw new Error('PayPal Capture Order transaction failed');
+                    }
+                }
+            }
+
+            const decodedTitle = decodeURIComponent(title || 'Item');
+            const orderId = token || `PAY-${Date.now().toString().slice(-6)}`;
+
+            // Create active order
+            await DbHelper.createOrder({
+                orderId,
+                userId: userId || 'guest',
+                email: email || 'guest@mysticface.com',
+                items: decodedTitle,
+                total: parseFloat(amount || '0'),
+                status: 'paid',
+                customerName: 'PayPal Customer',
+                shippingAddress: shippingAddress || 'Digital Product',
+                paymentMethod: 'paypal',
+                phone: ''
+            });
+
+            // Assign premium subscription if applicable
+            const isSubPlan = planId && (planId.includes('month') || planId.includes('year') || planId === 'sub' || planId.includes('pass') || planId.includes('plan'));
+            if (isSubPlan && userId && userId !== 'guest') {
+                let monthsToAdd = 1;
+                if (planId.includes('year')) monthsToAdd = 12;
+                const expireDate = new Date();
+                expireDate.setMonth(expireDate.getMonth() + monthsToAdd);
+
+                await DbHelper.updateUser(userId, {
+                    isSubscribed: true,
+                    subscriptionPlan: planId,
+                    subscribedAt: new Date().toISOString(),
+                    subscriptionExpiresAt: expireDate.toISOString()
+                });
+            }
+
+            // Redirect back to frontend success landing
+            res.redirect(`/?payment=success&orderId=${orderId}`);
+        } catch (err: any) {
+            console.error('[PayPal Success Capture Error]:', err);
+            res.redirect(`/?payment=failed&error=${encodeURIComponent(err.message)}`);
         }
     });
 
@@ -740,10 +963,20 @@ async function startServer() {
     app.post('/api/admin/generate-text', async (req, res) => {
         try {
             const { type, context } = req.body;
-            const apiKey = process.env.GEMINI_API_KEY;
+            let apiKey = process.env.GEMINI_API_KEY;
+            if (apiKey) apiKey = apiKey.trim();
             
-            if (!apiKey) {
-                return res.status(400).json({ error: "Gemini API key is not configured on the server." });
+            const isPlaceholder = !apiKey || 
+                                  apiKey === "" || 
+                                  apiKey.includes("YOUR_") || 
+                                  apiKey.includes("placeholder") || 
+                                  apiKey === "undefined" || 
+                                  apiKey.length < 15;
+
+            if (isPlaceholder) {
+                return res.status(400).json({ 
+                    error: "Gemini API key is not configured on the server. Please configure a valid API Key (starts with 'AIzaSy') in your Server Environment Variables." 
+                });
             }
 
             const ai = new GoogleGenAI({ apiKey });
