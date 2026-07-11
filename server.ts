@@ -1093,7 +1093,7 @@ Describe the mystical depth of this section, inviting readers to explore their d
         // In production, serve static files from dist
         const distPath = path.resolve(process.cwd(), 'dist');
         app.use(express.static(distPath));
-        app.get('*', (req, res) => {
+        app.get('*all', (req, res) => {
             res.sendFile(path.resolve(distPath, 'index.html'));
         });
     }
