@@ -34,6 +34,19 @@ const generateProducts = (): Product[] => {
           zodiac: z,
           element: element
        });
+
+       products.push({
+          id: `neck_${z}`,
+          nameKey: 'productNameNecklace',
+          defaultName: `${z} Celestial Silver Necklace`,
+          price: "$129.99",
+          numericPrice: 129.99,
+          imagePrompt: `elegant sterling silver necklace featuring meticulously carved ${z} zodiac emblem, glowing under ethereal celestial starlight, floating in cosmic fog, spiritual protection jewelry, 8k product shot`,
+          descKey: 'productDescNecklace',
+          category: 'necklace',
+          zodiac: z,
+          element: element
+       });
     });
 
     // 2. Western Zodiac Products

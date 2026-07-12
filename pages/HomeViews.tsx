@@ -39,129 +39,167 @@ export const LoadingSpinner = ({ t, progress, message }: { t: any, progress?: nu
   </div>
 );
 
-export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, freeFaceRemaining, freePalmRemaining }: { t: any, freeTrials: number, onStart: (type: 'face' | 'palm') => void, isLoggedIn?: boolean, freeFaceRemaining?: number, freePalmRemaining?: number }) => {
+export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, freeFaceRemaining, freePalmRemaining, daysRemaining, language }: { t: any, freeTrials: number, onStart: (type: 'face' | 'palm') => void, isLoggedIn?: boolean, freeFaceRemaining?: number, freePalmRemaining?: number, daysRemaining?: number, language?: string }) => {
     const boxSize = '200px'; 
     const imageBoxStyle = {
         width: boxSize, 
         height: boxSize, 
-        border: `1px solid ${theme.gold}`,
-        borderRadius: '4px',
-        background: 'rgba(0,0,0,0.3)',
+        border: `1.5px solid ${theme.gold}`,
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(212,175,55,0.05) 0%, rgba(11,8,6,0.85) 100%)',
         marginBottom: '20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '10px',
         boxSizing: 'border-box' as const,
-        position: 'relative' as const
+        position: 'relative' as const,
+        boxShadow: '0 0 20px rgba(212, 175, 55, 0.15), inset 0 0 15px rgba(212, 175, 55, 0.05)',
+        overflow: 'hidden' as const
     };
 
     return (
-    <div style={{...styles.glassPanel, border: `1px solid ${theme.darkGold}`, padding: '3.5rem 2rem', boxShadow: `0px 10px 40px rgba(0, 0, 0, 0.6), inset 0px 1px 0px rgba(255, 255, 255, 0.1)`, borderRadius: '12px'}} className="glass-panel-mobile">
-      <div style={{...styles.baguaContainer, margin: '0 auto 2rem', filter: 'drop-shadow(0 0 15px rgba(212, 175, 55, 0.6))', width: '90px', height: '90px'}}>
-         {BaguaSVG}
-      </div>
-      <h1 style={{fontSize: '2.8rem', fontWeight: 700, marginBottom: '1.2rem', color: theme.gold, fontFamily: 'Cinzel, Georgia, serif', letterSpacing: '2px', textShadow: '0 2px 10px rgba(0,0,0,0.8)'}}>{t.heroTitle}</h1>
-      <p style={{color: '#dfdfd5', marginBottom: '2.5rem', fontSize: '1.15rem', maxWidth: '700px', margin: '0 auto 2.5rem auto', lineHeight: '1.6', letterSpacing: '0.5px'}}>{t.heroDesc}</p>
+    <div style={{
+      ...styles.glassPanel, 
+      border: `2px solid ${theme.gold}`, 
+      padding: '4rem 2rem', 
+      boxShadow: `0px 15px 50px rgba(0, 0, 0, 0.8), inset 0px 0px 30px rgba(212, 175, 55, 0.05)`, 
+      borderRadius: '16px',
+      position: 'relative',
+      overflow: 'hidden',
+      background: 'linear-gradient(145deg, #0d0908 0%, #060404 100%)'
+    }} className="glass-panel-mobile">
       
-      <div className="home-cards-container" style={{display: 'flex', gap: '2.50rem', justifyContent: 'center', flexWrap: 'wrap', width: '100%'}}>
+      {/* Decorative Traditional Border Patterns */}
+      <div style={{ position: 'absolute', top: '10px', left: '10px', width: '25px', height: '25px', borderLeft: `2px solid ${theme.gold}`, borderTop: `2px solid ${theme.gold}`, opacity: 0.8 }} />
+      <div style={{ position: 'absolute', top: '10px', right: '10px', width: '25px', height: '25px', borderRight: `2px solid ${theme.gold}`, borderTop: `2px solid ${theme.gold}`, opacity: 0.8 }} />
+      <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '25px', height: '25px', borderLeft: `2px solid ${theme.gold}`, borderBottom: `2px solid ${theme.gold}`, opacity: 0.8 }} />
+      <div style={{ position: 'absolute', bottom: '10px', right: '10px', width: '25px', height: '25px', borderRight: `2px solid ${theme.gold}`, borderBottom: `2px solid ${theme.gold}`, opacity: 0.8 }} />
+
+      {/* Rotating Background Bagua Watermark */}
+      <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '500px',
+          height: '500px',
+          opacity: 0.02,
+          pointerEvents: 'none',
+          animation: 'spin 120s linear infinite',
+          zIndex: 0,
+          color: theme.gold
+      }}>
+          {BaguaSVG}
+      </div>
+
+      {/* Floating Taoist Symbols in Background */}
+      <div style={{ position: 'absolute', top: '20%', left: '8%', fontSize: '1.5rem', color: 'rgba(212,175,55,0.06)', fontFamily: 'SimSun, serif', userSelect: 'none' }}>乾</div>
+      <div style={{ position: 'absolute', top: '20%', right: '8%', fontSize: '1.5rem', color: 'rgba(212,175,55,0.06)', fontFamily: 'SimSun, serif', userSelect: 'none' }}>坤</div>
+      <div style={{ position: 'absolute', bottom: '20%', left: '8%', fontSize: '1.5rem', color: 'rgba(212,175,55,0.06)', fontFamily: 'SimSun, serif', userSelect: 'none' }}>巽</div>
+      <div style={{ position: 'absolute', bottom: '20%', right: '8%', fontSize: '1.5rem', color: 'rgba(212,175,55,0.06)', fontFamily: 'SimSun, serif', userSelect: 'none' }}>震</div>
+
+      <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{...styles.baguaContainer, margin: '0 auto 1.5rem', filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.7))', width: '95px', height: '95px', animation: 'spin 20s linear infinite'}}>
+             {BaguaSVG}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', alignItems: 'center', marginBottom: '10px', color: theme.gold }}>
+              <span style={{ fontSize: '1.2rem' }}>☯</span>
+              <span style={{ fontSize: '0.8rem', letterSpacing: '3px', textTransform: 'uppercase', fontFamily: 'Cinzel, serif' }}>Celestial Destiny Chamber</span>
+              <span style={{ fontSize: '1.2rem' }}>☯</span>
+          </div>
+          <h1 style={{fontSize: '2.8rem', fontWeight: 700, marginBottom: '1.2rem', color: theme.gold, fontFamily: 'Cinzel, Georgia, SimSun, serif', letterSpacing: '2px', textShadow: '0 2px 10px rgba(0,0,0,0.8)'}}>{t.heroTitle}</h1>
+          <p style={{color: '#dfdfd5', marginBottom: '2.5rem', fontSize: '1.15rem', maxWidth: '700px', margin: '0 auto 2.5rem auto', lineHeight: '1.6', letterSpacing: '0.5px'}}>{t.heroDesc}</p>
           
-          {/* FACE READING CARD */}
-          <div style={{
-              flex: '1 1 290px', 
-              maxWidth: '330px',
-              background: 'linear-gradient(135deg, rgba(20, 15, 10, 0.8) 0%, rgba(5, 5, 15, 0.95) 100%)', 
-              border: `1.5px solid ${theme.darkGold}`, 
-              borderRadius: '10px', 
-              padding: '35px 25px', 
-              cursor: 'pointer',
-              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
-          }} 
-          onClick={() => onStart('face')}
-          onMouseOver={(e) => {
-              e.currentTarget.style.borderColor = theme.gold;
-              e.currentTarget.style.transform = 'translateY(-8px)';
-              e.currentTarget.style.boxShadow = `0 12px 40px rgba(212, 175, 55, 0.25)`;
-          }}
-          onMouseOut={(e) => {
-              e.currentTarget.style.borderColor = theme.darkGold;
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)';
-          }}
-          >
-              <div style={imageBoxStyle}>
-                  <FaceMapSVG t={t} />
+          <div className="home-cards-container" style={{display: 'flex', gap: '2.50rem', justifyContent: 'center', flexWrap: 'wrap', width: '100%', position: 'relative', zIndex: 2}}>
+              
+              {/* FACE READING CARD */}
+              <div style={{
+                  flex: '1 1 290px', 
+                  maxWidth: '330px',
+                  background: 'linear-gradient(135deg, rgba(20, 15, 10, 0.95) 0%, rgba(6, 4, 12, 0.98) 100%)', 
+                  border: `1.5px solid ${theme.darkGold}`, 
+                  borderRadius: '12px', 
+                  padding: '35px 25px', 
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.7), inset 0 0 15px rgba(212,175,55,0.02)'
+              }} 
+              onClick={() => onStart('face')}
+              onMouseOver={(e) => {
+                  e.currentTarget.style.borderColor = theme.gold;
+                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.boxShadow = `0 15px 45px rgba(212, 175, 55, 0.35)`;
+              }}
+              onMouseOut={(e) => {
+                  e.currentTarget.style.borderColor = theme.darkGold;
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.7)';
+              }}
+              >
+                  <div style={imageBoxStyle}>
+                      <FaceMapSVG t={t} />
+                  </div>
+                  <h3 style={{color: theme.gold, fontSize: '1.45rem', fontFamily: 'Cinzel, Georgia, SimSun, serif', letterSpacing: '1px', margin: '0 0 15px 0', textTransform: 'uppercase'}}>{t.startBtn}</h3>
+                  <button style={{...styles.button, width: '100%', marginTop: 'auto', letterSpacing: '1px', fontWeight: 'bold', border: `1px solid ${theme.gold}`}}>{t.scanBtn}</button>
               </div>
-              <h3 style={{color: theme.gold, fontSize: '1.45rem', fontFamily: 'Cinzel, Georgia, serif', letterSpacing: '1px', margin: '0 0 15px 0', textTransform: 'uppercase'}}>{t.startBtn}</h3>
-              <button style={{...styles.button, width: '100%', marginTop: 'auto', letterSpacing: '1px', fontWeight: 'bold'}}>{t.scanBtn}</button>
-          </div>
-
-          {/* PALM READING CARD */}
-          <div style={{
-              flex: '1 1 290px', 
-              maxWidth: '330px',
-              background: 'linear-gradient(135deg, rgba(20, 15, 10, 0.8) 0%, rgba(5, 5, 15, 0.95) 100%)', 
-              border: `1.5px solid ${theme.darkGold}`, 
-              borderRadius: '10px', 
-              padding: '35px 25px', 
-              cursor: 'pointer',
-              transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
-          }}
-          onClick={() => onStart('palm')}
-          onMouseOver={(e) => {
-              e.currentTarget.style.borderColor = theme.gold;
-              e.currentTarget.style.transform = 'translateY(-8px)';
-              e.currentTarget.style.boxShadow = `0 12px 40px rgba(212, 175, 55, 0.25)`;
-          }}
-          onMouseOut={(e) => {
-              e.currentTarget.style.borderColor = theme.darkGold;
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.5)';
-          }}
-          >
-              <div style={imageBoxStyle}>
-                  <i className="fas fa-hand-sparkles" style={{fontSize: '6rem', color: theme.gold, textShadow: '0 0 15px rgba(212,175,55,0.6)', zIndex: 2}}></i>
-                  {/* Mystical Pulse Animation */}
-                  <div style={{position: 'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width: '120px', height:'120px', borderRadius:'50%', border:`2px solid ${theme.gold}`, animation: 'mysticalPulse 3s infinite', opacity: 0.5}}></div>
+    
+              {/* PALM READING CARD */}
+              <div style={{
+                  flex: '1 1 290px', 
+                  maxWidth: '330px',
+                  background: 'linear-gradient(135deg, rgba(20, 15, 10, 0.95) 0%, rgba(6, 4, 12, 0.98) 100%)', 
+                  border: `1.5px solid ${theme.darkGold}`, 
+                  borderRadius: '12px', 
+                  padding: '35px 25px', 
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.7), inset 0 0 15px rgba(212,175,55,0.02)'
+              }}
+              onClick={() => onStart('palm')}
+              onMouseOver={(e) => {
+                  e.currentTarget.style.borderColor = theme.gold;
+                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.boxShadow = `0 15px 45px rgba(212, 175, 55, 0.35)`;
+              }}
+              onMouseOut={(e) => {
+                  e.currentTarget.style.borderColor = theme.darkGold;
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.7)';
+              }}
+              >
+                  <div style={imageBoxStyle}>
+                      <i className="fas fa-hand-sparkles" style={{fontSize: '6.5rem', color: theme.gold, textShadow: '0 0 20px rgba(212,175,55,0.7)', zIndex: 2}}></i>
+                      {/* Mystical Pulse Animation */}
+                      <div style={{position: 'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width: '130px', height:'130px', borderRadius:'50%', border:`2px solid ${theme.gold}`, animation: 'mysticalPulse 3s infinite', opacity: 0.6}}></div>
+                  </div>
+                  <h3 style={{color: theme.gold, fontSize: '1.45rem', fontFamily: 'Cinzel, Georgia, SimSun, serif', letterSpacing: '1px', margin: '0 0 15px 0', textTransform: 'uppercase'}}>{t.palmBtn}</h3>
+                  <button style={{...styles.button, width: '100%', marginTop: 'auto', letterSpacing: '1px', fontWeight: 'bold', border: `1px solid ${theme.gold}`}}>{t.scanPalmBtn}</button>
               </div>
-              <h3 style={{color: theme.gold, fontSize: '1.45rem', fontFamily: 'Cinzel, Georgia, serif', letterSpacing: '1px', margin: '0 0 15px 0', textTransform: 'uppercase'}}>{t.palmBtn}</h3>
-              <button style={{...styles.button, width: '100%', marginTop: 'auto', letterSpacing: '1px', fontWeight: 'bold'}}>{t.scanPalmBtn}</button>
+    
           </div>
-
       </div>
 
       <div style={{marginTop: '35px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center'}}>
-          {isLoggedIn ? (
-              <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', marginTop: '10px'}}>
-                  <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.08)', padding: '8px 22px', borderRadius: '25px', border: `1px solid ${theme.darkGold}`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
-                      <i className="fas fa-smile" style={{marginRight: '6px', color: theme.gold}}></i> {t.freeFaceRemainingText || "Free Welcome Face Analyses"}: <span style={{color: '#fff', fontSize: '1.2rem'}}>{freeFaceRemaining !== undefined ? freeFaceRemaining : 3}</span>
-                  </div>
-                  <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.08)', padding: '8px 22px', borderRadius: '25px', border: `1px solid ${theme.darkGold}`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
-                      <i className="fas fa-hand-paper" style={{marginRight: '6px', color: theme.gold}}></i> {t.freePalmRemainingText || "Free Welcome Palm Analyses"}: <span style={{color: '#fff', fontSize: '1.2rem'}}>{freePalmRemaining !== undefined ? freePalmRemaining : 3}</span>
-                  </div>
+          <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', marginTop: '10px'}}>
+              <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.08)', padding: '8px 22px', borderRadius: '25px', border: `1px solid ${theme.darkGold}`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
+                  <i className="fas fa-calendar-alt" style={{marginRight: '8px', color: theme.gold}}></i>
+                  {t.freeTrialsHint ? t.freeTrialsHint.replace('{count}', (daysRemaining !== undefined ? daysRemaining : 3).toString()) : `免费试用期 (剩余: ${daysRemaining !== undefined ? daysRemaining : 3}天)`}
               </div>
-          ) : (
-              <>
-                  <div style={{fontSize: '0.85rem', color: '#aaa', letterSpacing: '0.5px'}}>
-                      {t.freeTrialsHint.replace('{count}', freeTrials.toString())}
-                  </div>
-                  {/* Daily Limit Display */}
-                  <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.08)', padding: '6px 20px', borderRadius: '25px', border: `1px solid ${theme.darkGold}`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
-                      <i className="fas fa-bolt" style={{marginRight: '6px'}}></i> {t.dailyFreeRemaining.replace('{count}', '3')}
-                  </div>
-                  <div style={{fontSize: '0.82rem', color: '#888', marginTop: '5px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px'}}>
-                      <i className="fas fa-gift" style={{color: theme.gold}}></i> Register a new account to unlock 3 free Face and 3 free Palm data analyses instantly!
-                  </div>
-              </>
-          )}
+              <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(212,175,55,0.08)', padding: '8px 22px', borderRadius: '25px', border: `1px solid ${theme.darkGold}`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
+                  <i className="fas fa-magic" style={{marginRight: '8px', color: theme.gold}}></i>
+                  {language === 'zh' ? `免费测试剩余: ${freeTrials}/10次` : language === 'zht' ? `免費測試剩餘: ${freeTrials}/10次` : `Free readings remaining: ${freeTrials}/10`}
+              </div>
+          </div>
+          <div style={{fontSize: '0.8rem', color: '#888', marginTop: '5px', fontStyle: 'italic', textAlign: 'center'}}>
+              {language === 'zh' ? "☯ 全站用户享有自首次使用起3天免费试用，总计最多可进行10次测试 ☯" : language === 'zht' ? "☯ 全站用戶享有自首次使用起3天免費試用，總計最多可進行10次測試 ☯" : "☯ All users enjoy a 3-day free trial from first use, up to 10 total readings across the site ☯"}
+          </div>
       </div>
     </div>
   );
@@ -311,7 +349,7 @@ export const RenderSelectionView = ({ t, readingType, gender, dobYear, dobMonth,
     );
 };
 
-export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onBuyProduct, onOpenBalance, userState, onProfileUpdate, onUnsubscribe, cart, onRemoveFromCart, onCartCheckout, onGoToShop }: any) => {
+export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onBuyProduct, onOpenBalance, userState, onProfileUpdate, onUnsubscribe, cart, onRemoveFromCart, onCartCheckout, onGoToShop, onViewProduct }: any) => {
     // Local state to manage showing detail view inside history tab
     const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
     const [subTab, setSubTab] = useState<'profile' | 'orders' | 'readings'>('profile');
@@ -444,6 +482,7 @@ export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaki
                         onAnalyzeAnother={() => setSelectedRecord(null)}
                         onBuyProduct={onBuyProduct}
                         onOpenBalance={onOpenBalance}
+                        onViewProduct={onViewProduct}
                     />
                 </div>
             </div>
@@ -958,20 +997,42 @@ export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCa
     );
 };
 
-export const RenderResultView = ({ t, readingType, birthDate, gender, calculatedElements, resultText, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onAnalyzeAnother, onBuyProduct, onOpenBalance }: any) => {
+export const RenderResultView = ({ t, readingType, birthDate, gender, calculatedElements, resultText, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onAnalyzeAnother, onBuyProduct, onOpenBalance, onViewProduct }: any) => {
     const age = calculateAge(birthDate);
     const zodiac = getChineseZodiac(birthDate);
     const starSign = getWesternZodiac(birthDate);
     const zodiacName = zodiac ? (t[`zodiac${zodiac}`] || zodiac) : "";
     const starSignName = starSign ? (t[`star${starSign}`] || starSign) : "";
-    const zodiacImg = zodiac ? `https://image.pollinations.ai/prompt/${encodeURIComponent(`mystical golden chinese zodiac ${zodiac} statue dark background`)}?width=300&height=300&nologo=true` : "";
-    const starSignImg = starSign ? `https://image.pollinations.ai/prompt/${encodeURIComponent(`mystical zodiac sign ${starSign} astrology symbol golden`)}?width=300&height=300&nologo=true` : "";
+    
+    // Premium artistic, mystical, and high-fantasy image prompts for Zodiac and Constellations
+    const zodiacImg = zodiac ? `https://image.pollinations.ai/prompt/${encodeURIComponent(`exquisite glowing golden oriental zodiac ${zodiac} animal spirit, ancient Chinese ink wash watercolor painting style with floating sparkles, deep cosmic starry night background, celestial and metaphysical vibe, fantasy illustration`)}?width=300&height=300&nologo=true` : "";
+    const starSignImg = starSign ? `https://image.pollinations.ai/prompt/${encodeURIComponent(`celestial western constellation sign ${starSign} spirit guardian, glowing stardust nebula, detailed sacred geometry background, high fantasy astrology art, vibrant gold and deep indigo colors`)}?width=300&height=300&nologo=true` : "";
     const missingElement = calculatedElements?.missingElement || 'Metal';
-    const recommendedProducts = SHOP_PRODUCTS.slice(0, 3); 
+    
+    // Personalized recommended products that match zodiac, star sign, or missing element
+    const recommendedProducts = React.useMemo(() => {
+        let matched = SHOP_PRODUCTS.filter(p => p.zodiac === zodiac || p.zodiac === starSign || p.element === missingElement);
+        if (matched.length === 0) {
+            matched = SHOP_PRODUCTS;
+        }
+        const selected: any[] = [];
+        const categories = ['bracelet', 'pendant', 'necklace', 'amulet'];
+        for (const cat of categories) {
+            const found = matched.find(p => p.category === cat && !selected.some(s => s.id === p.id));
+            if (found) selected.push(found);
+            if (selected.length >= 3) break;
+        }
+        while (selected.length < 3 && matched.length > 0) {
+            const found = matched.find(p => !selected.some(s => s.id === p.id));
+            if (!found) break;
+            selected.push(found);
+        }
+        return selected.slice(0, 3);
+    }, [zodiac, starSign, missingElement]);
 
     const formatMarkdown = (text: string) => {
-        return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                   .replace(/## (.*)/g, '<h3 style="color:#8a6e2f;border-bottom:1px solid #d4af37;padding-bottom:5px;margin-top:20px;font-family:Cinzel, serif;">$1</h3>')
+        return text.replace(/\*\*(.*?)\*\*/g, '<strong style="color: #FFFdd0; text-shadow: 0 0 8px rgba(255, 221, 100, 0.4); font-weight: bold;">$1</strong>')
+                   .replace(/## (.*)/g, '<h3 style="color:#D4AF37;border-bottom:1.5px solid rgba(212, 175, 55, 0.5);padding-bottom:6px;margin-top:28px;font-family:Cinzel, Georgia, SimSun, serif;text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);letter-spacing: 1px;">$1</h3>')
                    .replace(/\n/g, '<br/>');
     };
 
@@ -1015,31 +1076,78 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
     }
 
     return (
-        <div style={{width: '95%', maxWidth: '800px', margin: '0 auto', paddingBottom: '3rem'}}>
-            <div style={{background: 'rgba(0,0,0,0.6)', padding: '15px', borderRadius: '8px', border: `1px solid ${theme.gold}`, marginBottom: '20px', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '10px'}}>
-                <div style={{textAlign: 'center'}}>
-                    <div style={{color: '#888', fontSize: '0.8rem'}}>{t.ageLabel}</div>
-                    <div style={{fontSize: '1.2rem', color: theme.gold}}>{age}</div>
+        <div style={{
+            width: '95%', 
+            maxWidth: '820px', 
+            margin: '0 auto', 
+            paddingBottom: '3rem',
+            position: 'relative'
+        }}>
+            
+            {/* Masterfully Polished Header Badge */}
+            <div style={{
+                background: 'linear-gradient(135deg, rgba(15, 10, 25, 0.9) 0%, rgba(5, 3, 10, 0.95) 100%)', 
+                padding: '20px', 
+                borderRadius: '12px', 
+                border: `2px solid ${theme.gold}`, 
+                marginBottom: '25px', 
+                display: 'flex', 
+                justifyContent: 'space-around', 
+                flexWrap: 'wrap', 
+                gap: '15px',
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(212, 175, 55, 0.1)',
+                position: 'relative',
+                overflow: 'hidden'
+            }}>
+                {/* Micro corner decorations */}
+                <div style={{ position: 'absolute', top: '5px', left: '5px', width: '12px', height: '12px', borderLeft: `1px solid ${theme.gold}`, borderTop: `1px solid ${theme.gold}`, opacity: 0.7 }} />
+                <div style={{ position: 'absolute', top: '5px', right: '5px', width: '12px', height: '12px', borderRight: `1px solid ${theme.gold}`, borderTop: `1px solid ${theme.gold}`, opacity: 0.7 }} />
+                <div style={{ position: 'absolute', bottom: '5px', left: '5px', width: '12px', height: '12px', borderLeft: `1px solid ${theme.gold}`, borderBottom: `1px solid ${theme.gold}`, opacity: 0.7 }} />
+                <div style={{ position: 'absolute', bottom: '5px', right: '5px', width: '12px', height: '12px', borderRight: `1px solid ${theme.gold}`, borderBottom: `1px solid ${theme.gold}`, opacity: 0.7 }} />
+
+                <div style={{textAlign: 'center', minWidth: '80px'}}>
+                    <div style={{color: '#999', fontSize: '0.8rem', letterSpacing: '1px', textTransform: 'uppercase'}}>{t.ageLabel}</div>
+                    <div style={{fontSize: '1.4rem', color: theme.gold, fontWeight: 'bold', fontFamily: 'Cinzel, serif', textShadow: '0 0 5px rgba(212,175,55,0.4)'}}>{age}</div>
                 </div>
-                <div style={{textAlign: 'center'}}>
-                    <div style={{color: '#888', fontSize: '0.8rem'}}>{t.genderLabel}</div>
-                    <div style={{fontSize: '1.2rem', color: theme.gold}}>{gender === 'male' ? t.genderMale : t.genderFemale}</div>
+                <div style={{width: '1px', background: 'rgba(212, 175, 55, 0.2)', height: '40px', alignSelf: 'center'}} />
+                <div style={{textAlign: 'center', minWidth: '80px'}}>
+                    <div style={{color: '#999', fontSize: '0.8rem', letterSpacing: '1px', textTransform: 'uppercase'}}>{t.genderLabel}</div>
+                    <div style={{fontSize: '1.4rem', color: theme.gold, fontWeight: 'bold', fontFamily: 'Cinzel, Georgia, SimSun, serif', textShadow: '0 0 5px rgba(212,175,55,0.4)'}}>{gender === 'male' ? t.genderMale : t.genderFemale}</div>
                 </div>
                 {birthDate && (
-                    <div style={{textAlign: 'center'}}>
-                        <div style={{color: '#888', fontSize: '0.8rem'}}>{t.dobLabel}</div>
-                        <div style={{fontSize: '1.2rem', color: theme.gold}}>{birthDate}</div>
-                    </div>
+                    <>
+                        <div style={{width: '1px', background: 'rgba(212, 175, 55, 0.2)', height: '40px', alignSelf: 'center'}} />
+                        <div style={{textAlign: 'center', minWidth: '150px'}}>
+                            <div style={{color: '#999', fontSize: '0.8rem', letterSpacing: '1px', textTransform: 'uppercase'}}>{t.dobLabel}</div>
+                            <div style={{fontSize: '1.3rem', color: theme.gold, fontWeight: 'bold', fontFamily: 'Cinzel, serif', textShadow: '0 0 5px rgba(212,175,55,0.4)'}}>{birthDate}</div>
+                        </div>
+                    </>
                 )}
             </div>
             
-            <div style={{...styles.resultContainer, border: `1px solid ${theme.gold}`}} className="result-container-mobile">
-                <div style={{...styles.toolbar, borderColor: 'rgba(138, 110, 47, 0.2)'}}>
-                    <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-                        <select style={{background: 'transparent', color: theme.darkGold, border: 'none', fontFamily: 'Cinzel, serif', cursor: 'pointer'}} value={language} onChange={onLanguageChange}>
+            <div style={{
+                ...styles.resultContainer, 
+                border: `2.5px solid ${theme.gold}`,
+                borderRadius: '16px',
+                background: 'linear-gradient(135deg, rgba(20, 12, 35, 0.95) 0%, rgba(6, 4, 12, 0.98) 100%)',
+                boxShadow: '0 15px 50px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(212, 175, 55, 0.08)',
+                padding: '40px 30px',
+                position: 'relative',
+                overflow: 'hidden'
+            }} className="result-container-mobile">
+
+                {/* Corner Accents */}
+                <div style={{ position: 'absolute', top: '15px', left: '15px', width: '30px', height: '30px', borderLeft: `2.5px solid ${theme.gold}`, borderTop: `2.5px solid ${theme.gold}` }} />
+                <div style={{ position: 'absolute', top: '15px', right: '15px', width: '30px', height: '30px', borderRight: `2.5px solid ${theme.gold}`, borderTop: `2.5px solid ${theme.gold}` }} />
+                <div style={{ position: 'absolute', bottom: '15px', left: '15px', width: '30px', height: '30px', borderLeft: `2.5px solid ${theme.gold}`, borderBottom: `2.5px solid ${theme.gold}` }} />
+                <div style={{ position: 'absolute', bottom: '15px', right: '15px', width: '30px', height: '30px', borderRight: `2.5px solid ${theme.gold}`, borderBottom: `2.5px solid ${theme.gold}` }} />
+
+                <div style={{...styles.toolbar, borderColor: 'rgba(212, 175, 55, 0.25)', marginBottom: '25px', position: 'relative', zIndex: 10}}>
+                    <div style={{display: 'flex', gap: '15px', alignItems: 'center'}}>
+                        <select style={{background: 'rgba(0,0,0,0.5)', color: theme.gold, border: `1px solid ${theme.darkGold}`, borderRadius: '4px', padding: '4px 8px', fontSize: '0.85rem', fontFamily: 'Cinzel, Georgia, SimSun, serif', cursor: 'pointer'}} value={language} onChange={onLanguageChange}>
                             {LANGUAGES.map((l: any) => <option key={l.code} value={l.code}>{l.label}</option>)}
                         </select>
-                        <button onClick={onToggleSpeech} style={{background: 'transparent', border: 'none', color: theme.darkGold, cursor: 'pointer', fontSize: '1.2rem'}}>
+                        <button onClick={onToggleSpeech} style={{background: 'rgba(212, 175, 55, 0.1)', border: `1px solid ${theme.gold}`, borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.gold, cursor: 'pointer', fontSize: '1.1rem', transition: 'all 0.2s'}} className="hover:bg-amber-500/20">
                             {isSpeaking ? <i className="fas fa-stop-circle"></i> : <i className="fas fa-volume-up"></i>}
                         </button>
                     </div>
@@ -1047,28 +1155,39 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
 
                 {/* 1. Zodiac Images at Top - Only show if available */}
                 {(zodiac || starSign) && (
-                    <>
-                        <h3 style={{textAlign: 'center', color: '#8a6e2f', borderBottom: '1px solid #ddd', paddingBottom: '5px', marginTop: '10px', fontFamily:'Cinzel, serif'}}>{t.zodiacTitle}</h3>
-                        <div style={{display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', marginTop: '10px', marginBottom: '30px'}}>
+                    <div style={{ position: 'relative', zIndex: 2 }}>
+                        <h3 style={{textAlign: 'center', color: theme.gold, borderBottom: '1px solid rgba(212, 175, 55, 0.3)', paddingBottom: '8px', marginTop: '10px', fontFamily:'Cinzel, Georgia, SimSun, serif', fontSize: '1.4rem', textShadow: '0 0 8px rgba(212, 175, 55, 0.5)', letterSpacing: '2px'}}>☯ {t.zodiacTitle} ☯</h3>
+                        <div style={{display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', marginTop: '15px', marginBottom: '30px'}}>
                             {zodiac && (
                                 <div style={{textAlign: 'center'}}>
-                                    <img src={zodiacImg} style={{width: '100px', height: '100px', borderRadius: '50%', border: `2px solid ${theme.darkGold}`}} />
-                                    <div style={{fontWeight: 'bold', color: '#5d4037'}}>{zodiacName}</div>
-                                    <div style={{fontSize: '0.8rem', color: '#888'}}>{t.chineseZodiac}</div>
+                                    <img src={zodiacImg} style={{width: '90px', height: '90px', borderRadius: '50%', border: `2px solid ${theme.gold}`, boxShadow: '0 0 10px rgba(212, 175, 55, 0.3)'}} />
+                                    <div style={{fontWeight: 'bold', color: theme.gold, marginTop: '5px'}}>{zodiacName}</div>
+                                    <div style={{fontSize: '0.8rem', color: '#ccc'}}>{t.chineseZodiac}</div>
                                 </div>
                             )}
                             {starSign && (
                                 <div style={{textAlign: 'center'}}>
-                                    <img src={starSignImg} style={{width: '100px', height: '100px', borderRadius: '50%', border: `2px solid ${theme.darkGold}`}} />
-                                    <div style={{fontWeight: 'bold', color: '#5d4037'}}>{starSignName}</div>
-                                    <div style={{fontSize: '0.8rem', color: '#888'}}>{t.westernZodiac}</div>
+                                    <img src={starSignImg} style={{width: '90px', height: '90px', borderRadius: '50%', border: `2px solid ${theme.gold}`, boxShadow: '0 0 10px rgba(212, 175, 55, 0.3)'}} />
+                                    <div style={{fontWeight: 'bold', color: theme.gold, marginTop: '5px'}}>{starSignName}</div>
+                                    <div style={{fontSize: '0.8rem', color: '#ccc'}}>{t.westernZodiac}</div>
                                 </div>
                             )}
                         </div>
-                    </>
+                    </div>
                 )}
 
-                <h2 style={{textAlign: 'center', color: '#8a6e2f', fontFamily: 'Cinzel, serif', marginTop: 0}}>{t.resultTitle}</h2>
+                {/* Mystical Cosmic Portal Banner */}
+                <div style={{width: '100%', height: '160px', overflow: 'hidden', borderRadius: '8px', marginBottom: '25px', position: 'relative', border: `1px solid rgba(212, 175, 55, 0.4)`, boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)'}}>
+                    <img 
+                        src={`https://image.pollinations.ai/prompt/${encodeURIComponent("gorgeous spiritual celestial portal with glowing golden sacred geometry constellations, high fantasy art style, deep purple and gold starry nebula, cinematic lighting, 16:9, digital painting, high resolution")}?width=800&height=320&nologo=true`}
+                        style={{width: '100%', height: '100%', objectFit: 'cover'}} 
+                        alt="Celestial Portal"
+                    />
+                    <div style={{position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(6, 4, 12, 0.95) 100%)'}} />
+                    <div style={{position: 'absolute', bottom: '15px', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', width: '90%'}}>
+                        <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.8rem', margin: 0, textShadow: '0 0 10px rgba(212, 175, 55, 0.8)'}}>{t.resultTitle}</h2>
+                    </div>
+                </div>
                 
                 {isTranslating ? (
                     <div style={{textAlign:'center', padding:'40px', color: theme.darkGold}}>
@@ -1093,7 +1212,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                                 {/* 2. Header & 3. Chart */}
                                 {calculatedElements && (
                                     <>
-                                        <h3 style={{color:'#8a6e2f', borderBottom:'1px solid #d4af37', paddingBottom:'5px', marginTop:'20px', fontFamily:'Cinzel, serif'}}>
+                                        <h3 style={{color: theme.gold, borderBottom:`1px solid rgba(212, 175, 55, 0.4)`, paddingBottom:'5px', marginTop:'20px', fontFamily:'Cinzel, serif', textShadow: '0 0 5px rgba(212, 175, 55, 0.3)'}}>
                                              ⚖️ {t.reportHeaderElements}
                                         </h3>
                                         <FiveElementsChart elements={calculatedElements} t={t} />
@@ -1108,7 +1227,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                             <>
                                 {calculatedElements && (
                                     <>
-                                        <h3 style={{color:'#8a6e2f', borderBottom:'1px solid #d4af37', paddingBottom:'5px', marginTop:'20px', fontFamily:'Cinzel, serif'}}>
+                                        <h3 style={{color: theme.gold, borderBottom:`1px solid rgba(212, 175, 55, 0.4)`, paddingBottom:'5px', marginTop:'20px', fontFamily:'Cinzel, serif', textShadow: '0 0 5px rgba(212, 175, 55, 0.3)'}}>
                                              ⚖️ {t.reportHeaderElements}
                                         </h3>
                                         <FiveElementsChart elements={calculatedElements} t={t} />
@@ -1119,7 +1238,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                         )}
                         
                         {/* Master Optimization Button (Replaces content) */}
-                        <div style={{textAlign: 'center', marginTop: '30px', marginBottom: '20px', borderTop: '1px solid #ddd', paddingTop: '20px'}}>
+                        <div style={{textAlign: 'center', marginTop: '30px', marginBottom: '20px', borderTop: '1px solid rgba(212, 175, 55, 0.2)', paddingTop: '20px'}}>
                             <button style={{...styles.button, width: '100%', padding: '15px', fontSize: '1.1rem'}} onClick={handleAdviceClick}>
                                 <i className="fas fa-magic"></i> {t.masterOptimizationBtn || "Master Optimization Advice"}
                             </button>
@@ -1129,9 +1248,9 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
 
             </div>
             
-            <div style={{marginTop: '2rem'}}>
-                <h3 style={{textAlign: 'center', color: theme.gold, fontFamily: 'Cinzel, serif'}}>{t.recommendedProducts}</h3>
-                <p style={{textAlign: 'center', color: '#ccc', fontStyle: 'italic', marginBottom: '20px'}}>
+            <div style={{marginTop: '2.5rem', background: 'rgba(18, 9, 31, 0.6)', border: `1px solid rgba(212, 175, 55, 0.3)`, borderRadius: '12px', padding: '1.5rem', boxShadow: '0 10px 30px rgba(0,0,0,0.5)'}}>
+                <h3 style={{textAlign: 'center', color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.4rem', margin: '0 0 5px 0', textShadow: '0 0 8px rgba(212, 175, 55, 0.4)'}}>{t.recommendedProducts}</h3>
+                <p style={{textAlign: 'center', color: '#ccc', fontStyle: 'italic', marginBottom: '20px', fontSize: '0.9rem'}}>
                    {t.luckyElement}: <span style={{color: theme.gold, fontWeight: 'bold'}}>{t[`element${missingElement}`] || missingElement}</span>
                 </p>
                 <div style={{display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '10px'}}>
@@ -1140,11 +1259,16 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                         // Seed recommended product images too for speed
                         const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prod.imagePrompt)}?width=200&height=200&nologo=true&seed=${prod.id}`;
                         return (
-                            <div key={prod.id} style={{minWidth: '160px', background: 'rgba(0,0,0,0.5)', border: `1px solid ${theme.darkGold}`, borderRadius: '8px', padding: '10px', textAlign: 'center'}}>
-                                <img src={imgUrl} style={{width: '100%', borderRadius: '4px'}} loading="lazy" />
-                                <div style={{fontSize: '0.9rem', color: theme.gold, margin: '5px 0', height: '40px', overflow: 'hidden'}}>{prodName}</div>
-                                <div style={{fontWeight: 'bold', marginBottom: '5px'}}>{prod.price}</div>
-                                <button style={{...styles.button, padding: '5px 10px', fontSize: '0.8rem', marginTop: '5px', minWidth: 'auto'}} onClick={() => onBuyProduct(prod)}>{t.buyNow}</button>
+                            <div key={prod.id} style={{minWidth: '170px', background: 'rgba(6, 4, 12, 0.8)', border: `1px solid rgba(212, 175, 55, 0.3)`, borderRadius: '8px', padding: '12px', textAlign: 'center', transition: 'all 0.3s', boxShadow: '0 4px 10px rgba(0,0,0,0.3)'}} className="hover:border-amber-400 group">
+                                <div style={{cursor: 'pointer'}} onClick={() => onViewProduct(prod)}>
+                                    <img src={imgUrl} style={{width: '100%', borderRadius: '4px', border: '1px solid rgba(212, 175, 55, 0.15)', transition: 'transform 0.3s'}} className="group-hover:scale-105" loading="lazy" />
+                                    <div style={{fontSize: '0.85rem', color: theme.gold, fontWeight: 'bold', margin: '8px 0 4px 0', height: '36px', overflow: 'hidden', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical'}}>{prodName}</div>
+                                    <div style={{fontWeight: 'bold', color: '#fff', marginBottom: '8px', fontSize: '0.95rem'}}>{prod.price}</div>
+                                </div>
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '5px'}}>
+                                    <button style={{...styles.button, padding: '6px 12px', fontSize: '0.8rem', minWidth: 'auto', margin: 0, width: '100%', borderRadius: '4px'}} onClick={() => onBuyProduct(prod)}>{t.buyNow}</button>
+                                    <button style={{background: 'rgba(212, 175, 55, 0.1)', color: theme.gold, border: '1px solid rgba(212, 175, 55, 0.4)', padding: '5px 10px', fontSize: '0.75rem', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s', width: '100%'}} onClick={() => onViewProduct(prod)} className="hover:bg-amber-500/20">{t.viewDetails || "View Details"}</button>
+                                </div>
                             </div>
                         );
                     })}

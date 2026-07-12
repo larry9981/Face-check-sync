@@ -266,6 +266,85 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
     );
 };
 
+// --- NEW COMPONENT: RenderQRCode ---
+// Renders a high-fidelity vector QR code styled according to the selected app (WeChat/Alipay)
+const RenderQRCode = ({ type, theme }: { type: 'alipay' | 'wechat', theme: any }) => {
+    const isAlipay = type === 'alipay';
+    const accentColor = isAlipay ? '#00A3EE' : '#09BB07';
+    
+    return (
+        <svg width="180" height="180" viewBox="0 0 100 100" style={{ display: 'block', margin: '0 auto', background: '#fff', padding: '10px', borderRadius: '8px', border: `3px solid ${accentColor}` }}>
+            {/* Finder pattern Top-Left */}
+            <path d="M 0,0 H 21 V 3 H 3 V 18 H 0 Z M 6,6 H 15 V 15 H 6 Z M 9,9 H 12 V 12 H 9 Z" fill={accentColor} transform="translate(5,5) scale(0.8)" />
+            {/* Finder pattern Top-Right */}
+            <path d="M 0,0 H 21 V 3 H 3 V 18 H 0 Z M 6,6 H 15 V 15 H 6 Z M 9,9 H 12 V 12 H 9 Z" fill={accentColor} transform="translate(73,5) scale(0.8)" />
+            {/* Finder pattern Bottom-Left */}
+            <path d="M 0,0 H 21 V 3 H 3 V 18 H 0 Z M 6,6 H 15 V 15 H 6 Z M 9,9 H 12 V 12 H 9 Z" fill={accentColor} transform="translate(5,73) scale(0.8)" />
+            
+            {/* Alignment and Timing Patterns */}
+            <line x1="22" y1="11" x2="72" y2="11" stroke="#333" strokeWidth="2" strokeDasharray="2,2" />
+            <line x1="11" y1="22" x2="11" y2="72" stroke="#333" strokeWidth="2" strokeDasharray="2,2" />
+            <rect x="73" y="73" width="6" height="6" fill="#333" />
+            
+            {/* Pseudo Random QR Data matrix */}
+            <g fill="#333">
+                <rect x="25" y="20" width="3" height="3" />
+                <rect x="32" y="20" width="6" height="3" />
+                <rect x="42" y="20" width="3" height="6" />
+                <rect x="50" y="20" width="9" height="3" />
+                <rect x="62" y="20" width="3" height="3" />
+                
+                <rect x="20" y="28" width="6" height="3" />
+                <rect x="30" y="28" width="3" height="9" />
+                <rect x="38" y="28" width="9" height="3" />
+                <rect x="52" y="28" width="3" height="6" />
+                <rect x="60" y="28" width="6" height="3" />
+                <rect x="68" y="28" width="3" height="3" />
+                
+                <rect x="20" y="38" width="3" height="3" />
+                <rect x="25" y="44" width="9" height="3" />
+                <rect x="38" y="38" width="3" height="3" />
+                <rect x="45" y="38" width="6" height="3" />
+                <rect x="55" y="38" width="3" height="9" />
+                <rect x="62" y="38" width="9" height="3" />
+                
+                <rect x="20" y="50" width="6" height="6" />
+                <rect x="28" y="53" width="3" height="3" />
+                <rect x="35" y="50" width="9" height="3" />
+                <rect x="48" y="50" width="3" height="9" />
+                <rect x="53" y="53" width="9" height="3" />
+                <rect x="65" y="50" width="3" height="3" />
+                
+                <rect x="20" y="62" width="3" height="3" />
+                <rect x="25" y="62" width="6" height="6" />
+                <rect x="35" y="62" width="3" height="3" />
+                <rect x="42" y="62" width="9" height="3" />
+                <rect x="55" y="62" width="3" height="3" />
+                <rect x="60" y="62" width="6" height="6" />
+                <rect x="68" y="62" width="3" height="3" />
+                
+                <rect x="25" y="73" width="6" height="3" />
+                <rect x="35" y="73" width="3" height="9" />
+                <rect x="42" y="73" width="9" height="3" />
+                <rect x="55" y="73" width="3" height="3" />
+                <rect x="62" y="73" width="6" height="3" />
+                
+                <rect x="20" y="82" width="3" height="3" />
+                <rect x="28" y="82" width="9" height="3" />
+                <rect x="40" y="82" width="3" height="6" />
+                <rect x="48" y="82" width="6" height="3" />
+                <rect x="58" y="82" width="3" height="3" />
+                <rect x="65" y="82" width="6" height="3" />
+            </g>
+            
+            {/* Center Brand Icon Logo */}
+            <rect x="40" y="40" width="20" height="20" rx="4" fill="#fff" stroke={accentColor} strokeWidth="1.5" />
+            <circle cx="50" cy="50" r="6" fill={accentColor} />
+            <path d={isAlipay ? "M 48,46 H 52 M 47,49 H 53 M 50,46 V 54" : "M 48,48 A 2,2 0 1,1 52,48 M 47,51 A 3,3 0 0,0 53,51"} stroke="#fff" strokeWidth="1" fill="none" strokeLinecap="round" />
+        </svg>
+    );
+};
+
 export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, plan: Plan | Product, onClose: () => void, onSuccess: (details: any) => void, userId?: string }) => {
     const [successState, setSuccessState] = useState(false);
     const [processing, setProcessing] = useState(false);
@@ -283,8 +362,38 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
     const [cardNumber, setCardNumber] = useState('');
     const [expiry, setExpiry] = useState('');
     const [cvc, setCvc] = useState('');
-    const [shippingAddr, setShippingAddr] = useState('');
-    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal'>('stripe');
+    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal' | 'alipay' | 'wechat' | 'unionpay'>('paypal');
+    const [qrCountdown, setQrCountdown] = useState(300); // 5 Minutes QR countdown
+
+    // QR Countdown timer handler
+    React.useEffect(() => {
+        let timer: any;
+        if ((paymentMethod === 'alipay' || paymentMethod === 'wechat') && qrCountdown > 0) {
+            timer = setInterval(() => {
+                setQrCountdown(prev => (prev > 0 ? prev - 1 : 0));
+            }, 1000);
+        } else {
+            setQrCountdown(300);
+        }
+        return () => clearInterval(timer);
+    }, [paymentMethod, qrCountdown]);
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        return `${m}:${s}`;
+    };
+
+    // Structured shipping details states
+    const [shipName, setShipName] = useState('');
+    const [shipCountry, setShipCountry] = useState('');
+    const [shipState, setShipState] = useState('');
+    const [shipZip, setShipZip] = useState('');
+    const [shipStreet, setShipStreet] = useState('');
+    const [shipBuilding, setShipBuilding] = useState('');
+
+    const isZh = t.home === '首页' || t.title === '玄机面相';
+    const isPhysicalProduct = 'nameKey' in plan;
 
     let title = '';
 
@@ -310,18 +419,48 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
     
     const handlePaymentSubmit = async () => {
         if (!email) {
-            setErrorMsg("Please enter a valid email address.");
+            setErrorMsg(isZh ? "请输入有效的电子邮箱地址。" : "Please enter a valid email address.");
             return;
         }
-        if (paymentMethod === 'stripe') {
-            if (!firstName || !lastName || !cardNumber || !expiry || !cvc) {
-                setErrorMsg("Please fill out all Credit Card information fields.");
+        if (isPhysicalProduct) {
+            if (!shipName || !shipCountry || !shipState || !shipZip || !shipStreet || !shipBuilding) {
+                setErrorMsg(isZh ? "请完整填写收货人姓名、国家、省/州、邮编、道路地址、建筑名称和具体房间号。" : "Please fill out all shipping details: Name, Country, State, ZIP, Street, and Building/Room number.");
                 return;
+            }
+        }
+        
+        // Validation logic for credit card & unionpay
+        if (paymentMethod === 'stripe' || paymentMethod === 'unionpay') {
+            const cleanCard = cardNumber.replace(/\s/g, '');
+            if (!cleanCard) {
+                setErrorMsg(isZh ? "请输入卡号。" : "Please enter a card number.");
+                return;
+            }
+            if (paymentMethod === 'stripe') {
+                if (!firstName || !lastName || !expiry || !cvc) {
+                    setErrorMsg(isZh ? "请填写完整的信用卡信息。" : "Please fill out all Credit Card fields.");
+                    return;
+                }
+            } else if (paymentMethod === 'unionpay') {
+                if (!firstName) {
+                    setErrorMsg(isZh ? "请填写持卡人姓名。" : "Please fill out the cardholder name.");
+                    return;
+                }
             }
         }
 
         setProcessing(true);
         setErrorMsg('');
+
+        // Construct combined shipping details string
+        const formattedShipping = isPhysicalProduct ? [
+            `Name: ${shipName}`,
+            `Street: ${shipStreet}`,
+            `Building/Room: ${shipBuilding}`,
+            `State: ${shipState}`,
+            `Country: ${shipCountry}`,
+            `ZIP: ${shipZip}`
+        ].filter(Boolean).join(', ') : 'Digital / Virtual Insight';
 
         try {
             const response = await fetch('/api/payments/pay', {
@@ -333,13 +472,13 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                     planId: plan.id,
                     planTitle: title,
                     amount: priceVal,
-                    method: paymentMethod === 'stripe' ? 'credit-card' : 'paypal',
-                    shippingAddress: shippingAddr || 'Digital / Virtual Insight',
-                    cardDetails: paymentMethod === 'stripe' ? {
-                        name: `${firstName} ${lastName}`.trim(),
+                    method: paymentMethod,
+                    shippingAddress: formattedShipping,
+                    cardDetails: (paymentMethod === 'stripe' || paymentMethod === 'unionpay') ? {
+                        name: `${firstName} ${lastName}`.trim() || firstName || 'Customer',
                         cardNumber,
-                        expiry,
-                        cvc
+                        expiry: expiry || '12/29',
+                        cvc: cvc || '123'
                     } : null
                 })
             });
@@ -356,7 +495,7 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                         onSuccess({
                             email,
                             orderId: data.orderId,
-                            method: paymentMethod === 'stripe' ? 'credit-card' : 'paypal'
+                            method: paymentMethod
                         });
                     }
                 }, 2000);
@@ -370,11 +509,11 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
         }
     };
 
-    if (successState) return <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.95)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}><div style={{...styles.glassPanel, textAlign: 'center', maxWidth: '400px'}}><div style={{color: '#2ecc71', fontSize: '4rem', marginBottom: '15px'}}><i className="fas fa-check-circle"></i></div><h2 style={{color: theme.gold, margin: '0 0 10px 0'}}>{t.success}</h2><p style={{color: '#aaa', fontSize: '0.9rem'}}>Transaction authenticated successfully.</p></div></div>;
+    if (successState) return <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.95)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center'}}><div style={{...styles.glassPanel, textAlign: 'center', maxWidth: '400px'}}><div style={{color: '#2ecc71', fontSize: '4rem', marginBottom: '15px'}}><i className="fas fa-check-circle"></i></div><h2 style={{color: theme.gold, margin: '0 0 10px 0'}}>{t.success}</h2><p style={{color: '#aaa', fontSize: '0.9rem'}}>{t.paymentCompleted || "Transaction authenticated successfully."}</p></div></div>;
 
     return (
         <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.9)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)'}}>
-          <div style={{...styles.glassPanel, maxWidth: '550px', width: '95%', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${theme.gold}`}}>
+          <div style={{...styles.glassPanel, maxWidth: '580px', width: '95%', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${theme.gold}`}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
                 <h2 style={{color: theme.gold, margin: 0, fontFamily: 'Cinzel, serif'}}>{t.paymentTitle}</h2>
                 <button onClick={onClose} style={{background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer', transition: 'color 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.color = theme.gold} onMouseLeave={(e) => e.currentTarget.style.color = '#888'}>&times;</button>
@@ -394,51 +533,154 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
             )}
             
             <div style={{marginBottom: '20px'}}>
-                <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>Contact Info</h3>
+                <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>
+                    {isZh ? "联系信息" : "Contact Info"}
+                </h3>
                 <div>
                     <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>
-                        Email Address
+                        {isZh ? "电子邮箱" : "Email Address"}
                     </label>
                     <input type="email" placeholder="you@example.com" style={styles.cardInput} value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
             </div>
 
-            <div style={{marginBottom: '20px'}}>
-                <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>Shipping Address (Optional for Physical Goods)</h3>
-                <div>
-                    <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>
-                        Delivery details
-                    </label>
-                    <input type="text" placeholder="First & Last Name, Country, Full street address, suite, ZIP etc..." style={styles.cardInput} value={shippingAddr} onChange={e => setShippingAddr(e.target.value)} />
+            {/* Conditionally show structured shipping address for physical products */}
+            {isPhysicalProduct && (
+                <div style={{marginBottom: '20px'}}>
+                    <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>
+                        {isZh ? "收货信息" : "Shipping Address"}
+                    </h3>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+                        {/* Name Field */}
+                        <div>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.75rem', marginBottom: '4px'}}>
+                                {isZh ? "收货人姓名" : "Full Name"} <span style={{color: theme.gold}}>*</span>
+                            </label>
+                            <input type="text" placeholder={isZh ? "请输入收货人姓名" : "e.g. John Doe"} style={{...styles.cardInput, marginBottom: 0}} value={shipName} onChange={e => setShipName(e.target.value)} required />
+                        </div>
+
+                        {/* Country & State in one row */}
+                        <div style={{display: 'flex', gap: '12px'}}>
+                            <div style={{flex: 1}}>
+                                <label style={{display: 'block', color: '#aaa', fontSize: '0.75rem', marginBottom: '4px'}}>
+                                    {isZh ? "国家" : "Country"} <span style={{color: theme.gold}}>*</span>
+                                </label>
+                                <input type="text" placeholder={isZh ? "请输入国家" : "e.g. United States"} style={{...styles.cardInput, marginBottom: 0}} value={shipCountry} onChange={e => setShipCountry(e.target.value)} required />
+                            </div>
+                            <div style={{flex: 1}}>
+                                <label style={{display: 'block', color: '#aaa', fontSize: '0.75rem', marginBottom: '4px'}}>
+                                    {isZh ? "省 / 州" : "State"} <span style={{color: theme.gold}}>*</span>
+                                </label>
+                                <input type="text" placeholder={isZh ? "请输入省/州" : "e.g. California"} style={{...styles.cardInput, marginBottom: 0}} value={shipState} onChange={e => setShipState(e.target.value)} required />
+                            </div>
+                        </div>
+
+                        {/* ZIP Code */}
+                        <div>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.75rem', marginBottom: '4px'}}>
+                                {isZh ? "邮政编码" : "ZIP / Postal Code"} <span style={{color: theme.gold}}>*</span>
+                            </label>
+                            <input type="text" placeholder={isZh ? "请输入邮编" : "e.g. 90210"} style={{...styles.cardInput, marginBottom: 0}} value={shipZip} onChange={e => setShipZip(e.target.value)} required />
+                        </div>
+
+                        {/* Street Address */}
+                        <div>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.75rem', marginBottom: '4px'}}>
+                                {isZh ? "道路地址" : "Road / Street Address"} <span style={{color: theme.gold}}>*</span>
+                            </label>
+                            <input type="text" placeholder={isZh ? "请输入道路地址" : "e.g. 123 Main Street"} style={{...styles.cardInput, marginBottom: 0}} value={shipStreet} onChange={e => setShipStreet(e.target.value)} required />
+                        </div>
+
+                        {/* Building & Specific Room Number */}
+                        <div>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.75rem', marginBottom: '4px'}}>
+                                {isZh ? "建筑名称和具体房间号" : "Building Name & Specific Room Number"} <span style={{color: theme.gold}}>*</span>
+                            </label>
+                            <input type="text" placeholder={isZh ? "例如：泰康大厦 A栋 15层 1502室" : "e.g. Suite 405, Building 2"} style={{...styles.cardInput, marginBottom: 0}} value={shipBuilding} onChange={e => setShipBuilding(e.target.value)} required />
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div style={{marginBottom: '20px'}}>
-                <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>Payment Method</h3>
-                <div style={{display: 'flex', gap: '10px'}}>
-                    <button 
-                        type="button"
-                        onClick={() => setPaymentMethod('stripe')}
-                        style={{
-                            flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'stripe' ? theme.gold : '#333'}`,
-                            background: paymentMethod === 'stripe' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
-                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', transition: 'all 0.2s'
-                        }}
-                    >
-                        <i className="fas fa-credit-card" style={{fontSize: '1.6rem', color: theme.gold}}></i>
-                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'stripe' ? theme.gold : '#888'}}>Credit Card Collection</span>
-                    </button>
+                <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>
+                    {isZh ? "支付方式" : (t.paymentMethod || "Payment Method")}
+                </h3>
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', width: '100%'}}>
                     <button 
                         type="button"
                         onClick={() => setPaymentMethod('paypal')}
                         style={{
-                            flex: 1, padding: '12px', borderRadius: '8px', border: `1px solid ${paymentMethod === 'paypal' ? theme.gold : '#333'}`,
+                            padding: '12px 6px', borderRadius: '8px', border: `2px solid ${paymentMethod === 'paypal' ? theme.gold : '#333'}`,
                             background: paymentMethod === 'paypal' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
-                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', transition: 'all 0.2s'
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
+                            boxShadow: paymentMethod === 'paypal' ? `0 0 10px rgba(212, 175, 55, 0.2)` : 'none'
                         }}
                     >
-                        <i className="fab fa-paypal" style={{fontSize: '1.6rem', color: '#003087'}}></i>
-                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'paypal' ? theme.gold : '#888'}}>PayPal Gateway</span>
+                        <i className="fab fa-paypal" style={{fontSize: '1.4rem', color: '#003087'}}></i>
+                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'paypal' ? theme.gold : '#888'}}>
+                            PayPal
+                        </span>
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => setPaymentMethod('stripe')}
+                        style={{
+                            padding: '12px 6px', borderRadius: '8px', border: `2px solid ${paymentMethod === 'stripe' ? theme.gold : '#333'}`,
+                            background: paymentMethod === 'stripe' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
+                            boxShadow: paymentMethod === 'stripe' ? `0 0 10px rgba(212, 175, 55, 0.2)` : 'none'
+                        }}
+                    >
+                        <i className="fas fa-credit-card" style={{fontSize: '1.4rem', color: theme.gold}}></i>
+                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'stripe' ? theme.gold : '#888'}}>
+                            {isZh ? "信用卡" : (t.creditCard || "Credit Card")}
+                        </span>
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => setPaymentMethod('alipay')}
+                        style={{
+                            padding: '12px 6px', borderRadius: '8px', border: `2px solid ${paymentMethod === 'alipay' ? theme.gold : '#333'}`,
+                            background: paymentMethod === 'alipay' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
+                            boxShadow: paymentMethod === 'alipay' ? `0 0 10px rgba(212, 175, 55, 0.2)` : 'none'
+                        }}
+                    >
+                        <i className="fab fa-alipay" style={{fontSize: '1.4rem', color: '#00A3EE'}}></i>
+                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'alipay' ? theme.gold : '#888'}}>
+                            {isZh ? "支付宝" : (t.alipay || "Alipay")}
+                        </span>
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => setPaymentMethod('wechat')}
+                        style={{
+                            padding: '12px 6px', borderRadius: '8px', border: `2px solid ${paymentMethod === 'wechat' ? theme.gold : '#333'}`,
+                            background: paymentMethod === 'wechat' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
+                            boxShadow: paymentMethod === 'wechat' ? `0 0 10px rgba(212, 175, 55, 0.2)` : 'none'
+                        }}
+                    >
+                        <i className="fab fa-weixin" style={{fontSize: '1.4rem', color: '#09BB07'}}></i>
+                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'wechat' ? theme.gold : '#888'}}>
+                            {isZh ? "微信支付" : (t.wechatPay || "WeChat Pay")}
+                        </span>
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => setPaymentMethod('unionpay')}
+                        style={{
+                            padding: '12px 6px', borderRadius: '8px', border: `2px solid ${paymentMethod === 'unionpay' ? theme.gold : '#333'}`,
+                            background: paymentMethod === 'unionpay' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
+                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
+                            boxShadow: paymentMethod === 'unionpay' ? `0 0 10px rgba(212, 175, 55, 0.2)` : 'none'
+                        }}
+                    >
+                        <i className="fas fa-university" style={{fontSize: '1.4rem', color: '#D4AF37'}}></i>
+                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'unionpay' ? theme.gold : '#888'}}>
+                            {isZh ? "银联闪付" : (t.unionPay || "UnionPay")}
+                        </span>
                     </button>
                 </div>
             </div>
@@ -447,27 +689,40 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                 <div style={{marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid #333'}}>
                     <div style={{display: 'flex', gap: '10px', marginBottom: '10px'}}>
                         <div style={{flex: 1}}>
-                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>FIRST NAME</label>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>{isZh ? "名 (FIRST NAME)" : "FIRST NAME"}</label>
                             <input type="text" placeholder="John" style={styles.cardInput} value={firstName} onChange={e => setFirstName(e.target.value)} />
                         </div>
                         <div style={{flex: 1}}>
-                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>LAST NAME</label>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>{isZh ? "姓 (LAST NAME)" : "LAST NAME"}</label>
                             <input type="text" placeholder="Doe" style={styles.cardInput} value={lastName} onChange={e => setLastName(e.target.value)} />
                         </div>
                     </div>
                     <div style={{marginBottom: '10px'}}>
-                        <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>CARD NUMBER</label>
+                        <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>{isZh ? "卡号" : "CARD NUMBER"}</label>
                         <input type="text" maxLength={19} placeholder="4111 2222 3333 4444" style={styles.cardInput} value={cardNumber} onChange={e => setCardNumber(e.target.value)} />
                     </div>
                     <div style={{display: 'flex', gap: '20px'}}>
                         <div style={{flex: 1}}>
-                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>EXPIRY</label>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>{isZh ? "有效期" : "EXPIRY"}</label>
                             <input type="text" maxLength={5} placeholder="MM/YY" style={styles.cardInput} value={expiry} onChange={e => setExpiry(e.target.value)} />
                         </div>
                         <div style={{flex: 1}}>
-                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>CVC</label>
+                            <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>{isZh ? "安全码" : "CVC"}</label>
                             <input type="text" maxLength={4} placeholder="***" style={styles.cardInput} value={cvc} onChange={e => setCvc(e.target.value)} />
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {paymentMethod === 'unionpay' && (
+                <div style={{marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid #333'}}>
+                    <div style={{marginBottom: '10px'}}>
+                        <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>{isZh ? "银联卡号" : "UnionPay Card Number"}</label>
+                        <input type="text" maxLength={19} placeholder="6200 0000 0000 0000" style={styles.cardInput} value={cardNumber} onChange={e => setCardNumber(e.target.value)} />
+                    </div>
+                    <div style={{marginBottom: '10px'}}>
+                        <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>{isZh ? "持卡人姓名" : "Cardholder Name"}</label>
+                        <input type="text" placeholder={isZh ? "请输入姓名" : "e.g. John Doe"} style={styles.cardInput} value={firstName} onChange={e => setFirstName(e.target.value)} />
                     </div>
                 </div>
             )}
@@ -475,8 +730,30 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
             {paymentMethod === 'paypal' && (
                 <div style={{marginBottom: '20px', padding: '20px', textAlign: 'center', background: 'rgba(0,48,135,0.06)', borderRadius: '8px', border: '1px solid rgba(0,48,135,0.3)'}}>
                     <i className="fab fa-paypal" style={{fontSize: '3rem', color: '#0070ba', marginBottom: '10px'}}></i>
-                    <p style={{fontSize: '0.9rem', color: '#ccc', margin: '0 0 10px 0'}}>Pay securely with your PayPal account or linked bank sources.</p>
-                    <p style={{fontSize: '0.75rem', color: '#777', margin: 0}}>Redirecting protocol initiates upon clicking continue.</p>
+                    <p style={{fontSize: '0.9rem', color: '#ccc', margin: '0 0 10px 0'}}>
+                        {isZh ? "使用您的 PayPal 账户或关联的付款源安全支付。" : "Pay securely with your PayPal account or linked bank sources."}
+                    </p>
+                    <p style={{fontSize: '0.75rem', color: '#777', margin: 0}}>
+                        {isZh ? "点击下方按钮将打开 PayPal 支付跳转服务。" : "Redirecting protocol initiates upon clicking continue."}
+                    </p>
+                </div>
+            )}
+
+            {(paymentMethod === 'alipay' || paymentMethod === 'wechat') && (
+                <div style={{marginBottom: '20px', padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid #333'}}>
+                    <div style={{ position: 'relative', display: 'inline-block', margin: '0 auto 15px auto' }}>
+                        <RenderQRCode type={paymentMethod} theme={theme} />
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: '2px solid rgba(212, 175, 55, 0.3)', borderRadius: '8px', pointerEvents: 'none', animation: 'pulse 2s infinite' }}></div>
+                    </div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: theme.gold, marginBottom: '8px' }}>
+                        ${priceVal.toFixed(2)}
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: '#ccc', marginBottom: '10px' }}>
+                        {isZh ? "请使用支付宝或微信扫码支付以完成交易模拟。" : (t.simulatedPaymentHint || "Please scan the QR code with your Alipay or WeChat mobile app to complete the transaction simulation.")}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#888' }}>
+                        {isZh ? `二维码在 ${formatTime(qrCountdown)} 后失效` : `QR code expires in ${formatTime(qrCountdown)}`}
+                    </div>
                 </div>
             )}
 
@@ -495,9 +772,11 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                 disabled={processing}
             >
                 {processing ? (
-                    <><i className="fas fa-spinner fa-spin"></i> Processing...</>
+                    <><i className="fas fa-spinner fa-spin"></i> {t.processing}</>
                 ) : (
-                    paymentMethod === 'paypal' ? 'Continue with PayPal' : 'Pay Safely & Secure Checkout'
+                    paymentMethod === 'paypal' ? (isZh ? "使用 PayPal 继续支付" : "Continue with PayPal") :
+                    (paymentMethod === 'alipay' || paymentMethod === 'wechat') ? (isZh ? "我已完成支付" : "I Have Completed Payment") :
+                    (isZh ? "安全信用卡结账" : "Pay Safely & Secure Checkout")
                 )}
             </button>
             

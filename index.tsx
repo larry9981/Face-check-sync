@@ -434,6 +434,7 @@ const App = () => {
   }, []);
 
   const [currentPage, setCurrentPage] = useState<'home' | 'analysis' | 'pricing' | 'shop' | 'product-detail' | 'about' | 'privacy' | 'terms' | 'refund' | 'history' | 'cart'>('home');
+  const [previousPageConfig, setPreviousPageConfig] = useState<{ page: any; view: any } | null>(null);
   const [cookieConsent, setCookieConsent] = useState<string | null>(localStorage.getItem('cookieConsent'));
 
   useEffect(() => {
@@ -495,7 +496,7 @@ const App = () => {
 
   const [language, setLanguage] = useState('en');
   // IMPORTANT: Ensure t updates correctly. If translations are missing, this fallback prevents crashes.
-  const t = TRANSLATIONS['en'];
+  const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
   
   const [homepageConfigs, setHomepageConfigs] = useState<HomepageConfig[]>([]);
 
@@ -515,7 +516,7 @@ const App = () => {
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const [userState, setUserState] = useState<UserState>({ 
       trialStartDate: null, isSubscribed: false, hasPaidSingle: false, history: [], userId: '', isLoggedIn: false,
-      dailyGenerations: {}, lastGenerationDate: ''
+      dailyGenerations: {}, lastGenerationDate: '', totalTests: 0
   });
   const [showAuthModal, setShowAuthModal] = useState(false);
   
@@ -530,7 +531,8 @@ const App = () => {
               userId: `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
               isLoggedIn: false,
               dailyGenerations: {},
-              lastGenerationDate: ''
+              lastGenerationDate: '',
+              totalTests: 0
           };
       } else if (!parsed.userId) {
           parsed.userId = `USER-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -557,6 +559,7 @@ const App = () => {
           // Sync Subscription Status from Server DB
           isSubscribed: user.isSubscribed || false,
           trialStartDate: user.trialStartDate || prev.trialStartDate,
+          totalTests: user.totalTests !== undefined ? user.totalTests : prev.totalTests,
           hasPaidSingle: user.hasPaidSingle || false,
           // Welcome free remains: defaulting to 3
           freeFaceRemaining: user.freeFaceRemaining !== undefined ? user.freeFaceRemaining : 3,
@@ -615,6 +618,7 @@ const App = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const speakTextRef = useRef<{ chunks: string[]; index: number; isSpeaking: boolean }>({ chunks: [], index: 0, isSpeaking: false });
 
   useEffect(() => {
     if (!audioRef.current) { 
@@ -642,19 +646,39 @@ const App = () => {
       if (currentPage === 'history') fetchHistory();
   }, [currentPage, userState.userId]);
 
+  const getTotalTestsCount = () => {
+      let count = 0;
+      if (userState.dailyGenerations) {
+          for (const day in userState.dailyGenerations) {
+              count += userState.dailyGenerations[day] || 0;
+          }
+      }
+      if (userState.history && userState.history.length > count) {
+          count = userState.history.length;
+      }
+      if (userState.totalTests && userState.totalTests > count) {
+          count = userState.totalTests;
+      }
+      return count;
+  };
+
   const getDaysRemaining = () => {
       if (!userState.trialStartDate) return 3; 
       const start = new Date(userState.trialStartDate);
       const now = new Date();
       const diffMs = now.getTime() - start.getTime();
-      return Math.max(0, Math.ceil(3 - (diffMs / (1000 * 60 * 60 * 24))));
+      const daysRemaining = 3 - (diffMs / (1000 * 60 * 60 * 24));
+      return Math.max(0, Math.ceil(daysRemaining));
+  };
+
+  const getFreeTestsRemaining = () => {
+      if (userState.isSubscribed) return 999;
+      const totalTests = getTotalTestsCount();
+      return Math.max(0, 10 - totalTests);
   };
 
   const getDailyFreeRemaining = () => {
-      if (userState.isSubscribed) return 999;
-      const today = new Date().toISOString().split('T')[0];
-      const count = (userState.dailyGenerations && userState.dailyGenerations[today]) || 0;
-      return Math.max(0, 3 - count);
+      return getFreeTestsRemaining();
   };
 
   const switchLanguage = async (newLang: string) => {
@@ -663,9 +687,65 @@ const App = () => {
       setIsSpeaking(false);
       
       if (view === 'result' && resultText) {
+          // Instant offline translation for Demo Mode to guarantee success without API limits
+          if (resultText.includes("DEMO MODE") || resultText.includes("演示模式")) {
+              const targetT = TRANSLATIONS[newLang] || TRANSLATIONS.en;
+              const newHeaders = {
+                  aura: targetT.reportHeaderAura, elements: targetT.reportHeaderElements, name: targetT.reportHeaderName, star: targetT.reportHeaderStar,
+                  fortune: targetT.reportHeaderFortune, wealth: targetT.reportHeaderWealth, family: targetT.reportHeaderFamily, parents: targetT.reportHeaderParents,
+                  advice: targetT.reportHeaderAdvice, health: targetT.reportHeaderHealth, love: targetT.reportHeaderLove, dailyLuck: targetT.reportHeaderDailyLuck,
+                  palmLifeLine: targetT.palmLifeLine, palmHeadLine: targetT.palmHeadLine, palmHeartLine: targetT.palmHeartLine, palmFateLine: targetT.palmFateLine
+              };
+              
+              const isZh = newLang.startsWith('zh');
+              let newMockText = '';
+              if (isZh) {
+                  newMockText = `
+## 🔮 ${newHeaders.aura}
+（演示模式 - 离线/服务受限）
+您的气场散发着宁静、稳定的金色能量。
+
+## ⚖️ ${newHeaders.elements}
+*   🪙 **${targetT.elementMetal || "金"}:** 40%
+*   🌲 **${targetT.elementWood || "木"}:** 15%
+*   💧 **${targetT.elementWater || "水"}:** 25%
+*   🔥 **${targetT.elementFire || "火"}:** 10%
+*   ⛰️ **${targetT.elementEarth || "土"}:** 10%
+
+## 📜 ${newHeaders.advice}
+**${targetT.adviceCategoryDiet || "饮食建议"}**: 多吃根茎类蔬菜，保持膳食平衡。
+**${targetT.adviceCategoryHome || "居家风水"}**: 在房屋中央放置一块水晶。
+**${targetT.adviceCategoryJewelry || "幸运配饰"}**: 佩戴金饰或银饰。
+Google AI 服务目前在您的地区不可用。这是测算结果排版设计的演示。
+                  `.trim();
+              } else {
+                  newMockText = `
+## 🔮 ${newHeaders.aura}
+(DEMO MODE - LOCATION BLOCKED)
+Your aura radiates with a calm, stable golden energy.
+
+## ⚖️ ${newHeaders.elements}
+*   🪙 **${targetT.elementMetal}:** 40%
+*   🌲 **${targetT.elementWood}:** 15%
+*   💧 **${targetT.elementWater}:** 25%
+*   🔥 **${targetT.elementFire}:** 10%
+*   ⛰️ **${targetT.elementEarth}:** 10%
+
+## 📜 ${newHeaders.advice}
+**${targetT.adviceCategoryDiet}**: Eat balanced meals with more root vegetables.
+**${targetT.adviceCategoryHome}**: Place a crystal in the center of your home.
+**${targetT.adviceCategoryJewelry}**: Wear Gold or Silver.
+Google AI services are currently unavailable in your region.
+This is a demonstration of the result layout.
+                  `.trim();
+              }
+              setResultText(newMockText);
+              return;
+          }
+
           setIsTranslating(true);
           try {
-              const prompt = `Translate the following markdown text to ${language}. Preserve all formatting, emojis, and headers exactly. Text:\n\n${resultText}`;
+              const prompt = `Translate the following markdown text to ${newLang}. Preserve all formatting, emojis, and headers exactly. Text:\n\n${resultText}`;
               const translatedText = await callWithRetry(() => AIService.callAI(prompt, undefined, appConfig), 5, 2000, (retryMsg) => console.log("Translating wait: " + retryMsg));
               
               if (translatedText) setResultText(translatedText);
@@ -832,6 +912,27 @@ const App = () => {
 
   // --- DEMO / MOCK GENERATOR FOR ERROR FALLBACK ---
   const getMockResult = (headers: any) => {
+      const isZh = language.startsWith('zh');
+      if (isZh) {
+          return `
+## 🔮 ${headers.aura}
+（演示模式 - 离线/服务受限）
+您的气场散发着宁静、稳定的金色能量。
+
+## ⚖️ ${headers.elements}
+*   🪙 **${t.elementMetal || "金"}:** 40%
+*   🌲 **${t.elementWood || "木"}:** 15%
+*   💧 **${t.elementWater || "水"}:** 25%
+*   🔥 **${t.elementFire || "火"}:** 10%
+*   ⛰️ **${t.elementEarth || "土"}:** 10%
+
+## 📜 ${headers.advice}
+**${t.adviceCategoryDiet || "饮食建议"}**: 多吃根茎类蔬菜，保持膳食平衡。
+**${t.adviceCategoryHome || "居家风水"}**: 在房屋中央放置一块水晶。
+**${t.adviceCategoryJewelry || "幸运配饰"}**: 佩戴金饰或银饰。
+Google AI 服务目前在您的地区不可用。这是测算结果排版设计的演示。
+          `.trim();
+      }
       return `
 ## 🔮 ${headers.aura}
 (DEMO MODE - LOCATION BLOCKED)
@@ -850,50 +951,45 @@ Your aura radiates with a calm, stable golden energy.
 **${t.adviceCategoryJewelry}**: Wear Gold or Silver.
 Google AI services are currently unavailable in your region.
 This is a demonstration of the result layout.
-      `;
+      `.trim();
   };
 
   const processImage = async (base64Image: string) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
 
-    // Welcome Quota or Standard Checks
-    let hasWelcomeQuota = false;
-    if (userState.isLoggedIn) {
-        if (readingType === 'palm') {
-            const palmRem = userState.freePalmRemaining !== undefined ? userState.freePalmRemaining : 3;
-            if (palmRem > 0) hasWelcomeQuota = true;
-        } else {
-            const faceRem = userState.freeFaceRemaining !== undefined ? userState.freeFaceRemaining : 3;
-            if (faceRem > 0) hasWelcomeQuota = true;
-        }
-    }
-
-    // Checking limits only if the user does NOT have active Welcome Free Scan Quota and has NOT subscribed/paid
-    if (!hasWelcomeQuota && !userState.isSubscribed && !userState.hasPaidSingle) {
-        // 1. Check Daily Limit (3 times per day)
-        const dailyCount = (userState.dailyGenerations && userState.dailyGenerations[today]) || 0;
-        if (dailyCount >= 3) {
-            alert(t.dailyLimitReached || "Daily limit reached. Please view plans.");
+    // Free trial policy: everyone gets 3 days free trial, max 10 tests total.
+    // Subscribed users or single-reading paid users are exempt.
+    if (!userState.isSubscribed && !userState.hasPaidSingle) {
+        const daysRemaining = getDaysRemaining();
+        if (daysRemaining <= 0) {
+            alert(t.trialExpiredMsg || "您的3天免费试用期已结束，请订阅或购买单次测算继续使用。");
             setShowPaywall(true);
             setView('start');
             return;
         }
 
-        // 2. 3-Day Free Trial Logic (Legacy fallback check)
-        if (!userState.trialStartDate) {
-            setUserState(prev => ({ ...prev, trialStartDate: now.toISOString() }));
-        } else {
-            const start = new Date(userState.trialStartDate);
-            const daysPassed = (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-            if (daysPassed > 3) { 
-                setShowPaywall(true); 
-                setView('start'); 
-                return; 
-            }
+        const totalTests = getTotalTestsCount();
+        if (totalTests >= 10) {
+            alert(t.trialLimitExceededMsg || "您已达到全站点10次免费测试的总上限，请购买订阅或单次付费以继续使用。");
+            setShowPaywall(true);
+            setView('start');
+            return;
         }
     }
-    if (userState.hasPaidSingle) { setUserState(prev => ({ ...prev, hasPaidSingle: false })); }
+
+    // Initialize trialStartDate upon first test if not set yet
+    if (!userState.trialStartDate) {
+        setUserState(prev => ({
+            ...prev,
+            trialStartDate: new Date().toISOString()
+        }));
+    }
+
+    // Reset single payment state on consumption
+    if (userState.hasPaidSingle) { 
+        setUserState(prev => ({ ...prev, hasPaidSingle: false })); 
+    }
 
     // Conditional Calculations
     let wuXingResult: any = null;
@@ -1033,7 +1129,9 @@ This is a demonstration of the result layout.
                   setUserState(prev => ({
                       ...prev,
                       freeFaceRemaining: responseData.user.freeFaceRemaining,
-                      freePalmRemaining: responseData.user.freePalmRemaining
+                      freePalmRemaining: responseData.user.freePalmRemaining,
+                      trialStartDate: responseData.user.trialStartDate || prev.trialStartDate,
+                      totalTests: responseData.user.totalTests !== undefined ? responseData.user.totalTests : prev.totalTests
                   }));
               }
           } catch (e) {
@@ -1057,12 +1155,14 @@ This is a demonstration of the result layout.
           const todayStr = new Date().toISOString().split('T')[0];
           const newDaily = { ...(prev.dailyGenerations || {}) };
           newDaily[todayStr] = (newDaily[todayStr] || 0) + 1;
+          const currentTotal = prev.totalTests !== undefined ? prev.totalTests : 0;
           
           return { 
               ...prev, 
               history: [newHistoryItem, ...(prev.history || [])].slice(0, 5),
               dailyGenerations: newDaily,
-              lastGenerationDate: now.toISOString()
+              lastGenerationDate: now.toISOString(),
+              totalTests: currentTotal + 1
           };
       });
       
@@ -1075,27 +1175,166 @@ This is a demonstration of the result layout.
         setAnalysisProgress(0);
         setLoadingMessage("");
         
-        // Handle Location Block specifically
-        if (error.message.includes('FAILED_PRECONDITION') || error.message.includes('location')) {
-            const mockText = getMockResult(headers);
-            setResultText(mockText);
-            if (!calculatedElements) setCalculatedElements({ scores: { Metal: 20, Wood: 20, Water: 20, Fire: 20, Earth: 20 }, missingElement: 'Fire' });
-            setView('result');
-            alert("Google AI is not available in your region. Switching to Demo Mode.");
-        } else {
-             console.error("Analysis Error:", error);
-             alert("Connection failed. " + error.message);
+        console.error("Analysis Error:", error);
+        const errorMsg = error?.message || String(error);
+        
+        // Graceful fallback to local Demo Mode for ALL errors (such as location block, missing API key, network timeout)
+        const mockText = getMockResult(headers);
+        setResultText(mockText);
+        if (!calculatedElements) {
+            setCalculatedElements({ 
+                scores: { Metal: 22, Wood: 25, Water: 15, Fire: 18, Earth: 20 }, 
+                missingElement: 'Water' 
+            });
         }
+        setView('result');
+        alert(`${t.connectionFailedAlert || "AI service is currently unavailable."} (${errorMsg})\n\n${t.demoModeAlert || "Switching to celestial demo/offline mode so you can view the results."}`);
     }
   };
 
+  const stopSpeaking = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    speakTextRef.current.isSpeaking = false;
+    speakTextRef.current.chunks = [];
+    speakTextRef.current.index = 0;
+    setIsSpeaking(false);
+  };
+
+  const startSpeaking = (text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+
+    // Clean up markdown layout characters
+    const cleanedText = text.replace(/[#*`~]/g, ' ').replace(/\s+/g, ' ');
+    
+    // Split the text into natural sentence-level chunks to prevent browser buffer distortion
+    const sentenceBoundary = /([.!?。！？；;\n]+)/g;
+    const rawChunks = cleanedText.split(sentenceBoundary);
+    
+    const chunks: string[] = [];
+    let temp = "";
+    for (const part of rawChunks) {
+      if (!part) continue;
+      if (part.trim().match(/^[.!?。！？；;\n]+$/)) {
+        temp += part;
+        if (temp.trim().length > 0) {
+          chunks.push(temp.trim());
+        }
+        temp = "";
+      } else {
+        if (temp.trim().length > 0) {
+          chunks.push(temp.trim());
+          temp = "";
+        }
+        temp = part;
+      }
+    }
+    if (temp.trim().length > 0) {
+      chunks.push(temp.trim());
+    }
+
+    if (chunks.length === 0) return;
+
+    speakTextRef.current = { chunks, index: 0, isSpeaking: true };
+    setIsSpeaking(true);
+    speakNextChunk();
+  };
+
+  const speakNextChunk = () => {
+    const state = speakTextRef.current;
+    if (!state.isSpeaking || state.index >= state.chunks.length) {
+      setIsSpeaking(false);
+      state.isSpeaking = false;
+      return;
+    }
+
+    const chunkText = state.chunks[state.index];
+    if (!chunkText || chunkText.trim().length === 0) {
+      state.index++;
+      speakNextChunk();
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(chunkText);
+    
+    // Middle-aged calm, wise and magnetic tone values
+    utterance.pitch = 0.82; // Deep and resonant
+    utterance.rate = 0.85;  // Calm, deliberate, non-distorted pacing
+
+    const voices = window.speechSynthesis.getVoices();
+    
+    // Determine the language prefix or the best match voiceCode
+    const currentLangConfig = LANGUAGES.find(l => l.code === language);
+    const targetVoiceCode = currentLangConfig?.voiceCode || 'en-US';
+    
+    // Choose voice based on user selected language
+    let selectedVoice = null;
+    
+    if (targetVoiceCode.startsWith('zh')) {
+        // Find high-quality Chinese voice
+        const preferredZhKeywords = ['xiaoxiao', 'yunting', 'huihui', 'kangkang', 'yaoyao', 'google', 'liaoliao', 'standard', 'male', 'female'];
+        for (const kw of preferredZhKeywords) {
+            selectedVoice = voices.find(v => (v.lang.toLowerCase().startsWith('zh') || v.lang.toLowerCase().startsWith('cn') || v.lang.toLowerCase().startsWith('tw')) && v.name.toLowerCase().includes(kw));
+            if (selectedVoice) break;
+        }
+        if (!selectedVoice) {
+            selectedVoice = voices.find(v => (v.lang.toLowerCase().startsWith('zh') || v.lang.toLowerCase().startsWith('cn') || v.lang.toLowerCase().startsWith('tw')));
+        }
+    } else {
+        // Prioritize high-quality, magnetic foreign (English/US/UK) male voices
+        const preferredMaleKeywords = [
+          'google uk english male', 
+          'microsoft david', 
+          'david', 
+          'guy', 
+          'daniel', 
+          'brian', 
+          'andrew', 
+          'male', 
+          'natural'
+        ];
+        for (const kw of preferredMaleKeywords) {
+          selectedVoice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes(kw));
+          if (selectedVoice) break;
+        }
+        if (!selectedVoice) {
+          selectedVoice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('male'));
+        }
+        if (!selectedVoice) {
+          selectedVoice = voices.find(v => v.lang.startsWith('en'));
+        }
+    }
+    
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang;
+    } else {
+      utterance.lang = targetVoiceCode;
+    }
+
+    utterance.onend = () => {
+      state.index++;
+      speakNextChunk();
+    };
+
+    utterance.onerror = (e) => {
+      console.warn("Speech Synthesis error", e);
+      state.index++;
+      speakNextChunk();
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
   const toggleSpeech = () => {
-    if (isSpeaking) { window.speechSynthesis.cancel(); setIsSpeaking(false); return; }
-    if (!resultText) return;
-    const utterance = new SpeechSynthesisUtterance(resultText.replace(/[#*]/g, ''));
-    const langConfig = LANGUAGES.find(l => l.code === language);
-    utterance.lang = langConfig?.voiceCode || 'en-US';
-    utterance.onend = () => setIsSpeaking(false); speechRef.current = utterance; window.speechSynthesis.speak(utterance); setIsSpeaking(true);
+    if (isSpeaking) {
+      stopSpeaking();
+    } else {
+      if (!resultText) return;
+      startSpeaking(resultText);
+    }
   };
   
   // Updated: Only used for loading from history list now, passes record to RenderHistoryView logic internally
@@ -1130,12 +1369,8 @@ This is a demonstration of the result layout.
   };
 
   const handleOpenBalance = (aiAdvice?: string) => {
-      const daysRemaining = getDaysRemaining();
-      if (daysRemaining > 0 || userState.isSubscribed) { 
-          setBalanceAiAdvice(aiAdvice); setShowBalanceModal(true); 
-      } else { 
-          setShowPaywall(true); 
-      }
+      setBalanceAiAdvice(aiAdvice); 
+      setShowBalanceModal(true); 
   };
 
   const handleAddToCart = (product: Product) => { 
@@ -1161,20 +1396,38 @@ This is a demonstration of the result layout.
 
   const handleBuyProduct = (product: Product) => { setShowBalanceModal(false); setSelectedProduct(null); setSelectedPlan(product); setShowPaymentModal(true); };
   
-  const handleViewProduct = (product: Product) => { setSelectedProduct(product); setCurrentPage('product-detail'); setView('start'); };
+  const handleViewProduct = (product: Product) => { 
+      setPreviousPageConfig({ page: currentPage, view: view });
+      setSelectedProduct(product); 
+      setCurrentPage('product-detail'); 
+      setView('start'); 
+  };
 
-  const handlePaymentSuccess = async (paymentDetails?: any) => { 
-      if (!selectedPlan) return; 
+  const handleExplore = (type?: 'face' | 'palm' | 'shop') => {
+      if (type === 'shop') {
+          setCurrentPage('shop');
+      } else if (type === 'palm' || type === 'face') {
+          setReadingType(type);
+          setView('selection');
+          setCurrentPage('analysis');
+      } else {
+          setCurrentPage('analysis');
+      }
+  };
+
+  const handlePaymentSuccess = async (paymentDetails?: any, planOverride?: any) => { 
+      const activePlan = planOverride || selectedPlan;
+      if (!activePlan) return; 
       
       try {
           let orderItems = "";
           let total = 0;
-          if (selectedPlan.id === 'cart_checkout') {
+          if (activePlan.id === 'cart_checkout') {
               orderItems = cart.map(c => `${c.product.defaultName} x${c.quantity}`).join(', ');
               total = cart.reduce((acc, c) => acc + (c.product.numericPrice * c.quantity), 0);
           } else {
-              orderItems = 'defaultName' in selectedPlan ? (selectedPlan as Product).defaultName : (selectedPlan as Plan).title;
-              total = parseFloat(selectedPlan.price.replace(/[^0-9.]/g, ''));
+              orderItems = 'defaultName' in activePlan ? (activePlan as Product).defaultName : (activePlan as Plan).title;
+              total = parseFloat(activePlan.price.replace(/[^0-9.]/g, ''));
           }
 
           const shipping = paymentDetails?.shipping || {};
@@ -1198,14 +1451,21 @@ This is a demonstration of the result layout.
       }
 
       // Update Client State
-      if (selectedPlan.id === 'cart_checkout') { setCart([]); setCurrentPage('home'); setView('start'); } 
-      else if ('isSub' in selectedPlan) { 
-          if (selectedPlan.id === 'single') setUserState(prev => ({ ...prev, hasPaidSingle: true })); 
-          else setUserState(prev => ({ ...prev, isSubscribed: true })); 
+      if (activePlan.id === 'cart_checkout') { 
+          setCart([]); 
+          setCurrentPage('home'); 
+          setView('start'); 
+      } else if ('isSub' in activePlan || activePlan.id === 'single') { 
+          if (activePlan.id === 'single') {
+              setUserState(prev => ({ ...prev, hasPaidSingle: true })); 
+          } else {
+              setUserState(prev => ({ ...prev, isSubscribed: true })); 
+          }
       }
       
       alert(t.success); 
       setShowPaymentModal(false); 
+      setShowPaywall(false);
       if (currentPage === 'pricing') handleGoHome(); 
   };
   
@@ -1378,7 +1638,7 @@ This is a demonstration of the result layout.
       <div style={styles.main}>
         {showToast && <div style={{position: 'fixed', top: '100px', left: '50%', transform: 'translateX(-50%)', background: '#2ecc71', color: '#fff', padding: '15px 30px', borderRadius: '30px', zIndex: 3005, boxShadow: '0 5px 15px rgba(0,0,0,0.3)', fontWeight: 'bold'}} className="fade-in"><i className="fas fa-check-circle"></i> {t.addToCart} - Success</div>}
         
-        {showPaywall && <PaymentModal t={t} plan={{id: 'single', title: t.planSingle, price: t.planSinglePrice, desc: t.planSingleDesc, isSub: false}} onClose={() => setShowPaywall(false)} onSuccess={(d) => { handlePaymentSuccess(d); if (view === 'start') setView('selection'); }} />}
+        {showPaywall && <PaymentModal t={t} plan={{id: 'single', title: t.planSingle, price: t.planSinglePrice, desc: t.planSingleDesc, isSub: false}} onClose={() => setShowPaywall(false)} onSuccess={(d) => { handlePaymentSuccess(d, {id: 'single', title: t.planSingle, price: t.planSinglePrice, desc: t.planSingleDesc, isSub: false}); if (view === 'start') setView('selection'); }} />}
         {showPaymentModal && selectedPlan && <PaymentModal t={t} plan={selectedPlan} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />}
         {showBalanceModal && (<FiveElementsBalanceModal t={t} missingElement={calculatedElements ? calculatedElements.missingElement : 'Metal'} aiAdvice={balanceAiAdvice} onClose={() => setShowBalanceModal(false)} onBuyProduct={handleBuyProduct} />)}
         
@@ -1389,17 +1649,34 @@ This is a demonstration of the result layout.
 
         {currentPage === 'product-detail' && selectedProduct && (
             <div style={{...styles.heroSection, justifyContent: 'flex-start', paddingTop: '100px'}}>
-                <ProductDetailModal key={selectedProduct.id} isPageMode={true} t={t} product={selectedProduct} onClose={() => setCurrentPage('shop')} onAddToCart={() => handleAddToCart(selectedProduct)} onBuyNow={() => handleBuyProduct(selectedProduct)} onSwitchProduct={(p) => setSelectedProduct(p)} />
+                <ProductDetailModal 
+                    key={selectedProduct.id} 
+                    isPageMode={true} 
+                    t={t} 
+                    product={selectedProduct} 
+                    onClose={() => {
+                        if (previousPageConfig) {
+                            setCurrentPage(previousPageConfig.page);
+                            setView(previousPageConfig.view);
+                            setPreviousPageConfig(null);
+                        } else {
+                            setCurrentPage('shop');
+                        }
+                    }} 
+                    onAddToCart={() => handleAddToCart(selectedProduct)} 
+                    onBuyNow={() => handleBuyProduct(selectedProduct)} 
+                    onSwitchProduct={(p) => setSelectedProduct(p)} 
+                />
             </div>
         )}
 
         {currentPage === 'home' && (
-            <LandingPage t={t} homepageConfigs={homepageConfigs} onExplore={() => setCurrentPage('analysis')} />
+            <LandingPage t={t} homepageConfigs={homepageConfigs} onExplore={handleExplore} />
         )}
 
         {currentPage === 'analysis' && (
              <div style={{...styles.heroSection, paddingTop: '1rem'}}>
-                {view === 'start' && <RenderStartView t={t} freeTrials={getDailyFreeRemaining()} isLoggedIn={userState.isLoggedIn} freeFaceRemaining={userState.freeFaceRemaining} freePalmRemaining={userState.freePalmRemaining} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
+                {view === 'start' && <RenderStartView t={t} freeTrials={getDailyFreeRemaining()} isLoggedIn={userState.isLoggedIn} freeFaceRemaining={userState.freeFaceRemaining} freePalmRemaining={userState.freePalmRemaining} daysRemaining={getDaysRemaining()} language={language} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
                 {view === 'selection' && <RenderSelectionView 
                     t={t} readingType={readingType} gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
                     uploadProgress={uploadProgress} userName={userName} onSetUserName={setUserName} onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
@@ -1412,7 +1689,7 @@ This is a demonstration of the result layout.
                     t={t} readingType={readingType} birthDate={birthDate} gender={gender} calculatedElements={calculatedElements} resultText={resultText} 
                     language={language} isSpeaking={isSpeaking} isTranslating={isTranslating} LANGUAGES={LANGUAGES}
                     onLanguageChange={(e: any) => switchLanguage(e.target.value)} onToggleSpeech={toggleSpeech} onAnalyzeAnother={() => { setView('selection'); setImage(null); setResultText(""); }}
-                    onBuyProduct={handleBuyProduct} onOpenBalance={handleOpenBalance}
+                    onBuyProduct={handleBuyProduct} onOpenBalance={handleOpenBalance} onViewProduct={handleViewProduct}
                 />}
                 {view === 'start' && (
                     <div style={{marginTop: '4rem', maxWidth: '1000px', width: '100%'}} className="desktop-only">
@@ -1447,6 +1724,7 @@ This is a demonstration of the result layout.
                     onToggleSpeech={toggleSpeech}
                     onBuyProduct={handleBuyProduct}
                     onOpenBalance={handleOpenBalance}
+                    onViewProduct={handleViewProduct}
                     userState={userState}
                     onProfileUpdate={(updatedUser: any) => {
                         setUserState(prev => ({

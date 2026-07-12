@@ -69,7 +69,7 @@ export interface Product {
   imagePrompt: string;
   descKey: string;
   defaultDescription?: string;
-  category: 'bracelet' | 'pendant' | 'amulet' | 'other';
+  category: 'bracelet' | 'pendant' | 'amulet' | 'necklace' | 'other';
   zodiac: string;
   element?: string;
   imageUrl?: string;

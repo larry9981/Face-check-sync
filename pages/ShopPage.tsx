@@ -80,7 +80,7 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
     const filteredProducts = products.filter(p => {
         if (p.status === 'inactive') return false;
         if (activeCategory === 'all') return true;
-        if (activeCategory === 'chinese') return p.category === 'bracelet' || p.category === 'pendant';
+        if (activeCategory === 'chinese') return p.category === 'bracelet' || p.category === 'pendant' || p.category === 'necklace';
         if (activeCategory === 'western') return p.category === 'amulet';
         return true;
     });

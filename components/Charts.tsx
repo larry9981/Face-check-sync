@@ -54,7 +54,7 @@ export const FiveElementsChart = ({ elements, t }: { elements: any, t: any }) =>
             </svg>
             <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', marginTop: '15px'}}>
                 {data.map((item, i) => (
-                    <div key={i} style={{display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: '#5d4037', fontWeight: 'bold'}}>
+                    <div key={i} style={{display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: '#F4EAD4', fontWeight: 'bold'}}>
                         <div style={{width: '12px', height: '12px', background: item.color, borderRadius: '50%'}} />
                         {item.label}
                     </div>

@@ -343,6 +343,129 @@ async function seedHomepage() {
     await DbHelper.getHomepageConfigs();
 }
 
+async function seedProductsIfEmpty() {
+    const CHINESE_ZODIAC = ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig'];
+    const ZODIAC_ELEMENTS: Record<string, string> = {
+        'Rat': 'Water', 'Ox': 'Earth', 'Tiger': 'Wood', 'Rabbit': 'Wood', 
+        'Dragon': 'Earth', 'Snake': 'Fire', 'Horse': 'Fire', 'Goat': 'Earth', 
+        'Monkey': 'Metal', 'Rooster': 'Metal', 'Dog': 'Earth', 'Pig': 'Water'
+    };
+    const WESTERN_SIGNS = ["Capricorn", "Aquarius", "Pisces", "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius"];
+    const WESTERN_ELEMENT_MAP: any = {
+        'Aries': 'Fire', 'Leo': 'Fire', 'Sagittarius': 'Fire',
+        'Taurus': 'Earth', 'Virgo': 'Earth', 'Capricorn': 'Earth',
+        'Gemini': 'Metal', 'Libra': 'Metal', 'Aquarius': 'Metal',
+        'Cancer': 'Water', 'Scorpio': 'Water', 'Pisces': 'Water'
+    };
+
+    const initialProducts = readJSONFile('products.json', []);
+    
+    // Check if we need to seed
+    const hasBracelets = initialProducts.some((p: any) => p.category === 'bracelet' || p.category === 'Bracelet');
+    const hasNecklaces = initialProducts.some((p: any) => p.category === 'necklace' || p.category === 'Necklace');
+    
+    if (!hasBracelets || !hasNecklaces || initialProducts.length < 10) {
+        console.log("[Product Seeder] Seeding 12 Chinese Zodiac bracelets, pendants, and necklaces...");
+        const productsList: any[] = [...initialProducts];
+
+        const addProductIfMissing = (prod: any) => {
+            if (!productsList.some((p: any) => p.id === prod.id)) {
+                productsList.push(prod);
+            }
+        };
+
+        // 1. Chinese Zodiac bracelets, pendants, necklaces
+        CHINESE_ZODIAC.forEach(z => {
+            const element = ZODIAC_ELEMENTS[z] || 'Metal';
+            
+            addProductIfMissing({
+                id: `brace_${z}`,
+                nameKey: 'productNameBracelet',
+                defaultName: `${z} Fortune Bracelet`,
+                price: "$99.99",
+                numericPrice: 99.99,
+                imagePrompt: `mystical spiritual chinese zodiac ${z} obsidian gold feng shui bracelet, soft ethereal lighting, zen garden background, soul healing aesthetic, high resolution product photography`,
+                descKey: 'productDescBracelet',
+                category: 'bracelet',
+                zodiac: z,
+                element: element,
+                sku: `BRC-${z.toUpperCase().slice(0, 3)}-001`,
+                status: 'active',
+                longDescription: `Handcrafted with natural obsidian and genuine gold beads engraved with the sacred ${z} symbol. Helps ground your energy, ward off negative aura fields, and stabilize your Qi.`
+            });
+
+            addProductIfMissing({
+                id: `pend_${z}`,
+                nameKey: 'productNamePendant',
+                defaultName: `${z} Jade Pendant`,
+                price: "$169.99",
+                numericPrice: 169.99,
+                imagePrompt: `sacred chinese green jade pendant necklace zodiac ${z} carving, mystical aura, floating in ethereal mist, spiritual healing, soft cinematic lighting, high resolution`,
+                descKey: 'productDescPendant',
+                category: 'pendant',
+                zodiac: z,
+                element: element,
+                sku: `PDT-${z.toUpperCase().slice(0, 3)}-002`,
+                status: 'active',
+                longDescription: `Carved from premium Hetian jade. Exudes peaceful resonance, attracting helpful nobles (Gui Ren) and nourishing your life energy over continuous annual cycles.`
+            });
+
+            addProductIfMissing({
+                id: `neck_${z}`,
+                nameKey: 'productNameNecklace',
+                defaultName: `${z} Celestial Silver Necklace`,
+                price: "$129.99",
+                numericPrice: 129.99,
+                imagePrompt: `elegant sterling silver necklace featuring meticulously carved ${z} zodiac emblem, glowing under ethereal celestial starlight, floating in cosmic fog, spiritual protection jewelry, 8k product shot`,
+                descKey: 'productDescNecklace',
+                category: 'necklace',
+                zodiac: z,
+                element: element,
+                sku: `NKL-${z.toUpperCase().slice(0, 3)}-003`,
+                status: 'active',
+                longDescription: `Elegant solid s925 silver necklace featuring a custom micro-carving of the ${z} sign. Harmonizes your personal magnetic field and amplifies good fortune in relationship and health domains.`
+            });
+        });
+
+        // 2. Western Zodiac amulets
+        WESTERN_SIGNS.forEach(sign => {
+            const element = WESTERN_ELEMENT_MAP[sign] || 'Wood';
+            addProductIfMissing({
+                id: `amulet_${sign}`,
+                nameKey: 'productNameAmulet',
+                defaultName: `Golden ${sign} Amulet`,
+                price: "$129.99",
+                numericPrice: 129.99,
+                imagePrompt: `celestial golden ${sign} zodiac amulet, glowing with cosmic energy, starry nebula background, mystical spiritual jewelry, high resolution cinematic photography`,
+                descKey: 'productDescAmulet',
+                category: 'amulet',
+                zodiac: sign,
+                element: element,
+                sku: `AML-${sign.toUpperCase().slice(0, 3)}-004`,
+                status: 'active',
+                longDescription: `A master-crafted 18k gold-plated astrological amulet embedded with micro-crystals. Aligns with your star sign coordinates to channelize stellar favor and career success.`
+            });
+        });
+
+        writeJSONFile('products.json', productsList);
+
+        if (isMongoConnected()) {
+            try {
+                for (const p of productsList) {
+                    const exists = await Product.findOne({ id: p.id });
+                    if (!exists) {
+                        const newProd = new Product(p);
+                        await newProd.save();
+                    }
+                }
+                console.log("[Product Seeder] Successfully seeded products to MongoDB.");
+            } catch (err) {
+                console.error("[Product Seeder] Mongo seeding error:", err);
+            }
+        }
+    }
+}
+
 async function startServer() {
     const app = express();
     app.use(cors());
@@ -354,13 +477,16 @@ async function startServer() {
     const MONGODB_URI = process.env.MONGODB_URI;
     if (MONGODB_URI) {
         mongoose.connect(MONGODB_URI)
-            .then(() => {
+            .then(async () => {
                 console.log("[Backend] Connected to MongoDB");
-                seedHomepage();
+                await seedHomepage();
+                await seedProductsIfEmpty();
             })
             .catch(err => console.error("[Backend] MongoDB Connection Error:", err));
     } else {
         console.warn("[Backend] MONGODB_URI not found. Database features fallback to local storage files.");
+        // Call seeding for local file fallback
+        await seedProductsIfEmpty();
     }
 
     // =========================================================
@@ -458,7 +584,14 @@ async function startServer() {
                     });
                 }
 
-                const ai = new GoogleGenAI({ apiKey });
+                const ai = new GoogleGenAI({
+                    apiKey,
+                    httpOptions: {
+                        headers: {
+                            'User-Agent': 'aistudio-build'
+                        }
+                    }
+                });
                 const safetySettings = [
                     { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
                     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -467,7 +600,7 @@ async function startServer() {
                 ];
 
                 const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
+                    model: 'gemini-3.5-flash',
                     contents: {
                         parts: [
                             base64Image ? { inlineData: { mimeType: 'image/jpeg', data: base64Image } } : null,
@@ -534,30 +667,38 @@ async function startServer() {
                     summary: "AI Analysis Result" 
                 });
 
-                // ALSO: update user remaining free counts (3 free face & 3 free palm scans welcome promotion)
+                // ALSO: update user remaining free counts and trial data (3 days free trial, total max 10 tests)
                 const user = await DbHelper.findUserById(userId);
                 let userSafe: any = null;
                 if (user) {
                     const updateData: any = {};
-                    if (readingType === 'palm') {
-                        const currentVal = user.freePalmRemaining !== undefined ? user.freePalmRemaining : 3;
-                        if (currentVal > 0) {
-                            updateData.freePalmRemaining = currentVal - 1;
-                        }
+                    
+                    // Initialize trialStartDate if not set
+                    if (!user.trialStartDate) {
+                        updateData.trialStartDate = new Date().toISOString();
+                    }
+                    
+                    // Increment totalTests
+                    const currentTests = user.totalTests !== undefined ? user.totalTests : 0;
+                    updateData.totalTests = currentTests + 1;
+
+                    // Keep backward compatibility with old fields
+                    const faceRem = user.freeFaceRemaining !== undefined ? user.freeFaceRemaining : 3;
+                    const palmRem = user.freePalmRemaining !== undefined ? user.freePalmRemaining : 3;
+                    const remaining = Math.min(faceRem, palmRem);
+                    if (remaining > 0) {
+                        updateData.freeFaceRemaining = remaining - 1;
+                        updateData.freePalmRemaining = remaining - 1;
                     } else {
-                        const currentVal = user.freeFaceRemaining !== undefined ? user.freeFaceRemaining : 3;
-                        if (currentVal > 0) {
-                            updateData.freeFaceRemaining = currentVal - 1;
-                        }
+                        updateData.freeFaceRemaining = 0;
+                        updateData.freePalmRemaining = 0;
                     }
 
-                    if (Object.keys(updateData).length > 0) {
-                        const updatedUser = await DbHelper.updateUser(userId, updateData);
-                        if (updatedUser) {
-                            const userObj = typeof updatedUser.toObject === 'function' ? updatedUser.toObject() : updatedUser;
-                            userSafe = { ...userObj, id: userObj._id.toString() };
-                            delete (userSafe as any).password;
-                        }
+                    const updatedUser = await DbHelper.updateUser(userId, updateData);
+                    if (updatedUser) {
+                        const userObj = typeof updatedUser.toObject === 'function' ? updatedUser.toObject() : updatedUser;
+                        userSafe = { ...userObj, id: userObj._id.toString() };
+                        delete (userSafe as any).password;
                     }
                 }
 
@@ -627,7 +768,7 @@ async function startServer() {
         }
     });
 
-    // 9. Payment Integration endpoint for PayPal & Credit Card
+    // 9. Payment Integration endpoint for PayPal, Credit Card, Alipay, WeChat Pay, and UnionPay
     app.post('/api/payments/pay', async (req, res) => {
         const { userId, email, planId, planTitle, amount, method, shippingAddress, cardDetails } = req.body;
         let orderId = `PAY-${Date.now().toString().slice(-6)}`;
@@ -635,8 +776,41 @@ async function startServer() {
         
         try {
             // --- STRIPE CREDIT CARD PROCESSING ---
-            if (method === 'credit-card') {
+            if (method === 'credit-card' || method === 'stripe' || method === 'unionpay') {
                 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+                
+                // Validate card format
+                const cardNumberClean = (cardDetails?.cardNumber || '').replace(/\s/g, '');
+                if (!cardNumberClean) {
+                    return res.status(400).json({ error: "Missing Card Number" });
+                }
+                
+                if (method === 'stripe' || method === 'credit-card') {
+                    if (!/^\d{13,19}$/.test(cardNumberClean)) {
+                        return res.status(400).json({ error: "Invalid credit card number format. Check length (13-19 digits)." });
+                    }
+                    const expParts = (cardDetails?.expiry || '').split('/');
+                    if (expParts.length !== 2) {
+                        return res.status(400).json({ error: "Invalid expiry date. Use MM/YY format." });
+                    }
+                    const month = parseInt(expParts[0], 10);
+                    const year = parseInt(expParts[1], 10);
+                    if (isNaN(month) || month < 1 || month > 12) {
+                        return res.status(400).json({ error: "Invalid expiry month. Use MM/YY." });
+                    }
+                    if (isNaN(year) || year < 24) {
+                        return res.status(400).json({ error: "Card expired or invalid year." });
+                    }
+                } else if (method === 'unionpay') {
+                    // UnionPay usually starts with 62 or 60
+                    if (!cardNumberClean.startsWith('62') && !cardNumberClean.startsWith('60') && !cardNumberClean.startsWith('69')) {
+                        return res.status(400).json({ error: "Invalid UnionPay card number. Must start with 62, 60 or 69." });
+                    }
+                    if (cardNumberClean.length < 13 || cardNumberClean.length > 19) {
+                        return res.status(400).json({ error: "Invalid UnionPay card length. Must be between 13 and 19 digits." });
+                    }
+                }
+
                 if (stripeSecretKey && stripeSecretKey.startsWith('sk_')) {
                     try {
                         const stripe = new Stripe(stripeSecretKey);
@@ -650,7 +824,7 @@ async function startServer() {
                         const paymentMethod = await stripe.paymentMethods.create({
                             type: 'card',
                             card: {
-                                number: (cardDetails?.cardNumber || '').replace(/\s/g, ''),
+                                number: cardNumberClean,
                                 exp_month: expMonth,
                                 exp_year: expYear,
                                 cvc: cardDetails?.cvc || '123',
@@ -671,7 +845,8 @@ async function startServer() {
                                 userId: userId || 'guest',
                                 email: email || 'guest@mysticface.com',
                                 planId: planId || '',
-                                planTitle: planTitle || ''
+                                planTitle: planTitle || '',
+                                paymentChannel: method
                             }
                         });
 
@@ -679,7 +854,7 @@ async function startServer() {
                         status = paymentIntent.status === 'succeeded' ? 'paid' : 'pending';
                     } catch (stripeErr: any) {
                         console.error('[Stripe Payment Error]:', stripeErr);
-                        return res.status(400).json({ error: `Credit Card processing error: ${stripeErr.message}` });
+                        return res.status(400).json({ error: `Card processing error: ${stripeErr.message}` });
                     }
                 } else {
                     console.warn("[Stripe Warning] STRIPE_SECRET_KEY is empty or invalid. Running in sandbox demo mode.");
@@ -979,7 +1154,14 @@ async function startServer() {
                 });
             }
 
-            const ai = new GoogleGenAI({ apiKey });
+            const ai = new GoogleGenAI({
+                apiKey,
+                httpOptions: {
+                    headers: {
+                        'User-Agent': 'aistudio-build'
+                    }
+                }
+            });
             let systemPrompt = "";
 
             if (type === 'product') {
@@ -1004,7 +1186,7 @@ Describe the mystical depth of this section, inviting readers to explore their d
             }
 
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-3.5-flash',
                 contents: systemPrompt,
             });
 

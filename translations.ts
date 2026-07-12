@@ -2,6 +2,8 @@
 
 export const LANGUAGES = [
   { code: 'en', label: 'English', voiceCode: 'en-US' },
+  { code: 'zh-CN', label: '简体中文', voiceCode: 'zh-CN' },
+  { code: 'zh-TW', label: '繁體中文', voiceCode: 'zh-TW' },
 ];
 
 const EN_TRANS = {
@@ -65,11 +67,20 @@ const EN_TRANS = {
     productDescBracelet: "Handcrafted obsidian and gold bracelet engraved with the {zodiac} symbol. Enhances wealth, offers protection against negative energy, and stabilizes your Qi.",
     productDescPendant: "Authentic Hetian jade pendant featuring a meticulously carved {zodiac}. Known to promote health, harmony, and attract noble helpers in your life.",
     productDescAmulet: "Exquisite 18k gold amulet representing {zodiac}. Embedded with crystals to align with the stars and canalize cosmic energy for success.",
+    productNameNecklace: "{zodiac} Celestial Silver Necklace",
+    productDescNecklace: "Elegant sterling silver necklace featuring the meticulously crafted {zodiac} emblem. Attracts celestial energy, shields against negativity, and balances the wearer's inner flow of Qi.",
+    alipay: "Alipay", wechatPay: "WeChat Pay", unionPay: "UnionPay",
+    payAlipay: "Pay with Alipay", payWeChat: "Pay with WeChat Pay", payUnionPay: "Pay with UnionPay Card",
+    scanQRToPay: "Scan QR Code to Pay", simulatedPaymentHint: "Please scan the QR code with your Alipay or WeChat mobile app to complete the transaction simulation.",
+    paymentCompleted: "Payment Completed Successfully!",
     freeTrialsHint: "Free trial active ({count} days remaining)", 
     dailyFreeRemaining: "Free readings today: {count}",
     freeFaceRemainingText: "Free Welcome Face Readings",
     freePalmRemainingText: "Free Welcome Palm Readings",
     dailyLimitReached: "Daily free limit reached (3/3). Please subscribe for unlimited access.",
+    quotaExceeded: "You have used your 3 free registered readings. Please purchase a plan or a single reading to continue.",
+    pleaseRegister: "Please register or log in to get 3 free full-featured readings!",
+    viewDetails: "View Details",
     captureBtn: "Capture Now",
     shippingDetails: "Shipping Address", addressLine: "Street Address", city: "City", zipCode: "Zip / Postal Code", country: "Country", recipientName: "Recipient Name",
     snapPhoto: "Take Photo", balanceBtn: "Balance Your Elements", balanceTitle: "Master Optimization Advice", yourWeakest: "Your Missing Element",
@@ -211,7 +222,9 @@ const EN_TRANS = {
     statusNone: "None",
     footerDisclaimer: "This site is for entertainment purposes only.",
     followUs: "Follow Us",
-    socialMedia: "Social Media"
+    socialMedia: "Social Media",
+    connectionFailedAlert: "AI service is currently unavailable.",
+    demoModeAlert: "Switching to celestial demo/offline mode so you can view the results."
 };
 
 const ZH_CN_TRANS = {
@@ -275,11 +288,20 @@ const ZH_CN_TRANS = {
     productDescBracelet: "手工串制黑曜石与足金配饰，刻有{zodiac}生肖图案。具有极强的辟邪化煞功效，稳固气场，招财进宝。",
     productDescPendant: "精选上等和田玉，雕刻栩栩如生的{zodiac}形象。长期佩戴可滋养身心，促进健康，遇贵人扶持。",
     productDescAmulet: "精美18k金{zodiac}护身符，鑲嵌水晶，汇聚星辰之力，助您心想事成，诸事顺遂。",
+    productNameNecklace: "{zodiac} s925足银流光项链",
+    productDescNecklace: "精选高档s925纯银打造，立体微雕生肖{zodiac}开运印记。凝聚太阴月华之气，调和佩戴者五行气场，辟邪护身、遇难呈祥、永保平安。",
+    alipay: "支付宝", wechatPay: "微信支付", unionPay: "银联闪付",
+    payAlipay: "使用支付宝快捷支付", payWeChat: "使用微信安全支付", payUnionPay: "使用银联卡安全支付",
+    scanQRToPay: "微信/支付宝 扫码安全支付", simulatedPaymentHint: "请使用手机微信或支付宝扫一扫，即可在安全的沙箱环境下进行付款体验，系统会自动回调并发货。",
+    paymentCompleted: "付款成功！正在为您配货并激活灵气...",
     freeTrialsHint: "免费试用期 (剩余: {count}天)", 
     dailyFreeRemaining: "今日免费次数剩余: {count}",
     freeFaceRemainingText: "免费赠送面相测算次数",
     freePalmRemainingText: "免费赠送手相测算次数",
     dailyLimitReached: "今日免费次数已用完 (3/3)。请订阅以获取无限次测算。",
+    quotaExceeded: "您已用完3次免费注册测算额度。请购买订阅或单次付费以继续查看完整分析。",
+    pleaseRegister: "请先注册或登录，即可获赠3次免费完整功能面相/手相分析！",
+    viewDetails: "查看详情",
     captureBtn: "立即拍照",
     shippingDetails: "收货地址", addressLine: "街道地址", city: "城市", zipCode: "邮编", country: "国家", recipientName: "收件人姓名",
     snapPhoto: "拍照", balanceBtn: "五行平衡调理", balanceTitle: "大师优化建议", yourWeakest: "您的喜用神 (最缺)",
@@ -419,7 +441,9 @@ const ZH_CN_TRANS = {
     planFree: "免费",
     statusActive: "激活",
     statusNone: "无",
-    footerDisclaimer: "本网站仅供娱乐。"
+    footerDisclaimer: "本网站仅供娱乐。",
+    connectionFailedAlert: "AI 服务暂时不可用。",
+    demoModeAlert: "正在切换到演示/离线模式，以便您查看测算结果。"
 };
 
 const ZH_TW_TRANS = {
@@ -620,11 +644,13 @@ const ZH_TW_TRANS = {
     planFree: "免費",
     statusActive: "激活",
     statusNone: "無",
-    footerDisclaimer: "本網站僅供娛樂。"
+    footerDisclaimer: "本網站僅供娱乐。",
+    connectionFailedAlert: "AI 服務暫時不可用。",
+    demoModeAlert: "正在切換到演示/離線模式，以便您查看測算結果。"
 };
 
 export const TRANSLATIONS: any = {
   'en': EN_TRANS,
-  'zh-CN': EN_TRANS,
-  'zh-TW': EN_TRANS,
+  'zh-CN': ZH_CN_TRANS,
+  'zh-TW': ZH_TW_TRANS,
 };

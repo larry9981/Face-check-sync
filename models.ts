@@ -23,7 +23,9 @@ const UserSchema = new mongoose.Schema({
   
   // Custom free welcome credits for newly registered users (3 Face & 3 Palm scans)
   freeFaceRemaining: { type: Number, default: 3 },
-  freePalmRemaining: { type: Number, default: 3 }
+  freePalmRemaining: { type: Number, default: 3 },
+  trialStartDate: { type: String, default: null },
+  totalTests: { type: Number, default: 0 }
 });
 
 const OrderSchema = new mongoose.Schema({

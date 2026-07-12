@@ -4,8 +4,8 @@ import { Order, Product } from '../types';
 
 export const AdminPage = ({ t }: { t: any }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [username, setUsername] = useState('admin');
-    const [password, setPassword] = useState('admin123');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
@@ -143,7 +143,7 @@ export const AdminPage = ({ t }: { t: any }) => {
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        if (username === 'admin' && password === 'admin123') {
+        if (username === 'admin' && password === 'larry.yan1981') {
             setIsAuthenticated(true);
         } else {
             alert('Invalid credentials');
@@ -370,7 +370,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                         <input 
                             type="password" 
                             style={styles.formInput} 
-                            placeholder="admin123" 
+                            placeholder="••••••••" 
                             value={password} 
                             onChange={e => setPassword(e.target.value)} 
                         />
@@ -379,7 +379,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                     <div style={{ marginTop: '10px', fontSize: '0.85rem', color: theme.gold, opacity: 0.8, textAlign: 'center', background: 'rgba(212, 175, 55, 0.08)', padding: '8px', border: `1px dashed ${theme.darkGold}`, borderRadius: '4px' }}>
                         <strong>[管理登录凭证]</strong><br />
                         账号 (Username): <code style={{ color: '#fff' }}>admin</code><br />
-                        密码 (Password): <code style={{ color: '#fff' }}>admin123</code>
+                        密码 (Password): <code style={{ color: '#fff' }}>larry.yan1981</code>
                     </div>
                 </form>
             </div>
