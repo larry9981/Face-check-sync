@@ -6,21 +6,21 @@
     <title>Mystic Face Reader - AI Fortune Teller</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&family=Noto+Serif+SC:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Stripe.js for Real Credit Card Processing -->
     <script src="https://js.stripe.com/v3/"></script>
     <style>
       :root {
-        --color-bg: #050511;
-        --color-primary: #d4af37; /* Metallic Gold */
-        --color-secondary: #8a6e2f;
-        --color-accent: #c0392b; /* Seal Red */
-        --color-text: #e0e0e0;
-        --color-panel: rgba(10, 10, 20, 0.92);
-        --font-serif: 'Playfair Display', 'Noto Serif', serif;
-        --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-        --font-display: 'Cinzel', serif;
+        --color-bg: #05040a;
+        --color-primary: #c084fc; /* Celestial Lavender */
+        --color-secondary: #8b5cf6; /* Royal Violet */
+        --color-accent: #e2c57b; /* Refined Champagne Gold */
+        --color-text: #f3f4f6; /* Crisp Ivory Text */
+        --color-panel: rgba(10, 8, 22, 0.9); /* Dark Nebula Glass Panel */
+        --font-serif: 'Playfair Display', 'Georgia', serif;
+        --font-sans: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
+        --font-display: 'Space Grotesk', 'Cinzel', serif;
       }
 
       body {
@@ -28,15 +28,15 @@
         padding: 0;
         background-color: var(--color-bg);
         color: var(--color-text);
-        font-family: var(--font-serif);
+        font-family: var(--font-sans);
         overflow-x: hidden;
         -webkit-font-smoothing: antialiased;
-        background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000000 100%);
+        background-image: radial-gradient(circle at 50% 40%, #0d0924 0%, #030208 100%);
       }
 
       h1, h2, h3, button {
         font-family: var(--font-display);
-        text-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+        text-shadow: 0 0 5px rgba(192, 132, 252, 0.3);
       }
 
       /* Global Scrollbar */
@@ -85,9 +85,9 @@
       }
       
       @keyframes mysticalPulse {
-          0% { box-shadow: 0 0 15px rgba(212, 175, 55, 0.2) inset; opacity: 0.8; }
-          50% { box-shadow: 0 0 30px rgba(212, 175, 55, 0.6) inset; opacity: 1; }
-          100% { box-shadow: 0 0 15px rgba(212, 175, 55, 0.2) inset; opacity: 0.8; }
+          0% { box-shadow: 0 0 15px rgba(192, 132, 252, 0.2) inset; opacity: 0.8; }
+          50% { box-shadow: 0 0 30px rgba(192, 132, 252, 0.5) inset; opacity: 1; }
+          100% { box-shadow: 0 0 15px rgba(192, 132, 252, 0.2) inset; opacity: 0.8; }
       }
       
       .mystical-scan-frame {

@@ -32,9 +32,9 @@ const AMBIENT_MUSIC_URL = "https://cdn.pixabay.com/audio/2022/02/07/audio_191983
 
 const AIService = {
     // Call AI securely through server-side proxy
-    callAI: async (prompt: string, base64Image?: string, config?: AppConfig) => {
+    callAI: async (prompt: string, base64Image?: string, config?: AppConfig, userId?: string) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s timeout
 
         try {
             const provider = config?.textProvider || 'Google';
@@ -43,7 +43,7 @@ const AIService = {
             const response = await fetch('/api/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, base64Image, provider, config }),
+                body: JSON.stringify({ prompt, base64Image, provider, config, userId }),
                 signal: controller.signal
             });
 
@@ -612,6 +612,8 @@ const App = () => {
   const [dobSecond, setDobSecond] = useState('00');
   const [gender, setGender] = useState('male');
   const [userName, setUserName] = useState('');
+  const [height, setHeight] = useState('');
+  const [weight, setWeight] = useState('');
   const [useAdvancedAnalysis, setUseAdvancedAnalysis] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -957,6 +959,27 @@ This is a demonstration of the result layout.
   const processImage = async (base64Image: string) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
+    const isZh = language.startsWith('zh');
+
+    // Check subscription plan limits (Monthly/Single month: 300 uses, Annual: 3600 uses)
+    // Paywall restrictions deactivated as per user request to allow unlimited readings starting directly
+    /*
+    if (userState.isSubscribed) {
+        const plan = userState.subscriptionPlan || '';
+        const isAnnual = plan.includes('year') || plan === 'sub_year';
+        const limit = isAnnual ? 3600 : 300;
+        const totalTests = getTotalTestsCount();
+
+        if (totalTests >= limit) {
+            const limitMsg = isZh 
+                ? `您的${isAnnual ? '年度' : '月度'}订阅已达到最大使用次数限制（最高 ${limit} 次），请联系客服或更新订阅。`
+                : `Your ${isAnnual ? 'annual' : 'monthly'} subscription has reached its maximum usage limit (${limit} tests). Please contact support or renew your subscription.`;
+            alert(limitMsg);
+            setShowPaywall(true);
+            setView('start');
+            return;
+        }
+    }
 
     // Free trial policy: everyone gets 3 days free trial, max 10 tests total.
     // Subscribed users or single-reading paid users are exempt.
@@ -977,6 +1000,7 @@ This is a demonstration of the result layout.
             return;
         }
     }
+    */
 
     // Initialize trialStartDate upon first test if not set yet
     if (!userState.trialStartDate) {
@@ -1050,8 +1074,14 @@ This is a demonstration of the result layout.
       let prompt = '';
       if (readingType === 'palm') {
            prompt = `
-            You are a grandmaster of Palmistry. User: ${gender}. Date: ${currentDateStr}.
+            You are a supreme grandmaster of Palmistry, commanding state-of-the-art quantum cybernetic bio-mapping scanners and ancient esoteric Taoist magic. User: ${gender}. Date: ${currentDateStr}.${height ? ` Height: ${height}cm.` : ''}${weight ? ` Weight: ${weight}kg.` : ''}
             Analyze Life Line, Head Line, Heart Line, Fate Line.
+
+            CRITICAL DIRECTIVES:
+            1. Make the analysis extremely rich, highly detailed, exhaustive, and beautifully written with high literary flair. Write long, complete paragraphs for every single section. Do NOT write short summaries.
+            2. Infuse the reading with both MYSTICAL/FANTASY elements (ancient Taoist sorcery, celestial alignments, astral threads, soul contracts, Qi meridian paths, ancestral karma) and HIGH-TECH/SCIENTIFIC elements (quantum resonance frequency, holographic palm topography, biophoton emission dynamics, neural path mapping, holographic spatial matrix, timeline probability branches, spatial frequency vector fields).
+            3. Intelligently connect their physical metrics (${height ? `${height}cm height` : 'N/A'}, ${weight ? `${weight}kg weight` : 'N/A'}) to their constitutional vitality, metabolic Qi, and cellular reserve analysis in the Life Line section.
+            
             Structure:
             ## 🔮 ${headers.dailyLuck} ...
             ## 🧬 ${headers.palmLifeLine} ...
@@ -1061,18 +1091,24 @@ This is a demonstration of the result layout.
             ## ⚖️ ${headers.elements} ...
             
             ## 📜 ${headers.advice}
-            Based on the palm analysis above, provide personalized actionable advice:
-            *   **${t.adviceCategoryDiet}**: (Specific foods)
-            *   **${t.adviceCategoryHome}**: (Feng Shui tips)
-            *   **${t.adviceCategoryJewelry}**: (Lucky items)
-            *   **${t.namingAdvice}**: (Life Philosophy)
+            Based on the palm analysis above, provide extremely detailed, personalized actionable advice:
+            *   **${t.adviceCategoryDiet}**: (Specific foods and bio-energetic nutrients, customized for their physical build of ${height || 'N/A'}cm and ${weight || 'N/A'}kg)
+            *   **${t.adviceCategoryHome}**: (Feng Shui spatial vortex corrections and geomantic arrangements)
+            *   **${t.adviceCategoryJewelry}**: (Lucky crystalline energy transmitters and astral talismans)
+            *   **${t.namingAdvice}**: (Quantum cosmic philosophy and mind alignment)
             
             IMPORTANT: Output STRICTLY in ${targetLangName} (${targetLangCode}).
            `;
       } else {
           prompt = `
-            You are a grandmaster of Mianxiang (Face Reading). User: ${gender}. Date: ${currentDateStr}.
+            You are a supreme grandmaster of Mianxiang (Face Reading), possessing both legendary Eastern mystical vision and future quantum cyber-genetic facial structure scanners. User: ${gender}. Date: ${currentDateStr}.${height ? ` Height: ${height}cm.` : ''}${weight ? ` Weight: ${weight}kg.` : ''}
             Analyze face.
+
+            CRITICAL DIRECTIVES:
+            1. Make the analysis extremely rich, highly detailed, exhaustive, and beautifully written with high literary flair. Write long, complete paragraphs for every single section. Do NOT write short summaries.
+            2. Infuse the reading with both MYSTICAL/FANTASY elements (primordial Qi flows, celestial constellation resonance, spiritual aura of Yin-Yang, Daoist cosmic destiny, karmic threads of the soul) and HIGH-TECH/SCIENTIFIC elements (quantum biophotonic emission spectrum, micro-expression algorithmic mapping, cybernetic facial-surface topography, spatial energy vector fields, neural network probability curves, timeline state vector collapses).
+            3. Intelligently connect their physical metrics (${height ? `${height}cm height` : 'N/A'}, ${weight ? `${weight}kg weight` : 'N/A'}) to their bone density, facial muscle tone, constitutional health, and elemental balance in the general aura analysis.
+
             Structure:
             ## 🔮 ${headers.aura} ...
             ## ⚖️ ${headers.elements} ... (Include emojis 🪙, 🌲, 💧, 🔥, ⛰️)
@@ -1082,20 +1118,20 @@ This is a demonstration of the result layout.
             ## 👴 ${headers.parents} ...
             
             ## 📜 ${headers.advice}
-            Based on the face analysis above (e.g. eyes, nose, complexion), provide specific, personalized actionable advice in a list format:
-            *   **${t.adviceCategoryFiveElements}**: (Analyze the user's specific elemental balance based on face shape)
-            *   **${t.adviceCategoryDiet}**: (Specific foods to help their specific face reading weaknesses)
-            *   **${t.adviceCategoryHome}**: (Feng Shui tips for their specific situation)
-            *   **${t.adviceCategoryJewelry}**: (Specific crystals/items to wear)
+            Based on the face analysis above (e.g. eyes, nose, complexion), provide specific, highly detailed personalized actionable advice in a list format:
+            *   **${t.adviceCategoryFiveElements}**: (Analyze the user's specific quantum elemental balance based on face shape and elemental signatures)
+            *   **${t.adviceCategoryDiet}**: (Specific bio-energetic foods to adjust and heal their specific face reading weaknesses, customized for their physical build of ${height || 'N/A'}cm and ${weight || 'N/A'}kg)
+            *   **${t.adviceCategoryHome}**: (Geomantic Feng Shui spatial arrangements and frequency optimization for their specific situation)
+            *   **${t.adviceCategoryJewelry}**: (Specific crystalline resonance transmitters or amulets to wear for protection and amplification)
             
             IMPORTANT: Output STRICTLY in ${targetLangName} (${targetLangCode}).
           `;
           if (useAdvancedAnalysis && wuXingResult) {
-              prompt += ` Context: Born ${birthDate}. WuXing: Metal:${wuXingResult.scores.Metal}%, Wood:${wuXingResult.scores.Wood}%, Water:${wuXingResult.scores.Water}%, Fire:${wuXingResult.scores.Fire}%, Earth:${wuXingResult.scores.Earth}%. Weak: ${wuXingResult.missingElement}. Zodiac: ${starSign}. Name: ${userName}. Add analysis for these.`;
+              prompt += ` Context: Born ${birthDate}. WuXing: Metal:${wuXingResult.scores.Metal}%, Wood:${wuXingResult.scores.Wood}%, Water:${wuXingResult.scores.Water}%, Fire:${wuXingResult.scores.Fire}%, Earth:${wuXingResult.scores.Earth}%. Weak: ${wuXingResult.missingElement}. Zodiac: ${starSign}. Name: ${userName}.${height ? ` Height: ${height}cm.` : ''}${weight ? ` Weight: ${weight}kg.` : ''} Add analysis for these.`;
           }
       }
 
-      const result = await callWithRetry(() => AIService.callAI(prompt, base64Data, appConfig), 2, 1500, (retryMsg) => {
+      const result = await callWithRetry(() => AIService.callAI(prompt, base64Data, appConfig, userState.userId), 2, 1500, (retryMsg) => {
           if (isMounted.current) setLoadingMessage(retryMsg);
       });
       
@@ -1614,7 +1650,7 @@ This is a demonstration of the result layout.
                              fontWeight: 'bold', 
                              fontSize: '0.8rem'
                          }}>
-                             {(userState.name || 'U')[0].toUpperCase()}
+                             {((userState.name || 'U')[0] || 'U').toUpperCase()}
                          </div>
                          <span style={{color: theme.gold, fontSize: '0.82rem', fontWeight: '500'}}>
                              {userState.name || 'Account'}
@@ -1682,6 +1718,7 @@ This is a demonstration of the result layout.
                     uploadProgress={uploadProgress} userName={userName} onSetUserName={setUserName} onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
                     onStartCamera={() => startCamera(readingType)} onUpload={handleFileUpload} onBack={() => setView('start')}
                     language={language} useAdvancedAnalysis={useAdvancedAnalysis} onToggleAdvanced={() => setUseAdvancedAnalysis(!useAdvancedAnalysis)}
+                    height={height} onSetHeight={setHeight} weight={weight} onSetWeight={setWeight}
                 />}
                 {view === 'camera' && <RenderCameraView t={t} readingType={readingType} videoRef={videoRef} canvasRef={canvasRef} onStopCamera={() => { stopCamera(); setView('selection'); }} onCapture={capturePhoto} />}
                 {view === 'analyzing' && <LoadingSpinner t={t} progress={analysisProgress} message={loadingMessage} />}
@@ -1690,6 +1727,7 @@ This is a demonstration of the result layout.
                     language={language} isSpeaking={isSpeaking} isTranslating={isTranslating} LANGUAGES={LANGUAGES}
                     onLanguageChange={(e: any) => switchLanguage(e.target.value)} onToggleSpeech={toggleSpeech} onAnalyzeAnother={() => { setView('selection'); setImage(null); setResultText(""); }}
                     onBuyProduct={handleBuyProduct} onOpenBalance={handleOpenBalance} onViewProduct={handleViewProduct}
+                    image={image}
                 />}
                 {view === 'start' && (
                     <div style={{marginTop: '4rem', maxWidth: '1000px', width: '100%'}} className="desktop-only">

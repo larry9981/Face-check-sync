@@ -19,9 +19,17 @@ export const AdminPage = ({ t }: { t: any }) => {
         googlePixelId: '',
         facebookPixelId: '',
         paypalClientId: '',
+        paypalClientSecret: '',
         paypalEnabled: true,
         stripePublicKey: '',
-        stripeEnabled: true
+        stripeSecretKey: '',
+        stripeEnabled: true,
+        airwallexClientId: '',
+        airwallexApiKey: '',
+        airwallexClientKey: '',
+        airwallexEnabled: false,
+        airwallexMode: 'sandbox',
+        creditCardProcessor: 'stripe'
     });
     const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [settingsStatus, setSettingsStatus] = useState('');
@@ -349,34 +357,34 @@ export const AdminPage = ({ t }: { t: any }) => {
 
     if (!isAuthenticated) {
         return (
-            <div style={{...styles.glassPanel, maxWidth: '420px', margin: '60px auto', padding: '30px', border: `1px solid ${theme.gold}`}}>
+            <div style={{...styles.glassPanel, maxWidth: '420px', margin: '60px auto', padding: '30px', border: `1px solid rgba(102, 192, 244, 0.3)`}}>
                 <div style={{textAlign: 'center', marginBottom: '20px'}}>
-                    <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.6rem', margin: '0 0 5px 0'}}>Admin Login</h2>
-                    <p style={{color: '#aaa', fontSize: '0.85rem', margin: 0}}>Metaphysics Management Console</p>
+                    <h2 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.6rem', margin: '0 0 5px 0', textShadow: '0 0 10px rgba(102, 192, 244, 0.4)'}}>Admin Login</h2>
+                    <p style={{color: '#aaa', fontSize: '0.85rem', margin: 0, fontFamily: '"Space Grotesk", sans-serif'}}>Face Analysis Management Console</p>
                 </div>
                 <form onSubmit={handleLogin} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
                     <div>
-                        <label style={{display: 'block', color: theme.gold, fontSize: '0.8rem', marginBottom: '4px'}}>Username</label>
+                        <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '4px', fontFamily: '"Space Grotesk", sans-serif'}}>Username</label>
                         <input 
                             type="text" 
-                            style={styles.formInput} 
+                            style={{...styles.formInput, borderColor: 'rgba(102, 192, 244, 0.2)', fontFamily: '"Space Grotesk", sans-serif'}} 
                             placeholder="admin" 
                             value={username} 
                             onChange={e => setUsername(e.target.value)} 
                         />
                     </div>
                     <div>
-                        <label style={{display: 'block', color: theme.gold, fontSize: '0.8rem', marginBottom: '4px'}}>Password</label>
+                        <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '4px', fontFamily: '"Space Grotesk", sans-serif'}}>Password</label>
                         <input 
                             type="password" 
-                            style={styles.formInput} 
+                            style={{...styles.formInput, borderColor: 'rgba(102, 192, 244, 0.2)', fontFamily: '"Space Grotesk", sans-serif'}} 
                             placeholder="••••••••" 
                             value={password} 
                             onChange={e => setPassword(e.target.value)} 
                         />
                     </div>
                     <button type="submit" style={styles.button}>{t.login}</button>
-                    <div style={{ marginTop: '10px', fontSize: '0.85rem', color: theme.gold, opacity: 0.8, textAlign: 'center', background: 'rgba(212, 175, 55, 0.08)', padding: '8px', border: `1px dashed ${theme.darkGold}`, borderRadius: '4px' }}>
+                    <div style={{ marginTop: '10px', fontSize: '0.85rem', color: theme.accent, opacity: 0.8, textAlign: 'center', background: 'rgba(102, 192, 244, 0.05)', padding: '8px', border: `1px dashed rgba(102, 192, 244, 0.3)`, borderRadius: '4px', fontFamily: '"Space Grotesk", sans-serif' }}>
                         <strong>[管理登录凭证]</strong><br />
                         账号 (Username): <code style={{ color: '#fff' }}>admin</code><br />
                         密码 (Password): <code style={{ color: '#fff' }}>larry.yan1981</code>
@@ -392,46 +400,46 @@ export const AdminPage = ({ t }: { t: any }) => {
     return (
         <div style={{width: '95%', maxWidth: '1200px', margin: '0 auto', paddingBottom: '3rem'}}>
             {/* Header Tabs with Mobile Compatibility styling */}
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '1rem', flexWrap: 'wrap', gap: '12px'}}>
-                <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', margin: 0, fontSize: '1.5rem'}}>{t.adminDashboard}</h2>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, paddingBottom: '1rem', flexWrap: 'wrap', gap: '12px'}}>
+                <h2 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', margin: 0, fontSize: '1.5rem', textShadow: '0 0 10px rgba(102, 192, 244, 0.3)'}}>{t.adminDashboard}</h2>
                 <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}} className="admin-tabs">
                     <button 
                         onClick={() => setActiveTab('orders')} 
-                        style={{...styles.secondaryButton, background: activeTab === 'orders' ? theme.gold : 'transparent', color: activeTab === 'orders' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                        style={{...styles.secondaryButton, background: activeTab === 'orders' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'orders' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         {t.historyTitle}
                     </button>
                     <button 
                         onClick={() => setActiveTab('analytics')} 
-                        style={{...styles.secondaryButton, background: activeTab === 'analytics' ? theme.gold : 'transparent', color: activeTab === 'analytics' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                        style={{...styles.secondaryButton, background: activeTab === 'analytics' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'analytics' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         📊 数据汇总 (Analytics)
                     </button>
                     <button 
                         onClick={() => setActiveTab('products')} 
-                        style={{...styles.secondaryButton, background: activeTab === 'products' ? theme.gold : 'transparent', color: activeTab === 'products' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                        style={{...styles.secondaryButton, background: activeTab === 'products' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'products' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         {t.productManagement}
                     </button>
                     <button 
                         onClick={() => setActiveTab('homepage')} 
-                        style={{...styles.secondaryButton, background: activeTab === 'homepage' ? theme.gold : 'transparent', color: activeTab === 'homepage' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                        style={{...styles.secondaryButton, background: activeTab === 'homepage' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'homepage' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         {t.homepageManagement || "Homepage"}
                     </button>
                     <button 
                         onClick={() => setActiveTab('settings')} 
-                        style={{...styles.secondaryButton, background: activeTab === 'settings' ? theme.gold : 'transparent', color: activeTab === 'settings' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                        style={{...styles.secondaryButton, background: activeTab === 'settings' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'settings' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         SETTING & PIXEL
                     </button>
                     <button 
                         onClick={() => setActiveTab('payments')} 
-                        style={{...styles.secondaryButton, background: activeTab === 'payments' ? theme.gold : 'transparent', color: activeTab === 'payments' ? '#000' : theme.gold, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                        style={{...styles.secondaryButton, background: activeTab === 'payments' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'payments' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         💳 收款设置
                     </button>
-                    <button onClick={handleLogout} style={{...styles.secondaryButton, margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}>Logout</button>
+                    <button onClick={handleLogout} style={{...styles.secondaryButton, borderColor: '#ff4d4d', color: '#ff4d4d', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}>Logout</button>
                 </div>
             </div>
 
@@ -445,31 +453,31 @@ export const AdminPage = ({ t }: { t: any }) => {
                     </div>
                     <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden', width: '100%'}}>
                         <div style={{overflowX: 'auto'}}>
-                            <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', minWidth: '1000px'}}>
+                            <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', minWidth: '800px'}}>
                                 <thead>
-                                    <tr style={{background: 'rgba(212, 175, 55, 0.2)', borderBottom: `1px solid ${theme.darkGold}`}}>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>{t.orderId}</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>{t.date}</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>{t.customer}</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>{t.items}</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>{t.amount}</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>{t.status}</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>Contact</th>
+                                    <tr style={{background: 'rgba(102, 192, 244, 0.15)', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`}}>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>{t.orderId}</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>{t.date}</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>{t.customer}</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>{t.items}</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>{t.amount}</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>{t.status}</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>Contact</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {orders.length === 0 ? (
                                         <tr>
-                                            <td colSpan={7} style={{padding: '30px', textAlign: 'center', color: '#888'}}>{t.noOrders}</td>
+                                            <td colSpan={7} style={{padding: '30px', textAlign: 'center', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>{t.noOrders}</td>
                                         </tr>
                                     ) : (
                                         orders.map((order, index) => (
-                                            <tr key={index} style={{borderBottom: '1px solid rgba(255,255,255,0.1)', background: index % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.03)'}}>
+                                            <tr key={index} style={{borderBottom: '1px solid rgba(102, 192, 244, 0.1)', background: index % 2 === 0 ? 'transparent' : 'rgba(102, 192, 244, 0.02)'}}>
                                                 <td style={{padding: '12px 15px', fontSize: '0.85rem', fontFamily: 'monospace'}}>{order.id}</td>
-                                                <td style={{padding: '12px 15px', fontSize: '0.85rem'}}>{order.date ? new Date(order.date).toLocaleString() : 'N/A'}</td>
-                                                <td style={{padding: '12px 15px'}}>{order.customerName}</td>
-                                                <td style={{padding: '12px 15px', fontSize: '0.85rem'}}>{order.items}</td>
-                                                <td style={{padding: '12px 15px', fontWeight: 'bold', color: theme.gold}}>${(order.total || 0).toFixed(2)}</td>
+                                                <td style={{padding: '12px 15px', fontSize: '0.85rem', fontFamily: '"Space Grotesk", sans-serif'}}>{order.date ? new Date(order.date).toLocaleString() : 'N/A'}</td>
+                                                <td style={{padding: '12px 15px', fontFamily: '"Space Grotesk", sans-serif'}}>{order.customerName}</td>
+                                                <td style={{padding: '12px 15px', fontSize: '0.85rem', fontFamily: '"Space Grotesk", sans-serif'}}>{order.items}</td>
+                                                <td style={{padding: '12px 15px', fontWeight: 'bold', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>${(order.total || 0).toFixed(2)}</td>
                                                 <td style={{padding: '12px 15px'}}>
                                                     <span style={{
                                                         background: order.status === 'paid' ? 'rgba(46, 204, 113, 0.2)' : 'rgba(231, 76, 60, 0.2)',
@@ -477,12 +485,13 @@ export const AdminPage = ({ t }: { t: any }) => {
                                                         padding: '3px 8px',
                                                         borderRadius: '4px',
                                                         fontSize: '0.75rem',
-                                                        fontWeight: 'bold'
+                                                        fontWeight: 'bold',
+                                                        fontFamily: '"Space Grotesk", sans-serif'
                                                     }}>
-                                                        {order.status.toUpperCase()}
+                                                        {(order.status || 'paid').toUpperCase()}
                                                     </span>
                                                 </td>
-                                                <td style={{padding: '12px 15px', fontSize: '0.8rem'}}>
+                                                <td style={{padding: '12px 15px', fontSize: '0.8rem', fontFamily: '"Space Grotesk", sans-serif'}}>
                                                     <div>{order.email}</div>
                                                     {order.phone && <div>{order.phone}</div>}
                                                 </td>
@@ -502,17 +511,17 @@ export const AdminPage = ({ t }: { t: any }) => {
                     
                     {/* General metrics cards row */}
                     <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px'}}>
-                        <div style={{...styles.glassPanel, padding: '20px', textAlign: 'center'}}>
-                            <div style={{color: '#888', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '8px'}}>付费总销售额 (Total Sales)</div>
-                            <div style={{color: theme.gold, fontSize: '2rem', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>${totalSalesRevenue.toFixed(2)}</div>
+                        <div style={{...styles.glassPanel, padding: '20px', textAlign: 'center', borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                            <div style={{color: '#888', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>付费总销售额 (Total Sales)</div>
+                            <div style={{color: theme.accent, fontSize: '2rem', fontFamily: '"Space Grotesk", sans-serif', fontWeight: 'bold', textShadow: '0 0 10px rgba(102, 192, 244, 0.3)'}}>${totalSalesRevenue.toFixed(2)}</div>
                         </div>
-                        <div style={{...styles.glassPanel, padding: '20px', textAlign: 'center'}}>
-                            <div style={{color: '#888', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '8px'}}>付费总订单数 (Paid Orders)</div>
-                            <div style={{color: theme.gold, fontSize: '2rem', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{paidOrdersLength}</div>
+                        <div style={{...styles.glassPanel, padding: '20px', textAlign: 'center', borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                            <div style={{color: '#888', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>付费总订单数 (Paid Orders)</div>
+                            <div style={{color: theme.accent, fontSize: '2rem', fontFamily: '"Space Grotesk", sans-serif', fontWeight: 'bold', textShadow: '0 0 10px rgba(102, 192, 244, 0.3)'}}>{paidOrdersLength}</div>
                         </div>
-                        <div style={{...styles.glassPanel, padding: '20px', textAlign: 'center'}}>
-                            <div style={{color: '#888', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '8px'}}>平均客单价 (AOV)</div>
-                            <div style={{color: theme.gold, fontSize: '2rem', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>${averageOrderValue.toFixed(2)}</div>
+                        <div style={{...styles.glassPanel, padding: '20px', textAlign: 'center', borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                            <div style={{color: '#888', fontSize: '0.85rem', textTransform: 'uppercase', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>平均客单价 (AOV)</div>
+                            <div style={{color: theme.accent, fontSize: '2rem', fontFamily: '"Space Grotesk", sans-serif', fontWeight: 'bold', textShadow: '0 0 10px rgba(102, 192, 244, 0.3)'}}>${averageOrderValue.toFixed(2)}</div>
                         </div>
                     </div>
 
@@ -520,28 +529,28 @@ export const AdminPage = ({ t }: { t: any }) => {
                     <div style={{display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) minmax(280px, 1fr)', gap: '20px'}} className="responsive-grid">
                         
                         {/* Daily analytics box */}
-                        <div style={styles.glassPanel}>
-                            <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', marginBottom: '15px'}}>按日订单分析 (Daily Orders Breakdown)</h3>
+                        <div style={{...styles.glassPanel, borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                            <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.2rem', marginBottom: '15px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>按日订单分析 (Daily Orders Breakdown)</h3>
                             <div style={{overflowY: 'auto', maxHeight: '350px'}}>
                                 <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', fontSize: '0.85rem'}}>
                                     <thead>
-                                        <tr style={{background: 'rgba(212, 175, 55, 0.1)', borderBottom: `1px solid ${theme.darkGold}`}}>
-                                            <th style={{padding: '10px', textAlign: 'left', color: theme.gold}}>日期 (Date)</th>
-                                            <th style={{padding: '10px', textAlign: 'center', color: theme.gold}}>成交单数 (Orders)</th>
-                                            <th style={{padding: '10px', textAlign: 'right', color: theme.gold}}>当日销售额 (Sales)</th>
+                                        <tr style={{background: 'rgba(102, 192, 244, 0.1)', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`}}>
+                                            <th style={{padding: '10px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>日期 (Date)</th>
+                                            <th style={{padding: '10px', textAlign: 'center', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>成交单数 (Orders)</th>
+                                            <th style={{padding: '10px', textAlign: 'right', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>当日销售额 (Sales)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {dailyStats.length === 0 ? (
                                             <tr>
-                                                <td colSpan={3} style={{padding: '15px', textAlign: 'center', color: '#888'}}>暂无按日合算数据</td>
+                                                <td colSpan={3} style={{padding: '15px', textAlign: 'center', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>暂无按日合算数据</td>
                                             </tr>
                                         ) : (
                                             dailyStats.map((item, idx) => (
-                                                <tr key={idx} style={{borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
-                                                    <td style={{padding: '10px'}}>{item.date}</td>
-                                                    <td style={{padding: '10px', textAlign: 'center'}}>{item.count} <span style={{fontSize: '0.75rem', color: '#2ecc71'}}>({item.paidCount} paid)</span></td>
-                                                    <td style={{padding: '10px', textAlign: 'right', fontWeight: 'bold', color: theme.gold}}>${item.revenue.toFixed(2)}</td>
+                                                <tr key={idx} style={{borderBottom: '1px solid rgba(102,192,244,0.1)'}}>
+                                                    <td style={{padding: '10px', fontFamily: '"Space Grotesk", sans-serif'}}>{item.date}</td>
+                                                    <td style={{padding: '10px', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>{item.count} <span style={{fontSize: '0.75rem', color: '#2ecc71'}}>({item.paidCount} paid)</span></td>
+                                                    <td style={{padding: '10px', textAlign: 'right', fontWeight: 'bold', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>${item.revenue.toFixed(2)}</td>
                                                 </tr>
                                             ))
                                         )}
@@ -551,28 +560,28 @@ export const AdminPage = ({ t }: { t: any }) => {
                         </div>
 
                         {/* Monthly analytics box */}
-                        <div style={styles.glassPanel}>
-                            <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', marginBottom: '15px'}}>按月订单汇总 (Monthly Orders Summary)</h3>
+                        <div style={{...styles.glassPanel, borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                            <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.2rem', marginBottom: '15px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>按月订单汇总 (Monthly Orders Summary)</h3>
                             <div style={{overflowY: 'auto', maxHeight: '350px'}}>
                                 <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', fontSize: '0.85rem'}}>
                                     <thead>
-                                        <tr style={{background: 'rgba(212, 175, 55, 0.1)', borderBottom: `1px solid ${theme.darkGold}`}}>
-                                            <th style={{padding: '10px', textAlign: 'left', color: theme.gold}}>月份 (Month)</th>
-                                            <th style={{padding: '10px', textAlign: 'center', color: theme.gold}}>成交单数 (Orders)</th>
-                                            <th style={{padding: '10px', textAlign: 'right', color: theme.gold}}>每月销售额 (Sales)</th>
+                                        <tr style={{background: 'rgba(102, 192, 244, 0.1)', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`}}>
+                                            <th style={{padding: '10px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>月份 (Month)</th>
+                                            <th style={{padding: '10px', textAlign: 'center', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>成交单数 (Orders)</th>
+                                            <th style={{padding: '10px', textAlign: 'right', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>每月销售额 (Sales)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {monthlyStats.length === 0 ? (
                                             <tr>
-                                                <td colSpan={3} style={{padding: '15px', textAlign: 'center', color: '#888'}}>暂无按月汇总数据</td>
+                                                <td colSpan={3} style={{padding: '15px', textAlign: 'center', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>暂无按月汇总数据</td>
                                             </tr>
                                         ) : (
                                             monthlyStats.map((item, idx) => (
-                                                <tr key={idx} style={{borderBottom: '1px solid rgba(255,255,255,0.05)'}}>
-                                                    <td style={{padding: '10px', fontWeight: 'bold'}}>{item.month}</td>
-                                                    <td style={{padding: '10px', textAlign: 'center'}}>{item.count} <span style={{fontSize: '0.75rem', color: '#2ecc71'}}>({item.paidCount} paid)</span></td>
-                                                    <td style={{padding: '10px', textAlign: 'right', fontWeight: 'bold', color: theme.gold}}>${item.revenue.toFixed(2)}</td>
+                                                <tr key={idx} style={{borderBottom: '1px solid rgba(102,192,244,0.1)'}}>
+                                                    <td style={{padding: '10px', fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif'}}>{item.month}</td>
+                                                    <td style={{padding: '10px', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>{item.count} <span style={{fontSize: '0.75rem', color: '#2ecc71'}}>({item.paidCount} paid)</span></td>
+                                                    <td style={{padding: '10px', textAlign: 'right', fontWeight: 'bold', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>${item.revenue.toFixed(2)}</td>
                                                 </tr>
                                             ))
                                         )}
@@ -584,20 +593,20 @@ export const AdminPage = ({ t }: { t: any }) => {
                     </div>
 
                     {/* Registered users section */}
-                    <div style={styles.glassPanel}>
-                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.2rem', marginBottom: '15px'}}>
+                    <div style={{...styles.glassPanel, borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                        <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.2rem', marginBottom: '15px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>
                             <i className="fas fa-users" style={{marginRight: '8px'}}></i> 用户注册和订阅信息 (Registrations & Subscriptions)
                         </h3>
                         <div style={{overflowX: 'auto'}}>
                             <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', fontSize: '0.85rem'}}>
                                 <thead>
-                                    <tr style={{background: 'rgba(212, 175, 55, 0.15)', borderBottom: `1px solid ${theme.darkGold}`}}>
-                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.gold}}>用户名 / 姓名 (Name)</th>
-                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.gold}}>电子邮箱 (Email)</th>
-                                        <th style={{padding: '12px 10px', textAlign: 'center', color: theme.gold}}>注册通道 (Auth)</th>
-                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.gold}}>注册时间 (Registered At)</th>
-                                        <th style={{padding: '12px 10px', textAlign: 'center', color: theme.gold}}>订阅状态 (Subscription)</th>
-                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.gold}}>到期时间 (Expires At)</th>
+                                    <tr style={{background: 'rgba(102, 192, 244, 0.15)', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`}}>
+                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>用户名 / 姓名 (Name)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>电子邮箱 (Email)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'center', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>注册通道 (Auth)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>注册时间 (Registered At)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'center', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>订阅状态 (Subscription)</th>
+                                        <th style={{padding: '12px 10px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>到期时间 (Expires At)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -643,8 +652,8 @@ export const AdminPage = ({ t }: { t: any }) => {
                 <div style={{display: 'flex', flexDirection: 'column', gap: '30px'}}>
                     
                     {/* Top part: Product Form */}
-                    <div style={{...styles.glassPanel, border: `1px solid ${editingProduct ? theme.gold : 'rgba(255,255,255,0.08)'}`}}>
-                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '8px', marginBottom: '20px'}}>
+                    <div style={{...styles.glassPanel, border: `1px solid ${editingProduct ? 'rgba(102, 192, 244, 0.4)' : 'rgba(102, 192, 244, 0.15)'}`}}>
+                        <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, paddingBottom: '8px', marginBottom: '20px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>
                             {editingProduct?.id ? `✏️ 编辑商品属性 (${t.editProduct})` : `✨ 添加全新神佛圣物 (${t.addProduct})`}
                         </h3>
                         
@@ -652,32 +661,32 @@ export const AdminPage = ({ t }: { t: any }) => {
                             
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px'}}>
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         商品编号 (Product ID) <span style={{color: '#ff4d4d'}}>*</span>
                                     </label>
                                     <input 
-                                        type="text" placeholder="例如: prod-agate (不填将自动生成)" style={styles.formInput} 
+                                        type="text" placeholder="例如: prod-agate (不填将自动生成)" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingProduct?.id || ''} onChange={e => setEditingProduct({...editingProduct, id: e.target.value})} 
                                     />
-                                    <span style={{fontSize: '0.75rem', color: '#888'}}>商品的唯一标示代码 (唯一不可重复)</span>
+                                    <span style={{fontSize: '0.75rem', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>商品的唯一标示代码 (唯一不可重复)</span>
                                 </div>
 
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
-                                        产品多语言包健 (Name Tranlation Key)
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                        产品多语言包健 (Name Translation Key)
                                     </label>
                                     <input 
-                                        type="text" placeholder="例如: prod_agate_name" style={styles.formInput} 
+                                        type="text" placeholder="例如: prod_agate_name" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingProduct?.nameKey || ''} onChange={e => setEditingProduct({...editingProduct, nameKey: e.target.value})} 
                                     />
                                 </div>
 
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         产品名称/标题 (Product Title) <span style={{color: '#ff4d4d'}}>*</span>
                                     </label>
                                     <input 
-                                        type="text" placeholder="例如: 极品红玛瑙辟邪项链" style={styles.formInput} 
+                                        type="text" placeholder="例如: 极品红玛瑙辟邪项链" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingProduct?.defaultName || ''} onChange={e => setEditingProduct({...editingProduct, defaultName: e.target.value})} 
                                         required
                                     />
@@ -686,33 +695,33 @@ export const AdminPage = ({ t }: { t: any }) => {
 
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px'}}>
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         专属唯一商品 SKU <span style={{color: '#ff4d4d'}}>*</span>
                                     </label>
                                     <input 
-                                        type="text" placeholder="例如: AGT-BRC-001" style={styles.formInput} 
+                                        type="text" placeholder="例如: AGT-BRC-001" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingProduct?.sku || ''} onChange={e => setEditingProduct({...editingProduct, sku: e.target.value})} 
                                         required
                                     />
                                 </div>
 
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         价格显示 (Display Price Style) <span style={{color: '#ff4d4d'}}>*</span>
                                     </label>
                                     <input 
-                                        type="text" placeholder="例如: $39.99" style={styles.formInput} 
+                                        type="text" placeholder="例如: $39.99" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingProduct?.price || ''} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} 
                                         required
                                     />
                                 </div>
 
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         结算数值价格 (Numeric Price) <span style={{color: '#ff4d4d'}}>*</span>
                                     </label>
                                     <input 
-                                        type="number" step="0.01" placeholder="例如: 39.99" style={styles.formInput} 
+                                        type="number" step="0.01" placeholder="例如: 39.99" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingProduct?.numericPrice || 0} onChange={e => setEditingProduct({...editingProduct, numericPrice: parseFloat(e.target.value) || 0})} 
                                         required
                                     />
@@ -721,11 +730,11 @@ export const AdminPage = ({ t }: { t: any }) => {
 
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px'}}>
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         集合分类 (Collection Category)
                                     </label>
                                     <select 
-                                        style={styles.formInput} value={editingProduct?.category || 'bracelet'} 
+                                        style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} value={editingProduct?.category || 'bracelet'} 
                                         onChange={e => setEditingProduct({...editingProduct, category: e.target.value as any})}
                                     >
                                         <option value="bracelet">法力手链 (Bracelet)</option>
@@ -737,11 +746,11 @@ export const AdminPage = ({ t }: { t: any }) => {
                                 </div>
 
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         产品上架状态 (Status)
                                     </label>
                                     <select 
-                                        style={styles.formInput} value={editingProduct?.status || 'active'} 
+                                        style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} value={editingProduct?.status || 'active'} 
                                         onChange={e => setEditingProduct({...editingProduct, status: e.target.value as 'active' | 'inactive'})}
                                     >
                                         <option value="active">上架销售中 (Listed/Active)</option>
@@ -750,29 +759,29 @@ export const AdminPage = ({ t }: { t: any }) => {
                                 </div>
 
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         适用生肖属性 (Zodiac Alignment)
                                     </label>
                                     <input 
-                                        type="text" placeholder="例如: Dragon, Tiger (生肖龙, 虎)" style={styles.formInput} 
+                                        type="text" placeholder="例如: Dragon, Tiger (生肖龙, 虎)" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingProduct?.zodiac || ''} onChange={e => setEditingProduct({...editingProduct, zodiac: e.target.value})} 
                                     />
                                 </div>
 
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         五行核心属性 (Elemental Alignment)
                                     </label>
                                     <input 
-                                        type="text" placeholder="例如: Fire (生旺火行能量)" style={styles.formInput} 
+                                        type="text" placeholder="例如: Fire (生旺火行能量)" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingProduct?.element || ''} onChange={e => setEditingProduct({...editingProduct, element: e.target.value})} 
                                     />
                                 </div>
                             </div>
 
                             {/* Image File upload and Preview container */}
-                            <div style={{border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '4px'}}>
-                                <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px'}}>
+                            <div style={{border: '1px solid rgba(102, 192, 244, 0.15)', background: 'rgba(102, 192, 244, 0.01)', padding: '15px', borderRadius: '4px'}}>
+                                <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                     本地图片上传 & 实时预览 (Upload Product Image & Preview)
                                 </label>
                                 <div style={{display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap'}}>
@@ -780,8 +789,8 @@ export const AdminPage = ({ t }: { t: any }) => {
                                         width: '100px', 
                                         height: '100px', 
                                         borderRadius: '6px', 
-                                        border: `1px dashed ${theme.gold}`, 
-                                        background: '#04040c', 
+                                        border: `1px dashed rgba(102, 192, 244, 0.4)`, 
+                                        background: '#171A21', 
                                         display: 'flex', 
                                         alignItems: 'center', 
                                         justifyContent: 'center',
@@ -790,7 +799,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                                         {editingProduct?.imageUrl ? (
                                             <img src={editingProduct.imageUrl} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                                         ) : (
-                                            <span style={{color: '#444', fontSize: '0.75rem', textAlign: 'center', padding: '5px'}}>No Image</span>
+                                            <span style={{color: '#888', fontSize: '0.75rem', textAlign: 'center', padding: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>No Image</span>
                                         )}
                                     </div>
                                     <div style={{flex: 1}}>
@@ -806,9 +815,9 @@ export const AdminPage = ({ t }: { t: any }) => {
                                                     reader.readAsDataURL(file);
                                                 }
                                             }}
-                                            style={{color: '#ccc', fontSize: '0.85rem', cursor: 'pointer', background: 'transparent', border: 'none'}}
+                                            style={{color: '#ccc', fontSize: '0.85rem', cursor: 'pointer', background: 'transparent', border: 'none', fontFamily: '"Space Grotesk", sans-serif'}}
                                         />
-                                        <p style={{color: '#888', fontSize: '0.75rem', margin: '5px 0 0 0'}}>支持 JPEG, PNG, WEBP 本地拖拽上传或文件点选。加载后将自动转储预览。</p>
+                                        <p style={{color: '#888', fontSize: '0.75rem', margin: '5px 0 0 0', fontFamily: '"Space Grotesk", sans-serif'}}>支持 JPEG, PNG, WEBP 本地拖拽上传或文件点选。加载后将自动转储预览。</p>
                                     </div>
                                 </div>
                             </div>
@@ -816,7 +825,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                             {/* Descriptions in Vertical Alignment with AI writing */}
                             <div>
                                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
-                                    <label style={{color: theme.gold, fontSize: '0.85rem', fontWeight: '600'}}>
+                                    <label style={{color: theme.accent, fontSize: '0.85rem', fontWeight: '600', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         基础宣传描述 (Basic Product Description)
                                     </label>
                                     <button 
@@ -824,18 +833,19 @@ export const AdminPage = ({ t }: { t: any }) => {
                                         disabled={isGeneratingProdDesc}
                                         onClick={() => handleAIGenerateDesc('defaultDescription')} 
                                         style={{
-                                            background: 'rgba(212, 175, 55, 0.1)', 
-                                            borderColor: theme.gold, 
-                                            color: theme.gold, 
+                                            background: 'rgba(102, 192, 244, 0.1)', 
+                                            borderColor: 'rgba(102, 192, 244, 0.4)', 
+                                            color: theme.accent, 
                                             padding: '4px 8px', 
                                             fontSize: '0.75rem', 
                                             cursor: 'pointer', 
-                                            border: `1px solid ${theme.gold}`,
+                                            border: `1px solid rgba(102, 192, 244, 0.4)`,
                                             borderRadius: '4px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '5px',
-                                            margin: 0
+                                            margin: 0,
+                                            fontFamily: '"Space Grotesk", sans-serif'
                                         }}
                                     >
                                         <i className={`fas ${isGeneratingProdDesc ? 'fa-spinner fa-spin' : 'fa-magic'}`}></i>
@@ -843,14 +853,14 @@ export const AdminPage = ({ t }: { t: any }) => {
                                     </button>
                                 </div>
                                 <textarea 
-                                    placeholder="输入简要的基础描述文案，或点击AI魔法棒一键生成精美玄学物卖点文案..." style={{...styles.formInput, height: '100px'}} 
+                                    placeholder="输入简要的基础描述文案，或点击AI魔法棒一键生成精美玄学物卖点文案..." style={{...styles.formInput, height: '100px', fontFamily: '"Space Grotesk", sans-serif'}} 
                                     value={editingProduct?.defaultDescription || ''} onChange={e => setEditingProduct({...editingProduct, defaultDescription: e.target.value})} 
                                 />
                             </div>
 
                             <div>
                                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
-                                    <label style={{color: theme.gold, fontSize: '0.85rem', fontWeight: '600'}}>
+                                    <label style={{color: theme.accent, fontSize: '0.85rem', fontWeight: '600', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         商品高级排版详情参数 (Detailed Long Description)
                                     </label>
                                     <button 
@@ -858,18 +868,19 @@ export const AdminPage = ({ t }: { t: any }) => {
                                         disabled={isGeneratingProdLongDesc}
                                         onClick={() => handleAIGenerateDesc('longDescription')} 
                                         style={{
-                                            background: 'rgba(212, 175, 55, 0.1)', 
-                                            borderColor: theme.gold, 
-                                            color: theme.gold, 
+                                            background: 'rgba(102, 192, 244, 0.1)', 
+                                            borderColor: 'rgba(102, 192, 244, 0.4)', 
+                                            color: theme.accent, 
                                             padding: '4px 8px', 
                                             fontSize: '0.75rem', 
                                             cursor: 'pointer', 
-                                            border: `1px solid ${theme.gold}`,
+                                            border: `1px solid rgba(102, 192, 244, 0.4)`,
                                             borderRadius: '4px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '5px',
-                                            margin: 0
+                                            margin: 0,
+                                            fontFamily: '"Space Grotesk", sans-serif'
                                         }}
                                     >
                                         <i className={`fas ${isGeneratingProdLongDesc ? 'fa-spinner fa-spin' : 'fa-magic'}`}></i>
@@ -877,17 +888,17 @@ export const AdminPage = ({ t }: { t: any }) => {
                                     </button>
                                 </div>
                                 <textarea 
-                                    placeholder="输入产品的详细典籍记载、风水禁忌、佩戴讲究等全方位细节，亦可由AI一键深度代笔..." style={{...styles.formInput, height: '140px'}} 
+                                    placeholder="输入产品的详细典籍记载、风水禁忌、佩戴讲究等全方位细节，亦可由AI一键深度代笔..." style={{...styles.formInput, height: '140px', fontFamily: '"Space Grotesk", sans-serif'}} 
                                     value={editingProduct?.longDescription || ''} onChange={e => setEditingProduct({...editingProduct, longDescription: e.target.value})} 
                                 />
                             </div>
 
                             {/* Buttons conforming to multi-platform optimization constraint */}
                             <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap', width: '100%'}}>
-                                <button type="submit" style={{...styles.button, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.95rem'}}>
+                                <button type="submit" style={{...styles.button, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.95rem', fontFamily: '"Space Grotesk", sans-serif'}}>
                                     <i className="fas fa-save" style={{marginRight: '8px'}}></i> 保存商品 (Save Product)
                                 </button>
-                                <button type="button" onClick={() => setEditingProduct(null)} style={{...styles.secondaryButton, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.95rem'}}>
+                                <button type="button" onClick={() => setEditingProduct(null)} style={{...styles.secondaryButton, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.95rem', fontFamily: '"Space Grotesk", sans-serif', borderColor: 'rgba(102, 192, 244, 0.3)'}}>
                                     <i className="fas fa-undo" style={{marginRight: '8px'}}></i> 重置表单 (Reset Form)
                                 </button>
                             </div>
@@ -896,38 +907,38 @@ export const AdminPage = ({ t }: { t: any }) => {
                     </div>
 
                     {/* Bottom part: Products Table List */}
-                    <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden'}}>
-                        <div style={{padding: '15px 20px', borderBottom: `1px solid ${theme.darkGold}`, background: 'rgba(255,255,255,0.01)'}}>
-                            <h4 style={{color: theme.gold, fontFamily: 'Cinzel, serif', margin: 0, fontSize: '1.1rem'}}>
+                    <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden', borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                        <div style={{padding: '15px 20px', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, background: 'rgba(102, 192, 244, 0.01)'}}>
+                            <h4 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', margin: 0, fontSize: '1.1rem', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>
                                 <i className="fas fa-cubes" style={{marginRight: '8px'}}></i> 在售商品库一览 (Database Products Inventory)
                             </h4>
                         </div>
                         <div style={{overflowX: 'auto'}}>
                             <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0'}}>
                                 <thead>
-                                    <tr style={{background: 'rgba(212, 175, 55, 0.2)', borderBottom: `1px solid ${theme.darkGold}`}}>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>图片 (Image)</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>商品名称与SKU</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>价格 (Price)</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>集合与命理 (Tag)</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>销售状态 (Status)</th>
-                                        <th style={{padding: '15px', textAlign: 'right', color: theme.gold}}>操作栏 (Actions)</th>
+                                    <tr style={{background: 'rgba(102, 192, 244, 0.15)', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`}}>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>图片 (Image)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>商品名称与SKU</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>价格 (Price)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>集合与命理 (Tag)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>销售状态 (Status)</th>
+                                        <th style={{padding: '15px', textAlign: 'right', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>操作栏 (Actions)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {products.map((p) => (
-                                        <tr key={p.id} style={{borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'transparent'}}>
+                                        <tr key={p.id} style={{borderBottom: '1px solid rgba(102, 192, 244, 0.1)', background: 'transparent'}}>
                                             <td style={{padding: '10px 15px'}}>
-                                                <img src={p.imageUrl || `https://picsum.photos/seed/${p.id}/100/100`} style={{width: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover', border: `1px solid ${theme.darkGold}`}} />
+                                                <img src={p.imageUrl || `https://picsum.photos/seed/${p.id}/100/100`} style={{width: '50px', height: '50px', borderRadius: '4px', objectFit: 'cover', border: `1px solid rgba(102, 192, 244, 0.2)`}} />
                                             </td>
                                             <td style={{padding: '10px 15px'}}>
-                                                <div style={{fontWeight: 'bold', fontSize: '0.95rem'}}>{p.defaultName}</div>
-                                                <div style={{fontSize: '0.75rem', color: '#999'}}>SKU: <code style={{color: theme.gold}}>{p.sku || 'N/A'}</code> | ID: {p.id}</div>
+                                                <div style={{fontWeight: 'bold', fontSize: '0.95rem', fontFamily: '"Space Grotesk", sans-serif'}}>{p.defaultName}</div>
+                                                <div style={{fontSize: '0.75rem', color: '#999', fontFamily: '"Space Grotesk", sans-serif'}}>SKU: <code style={{color: theme.accent}}>{p.sku || 'N/A'}</code> | ID: {p.id}</div>
                                             </td>
-                                            <td style={{padding: '10px 15px', color: theme.gold, fontWeight: 'bold'}}>{p.price}</td>
-                                            <td style={{padding: '10px 15px'}}>
+                                            <td style={{padding: '10px 15px', color: theme.accent, fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif'}}>{p.price}</td>
+                                            <td style={{padding: '10px 15px', fontFamily: '"Space Grotesk", sans-serif'}}>
                                                 <span style={{fontSize: '0.75rem', padding: '2px 6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', textTransform: 'capitalize', marginRight: '5px'}}>分类: {p.category}</span>
-                                                {p.element && <span style={{fontSize: '0.75rem', padding: '2px 6px', background: 'rgba(212, 175, 55, 0.1)', color: theme.gold, borderRadius: '3px'}}>{p.element}行</span>}
+                                                {p.element && <span style={{fontSize: '0.75rem', padding: '2px 6px', background: 'rgba(102, 192, 244, 0.1)', color: theme.accent, borderRadius: '3px'}}>{p.element}行</span>}
                                             </td>
                                             <td style={{padding: '10px 15px'}}>
                                                 <span style={{
@@ -936,7 +947,8 @@ export const AdminPage = ({ t }: { t: any }) => {
                                                     padding: '2px 6px',
                                                     borderRadius: '4px',
                                                     fontSize: '0.75rem',
-                                                    fontWeight: 'bold'
+                                                    fontWeight: 'bold',
+                                                    fontFamily: '"Space Grotesk", sans-serif'
                                                 }}>
                                                     {p.status === 'inactive' ? 'DELISTED (已下架)' : 'LISTED (销售中)'}
                                                 </span>
@@ -945,10 +957,10 @@ export const AdminPage = ({ t }: { t: any }) => {
                                                 <button onClick={() => {
                                                     setEditingProduct(p);
                                                     window.scrollTo({ top: 120, behavior: 'smooth' });
-                                                }} style={{background: 'none', border: 'none', color: theme.gold, cursor: 'pointer', marginRight: '15px', fontSize: '1.05rem'}} title="编辑商品">
+                                                }} style={{background: 'none', border: 'none', color: theme.accent, cursor: 'pointer', marginRight: '15px', fontSize: '1.05rem'}} title="编辑商品">
                                                     <i className="fas fa-edit"></i>
                                                 </button>
-                                                <button onClick={() => handleDeleteProduct(p.id)} style={{background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: '1.05rem'}} title="删除商品">
+                                                <button onClick={() => handleDeleteProduct(p.id)} style={{background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '1.05rem'}} title="删除商品">
                                                     <i className="fas fa-trash"></i>
                                                 </button>
                                             </td>
@@ -967,24 +979,24 @@ export const AdminPage = ({ t }: { t: any }) => {
                 <div style={{display: 'flex', flexDirection: 'column', gap: '30px'}}>
                     
                     {/* Top Part: Homepage config form */}
-                    <div style={{...styles.glassPanel, border: `1px solid ${editingConfig ? theme.gold : 'rgba(255,255,255,0.08)'}`}}>
-                        <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '8px', marginBottom: '20px'}}>
+                    <div style={{...styles.glassPanel, border: `1px solid ${editingConfig ? 'rgba(102, 192, 244, 0.4)' : 'rgba(102, 192, 244, 0.15)'}`}}>
+                        <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, paddingBottom: '8px', marginBottom: '20px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>
                             {editingConfig ? `✍️ 优化主页板块: ${editingConfig.key}` : '💡 选择下方主页模块进行重修或文案撰写'}
                         </h3>
                         
                         <form onSubmit={handleSaveConfig} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px'}}>
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>板块标识代号 (Section / Key)</label>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>板块标识代号 (Section / Key)</label>
                                     <input 
-                                        type="text" style={{...styles.formInput, opacity: 0.6}} 
+                                        type="text" style={{...styles.formInput, opacity: 0.6, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingConfig?.key || '未选定模版'} readOnly 
                                     />
                                 </div>
                                 <div>
-                                    <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>展示大标题 (Title)</label>
+                                    <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>展示大标题 (Title)</label>
                                     <input 
-                                        type="text" placeholder="板块大标题" style={styles.formInput} 
+                                        type="text" placeholder="板块大标题" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                         value={editingConfig?.title || ''} onChange={e => setEditingConfig({...editingConfig, title: e.target.value})} 
                                         disabled={!editingConfig}
                                     />
@@ -992,15 +1004,15 @@ export const AdminPage = ({ t }: { t: any }) => {
                             </div>
 
                             {/* Local Image upload and preview for Homepage config */}
-                            <div style={{border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '4px'}}>
-                                <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px'}}>板块卡片图本地上传与实时预览 (Banner / Illustration Upload & Preview)</label>
+                            <div style={{border: '1px solid rgba(102, 192, 244, 0.15)', background: 'rgba(102, 192, 244, 0.01)', padding: '15px', borderRadius: '4px'}}>
+                                <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>板块卡片图本地上传与实时预览 (Banner / Illustration Upload & Preview)</label>
                                 <div style={{display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap'}}>
                                     <div style={{
                                         width: '140px', 
                                         height: '90px', 
                                         borderRadius: '6px', 
-                                        border: `1px dashed ${theme.gold}`, 
-                                        background: '#04040c', 
+                                        border: `1px dashed rgba(102, 192, 244, 0.4)`, 
+                                        background: '#171A21', 
                                         display: 'flex', 
                                         alignItems: 'center', 
                                         justifyContent: 'center',
@@ -1009,7 +1021,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                                         {editingConfig?.imageUrl ? (
                                             <img src={editingConfig.imageUrl} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
                                         ) : (
-                                            <span style={{color: '#444', fontSize: '0.75rem', textAlign: 'center'}}>No Image</span>
+                                            <span style={{color: '#888', fontSize: '0.75rem', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>No Image</span>
                                         )}
                                     </div>
                                     <div style={{flex: 1}}>
@@ -1026,9 +1038,9 @@ export const AdminPage = ({ t }: { t: any }) => {
                                                 }
                                             }}
                                             disabled={!editingConfig}
-                                            style={{color: '#ccc', fontSize: '0.85rem', cursor: editingConfig ? 'pointer' : 'not-allowed'}}
+                                            style={{color: '#ccc', fontSize: '0.85rem', cursor: editingConfig ? 'pointer' : 'not-allowed', fontFamily: '"Space Grotesk", sans-serif'}}
                                         />
-                                        <p style={{color: '#888', fontSize: '0.75rem', margin: '5px 0 0 0'}}>玄学大图或者配图上传区。此操作将彻底剔除并覆盖原网络URL。</p>
+                                        <p style={{color: '#888', fontSize: '0.75rem', margin: '5px 0 0 0', fontFamily: '"Space Grotesk", sans-serif'}}>玄学大图或者配图上传区。此操作将彻底剔除并覆盖原网络URL。</p>
                                     </div>
                                 </div>
                             </div>
@@ -1036,24 +1048,25 @@ export const AdminPage = ({ t }: { t: any }) => {
                             {/* AI Write description text */}
                             <div>
                                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px'}}>
-                                    <label style={{color: theme.gold, fontSize: '0.85rem', fontWeight: '600'}}>板块引介描述文案 (Introduction & Narrative)</label>
+                                    <label style={{color: theme.accent, fontSize: '0.85rem', fontWeight: '600', fontFamily: '"Space Grotesk", sans-serif'}}>板块引介描述文案 (Introduction & Narrative)</label>
                                     <button 
                                         type="button" 
                                         disabled={!editingConfig || isGeneratingHomeDesc}
                                         onClick={handleAIGenerateHomeDesc} 
                                         style={{
-                                            background: 'rgba(212, 175, 55, 0.1)', 
-                                            borderColor: theme.gold, 
-                                            color: theme.gold, 
+                                            background: 'rgba(102, 192, 244, 0.1)', 
+                                            borderColor: 'rgba(102, 192, 244, 0.4)', 
+                                            color: theme.accent, 
                                             padding: '4px 8px', 
                                             fontSize: '0.75rem', 
-                                            border: `1px solid ${theme.gold}`,
+                                            border: `1px solid rgba(102, 192, 244, 0.4)`,
                                             borderRadius: '4px',
                                             cursor: editingConfig ? 'pointer' : 'not-allowed',
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '5px',
-                                            margin: 0
+                                            margin: 0,
+                                            fontFamily: '"Space Grotesk", sans-serif'
                                         }}
                                     >
                                         <i className={`fas ${isGeneratingHomeDesc ? 'fa-spinner fa-spin' : 'fa-magic'}`}></i>
@@ -1061,7 +1074,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                                     </button>
                                 </div>
                                 <textarea 
-                                    placeholder="输入板块的精美推介词，或点击上方魔法按钮让AI为你量身编撰..." style={{...styles.formInput, height: '110px'}} 
+                                    placeholder="输入板块的精美推介词，或点击上方魔法按钮让AI为你量身编撰..." style={{...styles.formInput, height: '110px', fontFamily: '"Space Grotesk", sans-serif'}} 
                                     value={editingConfig?.description || ''} onChange={e => setEditingConfig({...editingConfig, description: e.target.value})} 
                                     disabled={!editingConfig}
                                 />
@@ -1069,9 +1082,9 @@ export const AdminPage = ({ t }: { t: any }) => {
 
                             {/* AI Image prompt (just kept/updated silently) */}
                             <div>
-                                <label style={{display: 'block', color: theme.gold, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px'}}>备用 AI 出图提示词 (Fallback Image Generation Prompt)</label>
+                                <label style={{display: 'block', color: theme.accent, fontSize: '0.85rem', fontWeight: '600', marginBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>备用 AI 出图提示词 (Fallback Image Generation Prompt)</label>
                                 <input 
-                                    type="text" placeholder="AI Prompt for backup image generation" style={styles.formInput} 
+                                    type="text" placeholder="AI Prompt for backup image generation" style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                     value={editingConfig?.imagePrompt || ''} onChange={e => setEditingConfig({...editingConfig, imagePrompt: e.target.value})} 
                                     disabled={!editingConfig}
                                 />
@@ -1079,10 +1092,10 @@ export const AdminPage = ({ t }: { t: any }) => {
 
                             {/* Buttons and actions with highly fluid container sizing to fit PC/Tablet/iPhone */}
                             <div style={{display: 'flex', gap: '15px', flexWrap: 'wrap', width: '100%'}}>
-                                <button type="submit" disabled={!editingConfig} style={{...styles.button, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.9rem', cursor: editingConfig ? 'pointer' : 'not-allowed'}}>
+                                <button type="submit" disabled={!editingConfig} style={{...styles.button, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.9rem', cursor: editingConfig ? 'pointer' : 'not-allowed', fontFamily: '"Space Grotesk", sans-serif'}}>
                                     <i className="fas fa-check-circle" style={{marginRight: '8px'}}></i> 保存板块修改 (Save Changes)
                                 </button>
-                                <button type="button" onClick={() => setEditingConfig(null)} style={{...styles.secondaryButton, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.9rem'}}>
+                                <button type="button" onClick={() => setEditingConfig(null)} style={{...styles.secondaryButton, flex: '1 1 200px', margin: 0, padding: '12px', fontSize: '0.9rem', fontFamily: '"Space Grotesk", sans-serif', borderColor: 'rgba(102, 192, 244, 0.3)'}}>
                                     <i className="fas fa-times" style={{marginRight: '8px'}}></i> 取消编辑 (Cancel)
                                 </button>
                             </div>
@@ -1090,41 +1103,41 @@ export const AdminPage = ({ t }: { t: any }) => {
                     </div>
 
                     {/* Bottom Part: Configs list layout */}
-                    <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden'}}>
-                        <div style={{padding: '15px 20px', borderBottom: `1px solid ${theme.darkGold}`, background: 'rgba(255,255,255,0.01)'}}>
-                            <h4 style={{color: theme.gold, fontFamily: 'Cinzel, serif', margin: 0, fontSize: '1.1rem'}}>
+                    <div style={{...styles.glassPanel, padding: '0', overflow: 'hidden', borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                        <div style={{padding: '15px 20px', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, background: 'rgba(102, 192, 244, 0.01)'}}>
+                            <h4 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', margin: 0, fontSize: '1.1rem', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>
                                 <i className="fas fa-th-list" style={{marginRight: '8px'}}></i> 现有主页板块模组 (Homepage Main Sections)
                             </h4>
                         </div>
                         <div style={{overflowX: 'auto'}}>
                             <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0'}}>
                                 <thead>
-                                    <tr style={{background: 'rgba(212, 175, 55, 0.2)', borderBottom: `1px solid ${theme.darkGold}`}}>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>类型 (Type)</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>主健 (Section Key)</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>前台标题 (Title)</th>
-                                        <th style={{padding: '15px', textAlign: 'left', color: theme.gold}}>配图预览</th>
-                                        <th style={{padding: '15px', textAlign: 'right', color: theme.gold}}>修改 (Actions)</th>
+                                    <tr style={{background: 'rgba(102, 192, 244, 0.15)', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`}}>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>类型 (Type)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>主健 (Section Key)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>前台标题 (Title)</th>
+                                        <th style={{padding: '15px', textAlign: 'left', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>配图预览</th>
+                                        <th style={{padding: '15px', textAlign: 'right', color: theme.accent, fontFamily: '"Space Grotesk", sans-serif'}}>修改 (Actions)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {homepageConfigs.map((c) => (
-                                        <tr key={c.key} style={{borderBottom: '1px solid rgba(255,255,255,0.1)'}}>
-                                            <td style={{padding: '10px 15px', textTransform: 'capitalize', fontSize: '0.8rem'}}>{c.type}</td>
-                                            <td style={{padding: '10px 15px', fontWeight: 'bold'}}>{c.key}</td>
-                                            <td style={{padding: '10px 15px'}}>{c.title}</td>
+                                        <tr key={c.key} style={{borderBottom: '1px solid rgba(102, 192, 244, 0.1)'}}>
+                                            <td style={{padding: '10px 15px', textTransform: 'capitalize', fontSize: '0.8rem', fontFamily: '"Space Grotesk", sans-serif'}}>{c.type}</td>
+                                            <td style={{padding: '10px 15px', fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif'}}>{c.key}</td>
+                                            <td style={{padding: '10px 15px', fontFamily: '"Space Grotesk", sans-serif'}}>{c.title}</td>
                                             <td style={{padding: '10px 15px'}}>
                                                 {c.imageUrl ? (
-                                                    <img src={c.imageUrl} style={{width: '60px', height: '35px', borderRadius: '3px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.1)'}} />
+                                                    <img src={c.imageUrl} style={{width: '60px', height: '35px', borderRadius: '3px', objectFit: 'cover', border: '1px solid rgba(102, 192, 244, 0.2)'}} />
                                                 ) : (
-                                                    <span style={{color: '#555', fontSize: '0.75rem'}}>No Image</span>
+                                                    <span style={{color: '#555', fontSize: '0.75rem', fontFamily: '"Space Grotesk", sans-serif'}}>No Image</span>
                                                 )}
                                             </td>
                                             <td style={{padding: '10px 15px', textAlign: 'right'}}>
                                                 <button onClick={() => {
                                                     setEditingConfig(c);
                                                     window.scrollTo({ top: 120, behavior: 'smooth' });
-                                                }} style={{background: 'none', border: 'none', color: theme.gold, cursor: 'pointer', fontSize: '1.05rem'}}>
+                                                }} style={{background: 'none', border: 'none', color: theme.accent, cursor: 'pointer', fontSize: '1.05rem'}}>
                                                     <i className="fas fa-edit"></i>
                                                 </button>
                                             </td>
@@ -1140,48 +1153,48 @@ export const AdminPage = ({ t }: { t: any }) => {
 
             {/* TAB CONTENT: 5. SETTING & PIXEL (Requirement 3 - Only keep FB Pixel and Google Analytics Pixel, Cancel any home page settings here) */}
             {activeTab === 'settings' && (
-                <div style={{...styles.glassPanel, maxWidth: '850px', margin: '0 auto', padding: '2.5rem'}}>
-                    <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.4rem', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '10px', marginBottom: '20px'}}>
+                <div style={{...styles.glassPanel, maxWidth: '850px', margin: '0 auto', padding: '2.5rem', borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                    <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.4rem', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, paddingBottom: '10px', marginBottom: '20px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>
                         <i className="fas fa-chart-line" style={{marginRight: '10px'}}></i>
                         SETTING & PIXEL (网站监控配置)
                     </h3>
-                    <p style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '2rem'}}>
+                    <p style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '2rem', fontFamily: '"Space Grotesk", sans-serif'}}>
                         配置并装配您的 Google Analytics (GTAG) 以及 Facebook-Meta API 追踪像素，为市场引流提供数据赋能。其他系统级设置在此处一律剔除。
                     </p>
 
                     <form onSubmit={handleSaveSettings} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                         
                         <div>
-                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.gold, fontWeight: 'bold', marginBottom: '8px'}}>GOOGLE ANALYTICS / GTAG ID</label>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, fontWeight: 'bold', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>GOOGLE ANALYTICS / GTAG ID</label>
                             <input 
                                 type="text" 
                                 placeholder="例如: G-XXXXXXXXXX" 
-                                style={styles.formInput} 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                 value={settings.googlePixelId || ''} 
                                 onChange={e => setSettings({...settings, googlePixelId: e.target.value})} 
                             />
-                            <span style={{fontSize: '0.75rem', color: '#888'}}>输入您的全局谷歌流量监控 ID，以便系统收集转化反馈。</span>
+                            <span style={{fontSize: '0.75rem', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>输入您的全局谷歌流量监控 ID，以便系统收集转化反馈。</span>
                         </div>
 
                         <div>
-                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.gold, fontWeight: 'bold', marginBottom: '8px'}}>FACEBOOK PIXEL ID (Meta 像素代号)</label>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, fontWeight: 'bold', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>FACEBOOK PIXEL ID (Meta 像素代号)</label>
                             <input 
                                 type="text" 
                                 placeholder="例如: 1234567890" 
-                                style={styles.formInput} 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                 value={settings.facebookPixelId || ''} 
                                 onChange={e => setSettings({...settings, facebookPixelId: e.target.value})} 
                             />
-                            <span style={{fontSize: '0.75rem', color: '#888'}}>Meta广告精准归因像素代号。</span>
+                            <span style={{fontSize: '0.75rem', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>Meta广告精准归因像素代号。</span>
                         </div>
 
                         {settingsStatus === 'success' && (
-                            <div style={{padding: '12px', background: 'rgba(46,204,113,0.15)', color: '#2ecc71', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                            <div style={{padding: '12px', background: 'rgba(46,204,113,0.15)', color: '#2ecc71', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>
                                 <i className="fas fa-check-circle" style={{marginRight: '8px'}}></i> Google & Facebook 流量分析像素参数已保存更新！
                             </div>
                         )}
                         {settingsStatus === 'error' && (
-                            <div style={{padding: '12px', background: 'rgba(231,76,60,0.15)', color: '#e74c3c', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                            <div style={{padding: '12px', background: 'rgba(231,76,60,0.15)', color: '#ff4d4d', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>
                                 <i className="fas fa-times-circle" style={{marginRight: '8px'}}></i> 保存失败，请检查网络后台连接。
                             </div>
                         )}
@@ -1189,7 +1202,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                         <button 
                             type="submit" 
                             disabled={isSavingSettings}
-                            style={{...styles.button, width: '100%', marginTop: '10px'}}
+                            style={{...styles.button, width: '100%', marginTop: '10px', fontFamily: '"Space Grotesk", sans-serif'}}
                         >
                             {isSavingSettings ? "Saving Settings..." : "保存像素监控参数 (Save Pixels)"}
                         </button>
@@ -1199,68 +1212,161 @@ export const AdminPage = ({ t }: { t: any }) => {
 
             {/* TAB CONTENT: 6. PAYMENTS CONFIG (Requirement 4 - Separate Payments Setup for PayPal & Stripe Credit Card integrations) */}
             {activeTab === 'payments' && (
-                <div style={{...styles.glassPanel, maxWidth: '850px', margin: '0 auto', padding: '2.5rem'}}>
-                    <h3 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.4rem', borderBottom: `1px solid ${theme.darkGold}`, paddingBottom: '10px', marginBottom: '20px'}}>
+                <div style={{...styles.glassPanel, maxWidth: '850px', margin: '0 auto', padding: '2.5rem', borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                    <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.4rem', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, paddingBottom: '10px', marginBottom: '20px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>
                         <i className="fas fa-wallet" style={{marginRight: '10px'}}></i>
-                        收款设置 (Payment Getaways Setup)
+                        收款设置 (Payment Gateways Setup)
                     </h3>
-                    <p style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '2rem'}}>
+                    <p style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '2rem', fontFamily: '"Space Grotesk", sans-serif'}}>
                         管理前台玄学解签或福物采购所需的底层资金流收取通道。在这里可以自定义 PayPal 沙盒和 Stripe 信用卡的网关秘钥。
                     </p>
 
                     <form onSubmit={handleSaveSettings} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                         
                         {/* PayPal Container */}
-                        <div style={{background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '4px'}}>
+                        <div style={{background: 'rgba(102, 192, 244, 0.02)', border: '1px solid rgba(102, 192, 244, 0.15)', padding: '20px', borderRadius: '4px'}}>
                             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
-                                <span style={{color: '#fff', fontWeight: 'bold'}}><i className="fab fa-paypal" style={{color: '#003087', marginRight: '8px'}}></i>PayPal Checkout 收款开关</span>
+                                <span style={{color: '#fff', fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif'}}><i className="fab fa-paypal" style={{color: '#66c0f4', marginRight: '8px'}}></i>PayPal Checkout 收款开关</span>
                                 <input 
                                     type="checkbox" 
                                     checked={!!settings.paypalEnabled} 
                                     onChange={e => setSettings({...settings, paypalEnabled: e.target.checked})} 
-                                    style={{width: '20px', height: '20px', cursor: 'pointer', accentColor: theme.gold}}
+                                    style={{width: '20px', height: '20px', cursor: 'pointer', accentColor: theme.accent}}
                                 />
                             </div>
-                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.gold, marginBottom: '5px', fontWeight: '500'}}>PAYPAL CLIENT ID (沙盒或线上生产商号)</label>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, marginBottom: '5px', fontWeight: '500', fontFamily: '"Space Grotesk", sans-serif'}}>PAYPAL CLIENT ID (沙盒或线上生产商号)</label>
                             <input 
                                 type="text" 
                                 placeholder="输入 PayPal Client 客户端凭证代码" 
-                                style={styles.formInput} 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                 value={settings.paypalClientId || ''} 
                                 onChange={e => setSettings({...settings, paypalClientId: e.target.value})} 
                                 disabled={!settings.paypalEnabled}
                             />
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, marginTop: '10px', marginBottom: '5px', fontWeight: '500', fontFamily: '"Space Grotesk", sans-serif'}}>PAYPAL CLIENT SECRET (商户客户端密钥)</label>
+                            <input 
+                                type="password" 
+                                placeholder="输入 PayPal Client Secret 客户端密钥" 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
+                                value={settings.paypalClientSecret || ''} 
+                                onChange={e => setSettings({...settings, paypalClientSecret: e.target.value})} 
+                                disabled={!settings.paypalEnabled}
+                            />
+                        </div>
+
+                        {/* Credit Card Gateway Router */}
+                        <div style={{background: 'rgba(102, 192, 244, 0.04)', border: '1px solid rgba(102, 192, 244, 0.3)', padding: '20px', borderRadius: '4px', marginTop: '10px'}}>
+                            <label style={{display: 'block', fontSize: '0.9rem', color: '#fff', fontWeight: 'bold', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                <i className="fas fa-random" style={{color: theme.accent, marginRight: '8px'}}></i>
+                                默认信用卡收款通道 (Active Credit Card Processor)
+                            </label>
+                            <p style={{color: '#aaa', fontSize: '0.8rem', margin: '0 0 12px 0'}}>
+                                当用户在前台选择信用卡支付时，系统底层的资金结算通道（Stripe 或者是空中云汇 Airwallex）。
+                            </p>
+                            <select 
+                                value={settings.creditCardProcessor || 'stripe'} 
+                                onChange={e => setSettings({...settings, creditCardProcessor: e.target.value})}
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}}
+                            >
+                                <option value="stripe">Stripe 收款通道 (默认)</option>
+                                <option value="airwallex">空中云汇 Airwallex 收款通道</option>
+                            </select>
                         </div>
 
                         {/* Credit Card Stripe Container */}
-                        <div style={{background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '20px', borderRadius: '4px', marginTop: '10px'}}>
+                        <div style={{background: 'rgba(102, 192, 244, 0.02)', border: '1px solid rgba(102, 192, 244, 0.15)', padding: '20px', borderRadius: '4px', marginTop: '10px'}}>
                             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
-                                <span style={{color: '#fff', fontWeight: 'bold'}}><i className="fab fa-stripe" style={{color: '#6772e5', marginRight: '8px'}}></i>Stripe 信和借记信用卡收款开关</span>
+                                <span style={{color: '#fff', fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif'}}><i className="fab fa-stripe" style={{color: '#6772e5', marginRight: '8px'}}></i>Stripe 信用卡收款开关</span>
                                 <input 
                                     type="checkbox" 
                                     checked={!!settings.stripeEnabled} 
                                     onChange={e => setSettings({...settings, stripeEnabled: e.target.checked})} 
-                                    style={{width: '20px', height: '20px', cursor: 'pointer', accentColor: theme.gold}}
+                                    style={{width: '20px', height: '20px', cursor: 'pointer', accentColor: theme.accent}}
                                 />
                             </div>
-                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.gold, marginBottom: '5px', fontWeight: '500'}}>STRIPE PUBLIC KEY (公钥 pk_test_... 或 pk_live_...)</label>
+                            <p style={{color: '#888', fontSize: '0.78rem', margin: '-10px 0 15px 0'}}>
+                                提示：如果在此处留空，系统将默认读取服务器环境变量 <code>STRIPE_PUBLIC_KEY</code> 及 <code>STRIPE_SECRET_KEY</code>。
+                            </p>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, marginBottom: '5px', fontWeight: '500', fontFamily: '"Space Grotesk", sans-serif'}}>STRIPE PUBLIC KEY (网页前端公钥 pk_...)</label>
                             <input 
                                 type="text" 
-                                placeholder="输入 Stripe 网页公钥凭证" 
-                                style={styles.formInput} 
+                                placeholder="输入 Stripe 网页公钥 (留空将读取环境变量)" 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
                                 value={settings.stripePublicKey || ''} 
                                 onChange={e => setSettings({...settings, stripePublicKey: e.target.value})} 
                                 disabled={!settings.stripeEnabled}
                             />
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, marginTop: '10px', marginBottom: '5px', fontWeight: '500', fontFamily: '"Space Grotesk", sans-serif'}}>STRIPE SECRET KEY (服务端私钥 sk_...)</label>
+                            <input 
+                                type="password" 
+                                placeholder="输入 Stripe 服务端私钥 (留空将读取环境变量)" 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
+                                value={settings.stripeSecretKey || ''} 
+                                onChange={e => setSettings({...settings, stripeSecretKey: e.target.value})} 
+                                disabled={!settings.stripeEnabled}
+                            />
+                        </div>
+
+                        {/* Credit Card Airwallex Container */}
+                        <div style={{background: 'rgba(102, 192, 244, 0.02)', border: '1px solid rgba(102, 192, 244, 0.15)', padding: '20px', borderRadius: '4px', marginTop: '10px'}}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
+                                <span style={{color: '#fff', fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif'}}><i className="fas fa-globe" style={{color: '#25ccd6', marginRight: '8px'}}></i>空中云汇 Airwallex 信用卡收款开关</span>
+                                <input 
+                                    type="checkbox" 
+                                    checked={!!settings.airwallexEnabled} 
+                                    onChange={e => setSettings({...settings, airwallexEnabled: e.target.checked})} 
+                                    style={{width: '20px', height: '20px', cursor: 'pointer', accentColor: theme.accent}}
+                                />
+                            </div>
+                            <p style={{color: '#888', fontSize: '0.78rem', margin: '-10px 0 15px 0'}}>
+                                提示：如果在此处留空，系统将默认读取服务器环境变量 <code>AIRWALLEX_CLIENT_ID</code>、<code>AIRWALLEX_API_KEY</code> 及 <code>AIRWALLEX_CLIENT_KEY</code>。
+                            </p>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, marginBottom: '5px', fontWeight: '500', fontFamily: '"Space Grotesk", sans-serif'}}>AIRWALLEX CLIENT ID (空中云汇商户客户端 ID)</label>
+                            <input 
+                                type="text" 
+                                placeholder="输入 Airwallex Client ID (留空将读取环境变量)" 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
+                                value={settings.airwallexClientId || ''} 
+                                onChange={e => setSettings({...settings, airwallexClientId: e.target.value})} 
+                                disabled={!settings.airwallexEnabled}
+                            />
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, marginTop: '10px', marginBottom: '5px', fontWeight: '500', fontFamily: '"Space Grotesk", sans-serif'}}>AIRWALLEX API KEY (结算 API 凭证密钥)</label>
+                            <input 
+                                type="password" 
+                                placeholder="输入 Airwallex API Key (留空将读取环境变量)" 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
+                                value={settings.airwallexApiKey || ''} 
+                                onChange={e => setSettings({...settings, airwallexApiKey: e.target.value})} 
+                                disabled={!settings.airwallexEnabled}
+                            />
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, marginTop: '10px', marginBottom: '5px', fontWeight: '500', fontFamily: '"Space Grotesk", sans-serif'}}>AIRWALLEX CLIENT KEY (网页前端 JavaScript 公钥)</label>
+                            <input 
+                                type="text" 
+                                placeholder="输入 Airwallex Client Key (留空将读取环境变量)" 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
+                                value={settings.airwallexClientKey || ''} 
+                                onChange={e => setSettings({...settings, airwallexClientKey: e.target.value})} 
+                                disabled={!settings.airwallexEnabled}
+                            />
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, marginTop: '10px', marginBottom: '5px', fontWeight: '500', fontFamily: '"Space Grotesk", sans-serif'}}>AIRWALLEX ENVIRONMENT (云汇环境模式)</label>
+                            <select 
+                                value={settings.airwallexMode || 'sandbox'} 
+                                onChange={e => setSettings({...settings, airwallexMode: e.target.value})}
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}}
+                                disabled={!settings.airwallexEnabled}
+                            >
+                                <option value="sandbox">Sandbox (沙盒测试测试环境)</option>
+                                <option value="production">Production (生产线上正式结算)</option>
+                            </select>
                         </div>
 
                         {settingsStatus === 'success' && (
-                            <div style={{padding: '12px', background: 'rgba(46,204,113,0.15)', color: '#2ecc71', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                            <div style={{padding: '12px', background: 'rgba(46,204,113,0.15)', color: '#2ecc71', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>
                                 <i className="fas fa-check-circle" style={{marginRight: '8px'}}></i> 收款网关密钥设置保存成功！
                             </div>
                         )}
                         {settingsStatus === 'error' && (
-                            <div style={{padding: '12px', background: 'rgba(231,76,60,0.15)', color: '#e74c3c', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center'}}>
+                            <div style={{padding: '12px', background: 'rgba(231,76,60,0.15)', color: '#ff4d4d', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>
                                 <i className="fas fa-times-circle" style={{marginRight: '8px'}}></i> 保存失败，请检查网络后台连接。
                             </div>
                         )}
@@ -1268,7 +1374,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                         <button 
                             type="submit" 
                             disabled={isSavingSettings}
-                            style={{...styles.button, width: '100%', marginTop: '10px'}}
+                            style={{...styles.button, width: '100%', marginTop: '10px', fontFamily: '"Space Grotesk", sans-serif'}}
                         >
                             {isSavingSettings ? "Saving Pay Creds..." : "保存收款网关配置 (Save Payment Config)"}
                         </button>

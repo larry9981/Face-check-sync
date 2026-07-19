@@ -12,8 +12,8 @@ const ProductCard: React.FC<{ product: Product, t: any, onViewProduct: (p: Produ
     const name = t[product.nameKey] ? t[product.nameKey].replace('{zodiac}', zodiacLocal) : product.defaultName;
 
     return (
-        <div style={{...styles.glassPanel, maxWidth: '250px', padding: '0', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(212, 175, 55, 0.3)'}} onClick={() => onViewProduct(product)}>
-            <div style={{width: '100%', height: '250px', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
+        <div style={{...styles.glassPanel, maxWidth: '250px', padding: '0', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(102, 192, 244, 0.22)', borderRadius: '12px'}} onClick={() => onViewProduct(product)}>
+            <div style={{width: '100%', height: '250px', background: '#121E2A', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
                 <CachedImage 
                     productId={product.id} 
                     prompt={product.imagePrompt} 
@@ -23,7 +23,7 @@ const ProductCard: React.FC<{ product: Product, t: any, onViewProduct: (p: Produ
                 />
             </div>
             <div style={{padding: '1.5rem', textAlign: 'center'}}>
-                <h3 style={{fontSize: '1.1rem', color: theme.gold, marginBottom: '0.5rem', fontFamily: 'Cinzel, serif', height: '1.5em', overflow: 'hidden'}}>{name}</h3>
+                <h3 style={{fontSize: '1.1rem', color: theme.gold, marginBottom: '0.5rem', fontFamily: '"Space Grotesk", sans-serif', height: '1.5em', overflow: 'hidden'}}>{name}</h3>
                 <p style={{color: '#fff', fontWeight: 'bold'}}>{product.price}</p>
             </div>
         </div>
@@ -31,7 +31,7 @@ const ProductCard: React.FC<{ product: Product, t: any, onViewProduct: (p: Produ
 };
 
 export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Product) => void }) => {
-    const [activeCategory, setActiveCategory] = useState<'chinese' | 'western' | 'all'>('chinese');
+    const [activeCategory, setActiveCategory] = useState<'chinese' | 'western' | 'all'>('all');
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -80,21 +80,73 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
     const filteredProducts = products.filter(p => {
         if (p.status === 'inactive') return false;
         if (activeCategory === 'all') return true;
-        if (activeCategory === 'chinese') return p.category === 'bracelet' || p.category === 'pendant' || p.category === 'necklace';
-        if (activeCategory === 'western') return p.category === 'amulet';
+        if (activeCategory === 'chinese') {
+            return ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig'].includes(p.zodiac);
+        }
+        if (activeCategory === 'western') {
+            return ["Capricorn", "Aquarius", "Pisces", "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius"].includes(p.zodiac);
+        }
         return true;
     });
 
     return (
         <div style={{maxWidth: '1200px', width: '95%', paddingBottom: '3rem'}}>
             <div style={{textAlign: 'center', marginBottom: '3rem'}}>
-                <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2.5rem', marginBottom: '1rem'}}>{t.shopTitle}</h2>
+                <h2 style={{color: theme.gold, fontFamily: '"Space Grotesk", sans-serif', fontSize: '2.5rem', marginBottom: '1rem'}}>{t.shopTitle}</h2>
                 <p style={{color: '#ccc', fontStyle: 'italic'}}>{t.shopDesc}</p>
             </div>
             <div style={{display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '30px', flexWrap: 'wrap'}}>
-                <button onClick={() => setActiveCategory('chinese')} style={{background: activeCategory === 'chinese' ? theme.gold : 'transparent', color: activeCategory === 'chinese' ? '#000' : theme.gold, border: `1px solid ${theme.gold}`, padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{t.shopCategoryChinese}</button>
-                <button onClick={() => setActiveCategory('western')} style={{background: activeCategory === 'western' ? theme.gold : 'transparent', color: activeCategory === 'western' ? '#000' : theme.gold, border: `1px solid ${theme.gold}`, padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{t.shopCategoryWestern}</button>
-                <button onClick={() => setActiveCategory('all')} style={{background: activeCategory === 'all' ? theme.gold : 'transparent', color: activeCategory === 'all' ? '#000' : theme.gold, border: `1px solid ${theme.gold}`, padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', fontFamily: 'Cinzel, serif', fontWeight: 'bold'}}>{t.moreProducts}</button>
+                <button 
+                    onClick={() => setActiveCategory('all')} 
+                    style={{
+                        background: activeCategory === 'all' ? `linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)` : 'rgba(23, 38, 54, 0.5)', 
+                        color: '#ffffff', 
+                        border: activeCategory === 'all' ? '1px solid #fff' : '1px solid rgba(102, 192, 244, 0.25)', 
+                        padding: '10px 24px', 
+                        borderRadius: '12px', 
+                        cursor: 'pointer', 
+                        fontFamily: '"Space Grotesk", sans-serif', 
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        boxShadow: activeCategory === 'all' ? '0 0 15px rgba(102, 192, 244, 0.35)' : 'none'
+                    }}
+                >
+                    {t.moreProducts}
+                </button>
+                <button 
+                    onClick={() => setActiveCategory('western')} 
+                    style={{
+                        background: activeCategory === 'western' ? `linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)` : 'rgba(23, 38, 54, 0.5)', 
+                        color: '#ffffff', 
+                        border: activeCategory === 'western' ? '1px solid #fff' : '1px solid rgba(102, 192, 244, 0.25)', 
+                        padding: '10px 24px', 
+                        borderRadius: '12px', 
+                        cursor: 'pointer', 
+                        fontFamily: '"Space Grotesk", sans-serif', 
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        boxShadow: activeCategory === 'western' ? '0 0 15px rgba(102, 192, 244, 0.35)' : 'none'
+                    }}
+                >
+                    {t.shopCategoryWestern}
+                </button>
+                <button 
+                    onClick={() => setActiveCategory('chinese')} 
+                    style={{
+                        background: activeCategory === 'chinese' ? `linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)` : 'rgba(23, 38, 54, 0.5)', 
+                        color: '#ffffff', 
+                        border: activeCategory === 'chinese' ? '1px solid #fff' : '1px solid rgba(102, 192, 244, 0.25)', 
+                        padding: '10px 24px', 
+                        borderRadius: '12px', 
+                        cursor: 'pointer', 
+                        fontFamily: '"Space Grotesk", sans-serif', 
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        boxShadow: activeCategory === 'chinese' ? '0 0 15px rgba(102, 192, 244, 0.35)' : 'none'
+                    }}
+                >
+                    {t.shopCategoryChinese}
+                </button>
             </div>
             {loading ? (
                 <div style={{textAlign: 'center', padding: '50px', color: theme.gold}}>

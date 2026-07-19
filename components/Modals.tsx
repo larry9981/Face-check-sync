@@ -3,14 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { theme, styles } from '../theme';
 import { Product, Plan } from '../types';
 import { SHOP_PRODUCTS } from '../products';
-import { hashCode, ELEMENT_ADVICE, ImagePersistence } from '../utils';
+import { hashCode, ELEMENT_ADVICE, ImagePersistence, handleImageError } from '../utils';
 
 // --- NEW COMPONENT: Cached Image ---
 // Handles async loading from IndexedDB to avoid re-fetching from API
 export const CachedImage = ({ productId, prompt, size = 512, style, className, imageUrl }: { productId: string, prompt: string, size?: number, style?: React.CSSProperties, className?: string, imageUrl?: string }) => {
     // If we have a direct imageUrl, use it immediately
     if (imageUrl && imageUrl.trim() !== "") {
-        return <img src={imageUrl} style={style} className={className} alt="Product" referrerPolicy="no-referrer" />;
+        return <img src={imageUrl} style={style} className={className} alt="Product" referrerPolicy="no-referrer" onError={(e) => handleImageError(e, productId)} />;
     }
 
     // Initialize with memory cache if available for instant render
@@ -47,7 +47,7 @@ export const CachedImage = ({ productId, prompt, size = 512, style, className, i
         );
     }
 
-    return <img src={url || ''} style={style} className={className} alt="Product content" />;
+    return <img src={url || ''} style={style} className={className} alt="Product content" referrerPolicy="no-referrer" onError={(e) => handleImageError(e, productId)} />;
 };
 
 // Helper component for small product items (list view)
@@ -242,12 +242,18 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
                         
                         {/* BUTTONS INTEGRATED HERE */}
                         <div className="product-detail-buttons">
-                            <button style={{...styles.button, marginTop: 0, minWidth: '200px'}} onClick={onBuyNow}>
+                            <button style={{...styles.button, marginTop: 0, minWidth: 'unset', width: '220px', maxWidth: '100%', padding: '12px 20px', fontSize: '0.9rem'}} onClick={onBuyNow}>
                                 {t.buyNow}
                             </button>
                             <button 
                                 style={{
-                                    ...styles.secondaryButton, marginTop: 0, minWidth: '200px',
+                                    ...styles.secondaryButton, 
+                                    marginTop: 0, 
+                                    minWidth: 'unset', 
+                                    width: '220px', 
+                                    maxWidth: '100%',
+                                    padding: '12px 20px',
+                                    fontSize: '0.9rem',
                                     background: isAdded ? '#27ae60' : '#3498db', // Blue background
                                     borderColor: isAdded ? '#27ae60' : '#3498db',
                                     color: '#fff',
@@ -362,27 +368,7 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
     const [cardNumber, setCardNumber] = useState('');
     const [expiry, setExpiry] = useState('');
     const [cvc, setCvc] = useState('');
-    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal' | 'alipay' | 'wechat' | 'unionpay'>('paypal');
-    const [qrCountdown, setQrCountdown] = useState(300); // 5 Minutes QR countdown
-
-    // QR Countdown timer handler
-    React.useEffect(() => {
-        let timer: any;
-        if ((paymentMethod === 'alipay' || paymentMethod === 'wechat') && qrCountdown > 0) {
-            timer = setInterval(() => {
-                setQrCountdown(prev => (prev > 0 ? prev - 1 : 0));
-            }, 1000);
-        } else {
-            setQrCountdown(300);
-        }
-        return () => clearInterval(timer);
-    }, [paymentMethod, qrCountdown]);
-
-    const formatTime = (seconds: number) => {
-        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-        const s = (seconds % 60).toString().padStart(2, '0');
-        return `${m}:${s}`;
-    };
+    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'paypal'>('paypal');
 
     // Structured shipping details states
     const [shipName, setShipName] = useState('');
@@ -416,7 +402,10 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
 
     const priceStr = plan.price.replace(/[^0-9.]/g, '');
     const priceVal = parseFloat(priceStr) || 0;
-    
+
+    // State for showing redirect notice
+    const [isRedirectingPaypal, setIsRedirectingPaypal] = useState(false);
+
     const handlePaymentSubmit = async () => {
         if (!email) {
             setErrorMsg(isZh ? "请输入有效的电子邮箱地址。" : "Please enter a valid email address.");
@@ -429,23 +418,16 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
             }
         }
         
-        // Validation logic for credit card & unionpay
-        if (paymentMethod === 'stripe' || paymentMethod === 'unionpay') {
+        // Validation logic for credit card
+        if (paymentMethod === 'stripe') {
             const cleanCard = cardNumber.replace(/\s/g, '');
             if (!cleanCard) {
                 setErrorMsg(isZh ? "请输入卡号。" : "Please enter a card number.");
                 return;
             }
-            if (paymentMethod === 'stripe') {
-                if (!firstName || !lastName || !expiry || !cvc) {
-                    setErrorMsg(isZh ? "请填写完整的信用卡信息。" : "Please fill out all Credit Card fields.");
-                    return;
-                }
-            } else if (paymentMethod === 'unionpay') {
-                if (!firstName) {
-                    setErrorMsg(isZh ? "请填写持卡人姓名。" : "Please fill out the cardholder name.");
-                    return;
-                }
+            if (!firstName || !lastName || !expiry || !cvc) {
+                setErrorMsg(isZh ? "请填写完整的信用卡信息。" : "Please fill out all Credit Card fields.");
+                return;
             }
         }
 
@@ -474,7 +456,7 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                     amount: priceVal,
                     method: paymentMethod,
                     shippingAddress: formattedShipping,
-                    cardDetails: (paymentMethod === 'stripe' || paymentMethod === 'unionpay') ? {
+                    cardDetails: paymentMethod === 'stripe' ? {
                         name: `${firstName} ${lastName}`.trim() || firstName || 'Customer',
                         cardNumber,
                         expiry: expiry || '12/29',
@@ -486,9 +468,34 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
             const data = await response.json();
             if (response.ok && data.success) {
                 if (data.redirectUrl) {
-                    window.location.href = data.redirectUrl;
+                    setIsRedirectingPaypal(true);
+                    // Try to open PayPal in a new tab to fully bypass any sandbox iframe restrictions
+                    const openedWindow = window.open(data.redirectUrl, '_blank');
+                    if (!openedWindow || openedWindow.closed || typeof openedWindow.closed === 'undefined') {
+                        // Fallback to direct window location redirection if popups are blocked
+                        window.location.href = data.redirectUrl;
+                    }
                     return;
                 }
+
+                if (data.simulated) {
+                    // Beautiful loading simulation for empty sandbox credentials
+                    setProcessing(true);
+                    setTimeout(() => {
+                        setSuccessState(true);
+                        setTimeout(() => {
+                            if (isMounted.current) {
+                                onSuccess({
+                                    email,
+                                    orderId: data.orderId,
+                                    method: paymentMethod
+                                });
+                            }
+                        }, 2000);
+                    }, 1500);
+                    return;
+                }
+
                 setSuccessState(true);
                 setTimeout(() => {
                     if (isMounted.current) {
@@ -505,7 +512,11 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
         } catch (err: any) {
             setErrorMsg("Unable to process transaction at this moment. Please try again.");
         } finally {
-            setProcessing(false);
+            // Keep processing true if simulated or redirecting to avoid double clicking
+            const data = (window as any)._lastPayData; // dummy check or fallback
+            if (!isRedirectingPaypal) {
+                setProcessing(false);
+            }
         }
     };
 
@@ -606,7 +617,7 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                 <h3 style={{color: theme.gold, fontSize: '0.85rem', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px'}}>
                     {isZh ? "支付方式" : (t.paymentMethod || "Payment Method")}
                 </h3>
-                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '10px', width: '100%'}}>
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%'}}>
                     <button 
                         type="button"
                         onClick={() => setPaymentMethod('paypal')}
@@ -635,51 +646,6 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                         <i className="fas fa-credit-card" style={{fontSize: '1.4rem', color: theme.gold}}></i>
                         <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'stripe' ? theme.gold : '#888'}}>
                             {isZh ? "信用卡" : (t.creditCard || "Credit Card")}
-                        </span>
-                    </button>
-                    <button 
-                        type="button"
-                        onClick={() => setPaymentMethod('alipay')}
-                        style={{
-                            padding: '12px 6px', borderRadius: '8px', border: `2px solid ${paymentMethod === 'alipay' ? theme.gold : '#333'}`,
-                            background: paymentMethod === 'alipay' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
-                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
-                            boxShadow: paymentMethod === 'alipay' ? `0 0 10px rgba(212, 175, 55, 0.2)` : 'none'
-                        }}
-                    >
-                        <i className="fab fa-alipay" style={{fontSize: '1.4rem', color: '#00A3EE'}}></i>
-                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'alipay' ? theme.gold : '#888'}}>
-                            {isZh ? "支付宝" : (t.alipay || "Alipay")}
-                        </span>
-                    </button>
-                    <button 
-                        type="button"
-                        onClick={() => setPaymentMethod('wechat')}
-                        style={{
-                            padding: '12px 6px', borderRadius: '8px', border: `2px solid ${paymentMethod === 'wechat' ? theme.gold : '#333'}`,
-                            background: paymentMethod === 'wechat' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
-                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
-                            boxShadow: paymentMethod === 'wechat' ? `0 0 10px rgba(212, 175, 55, 0.2)` : 'none'
-                        }}
-                    >
-                        <i className="fab fa-weixin" style={{fontSize: '1.4rem', color: '#09BB07'}}></i>
-                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'wechat' ? theme.gold : '#888'}}>
-                            {isZh ? "微信支付" : (t.wechatPay || "WeChat Pay")}
-                        </span>
-                    </button>
-                    <button 
-                        type="button"
-                        onClick={() => setPaymentMethod('unionpay')}
-                        style={{
-                            padding: '12px 6px', borderRadius: '8px', border: `2px solid ${paymentMethod === 'unionpay' ? theme.gold : '#333'}`,
-                            background: paymentMethod === 'unionpay' ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
-                            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', transition: 'all 0.2s',
-                            boxShadow: paymentMethod === 'unionpay' ? `0 0 10px rgba(212, 175, 55, 0.2)` : 'none'
-                        }}
-                    >
-                        <i className="fas fa-university" style={{fontSize: '1.4rem', color: '#D4AF37'}}></i>
-                        <span style={{fontSize: '0.75rem', fontWeight: 'bold', color: paymentMethod === 'unionpay' ? theme.gold : '#888'}}>
-                            {isZh ? "银联闪付" : (t.unionPay || "UnionPay")}
                         </span>
                     </button>
                 </div>
@@ -714,71 +680,77 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
                 </div>
             )}
 
-            {paymentMethod === 'unionpay' && (
-                <div style={{marginBottom: '20px', padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid #333'}}>
-                    <div style={{marginBottom: '10px'}}>
-                        <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>{isZh ? "银联卡号" : "UnionPay Card Number"}</label>
-                        <input type="text" maxLength={19} placeholder="6200 0000 0000 0000" style={styles.cardInput} value={cardNumber} onChange={e => setCardNumber(e.target.value)} />
-                    </div>
-                    <div style={{marginBottom: '10px'}}>
-                        <label style={{display: 'block', color: '#aaa', fontSize: '0.7rem', marginBottom: '5px'}}>{isZh ? "持卡人姓名" : "Cardholder Name"}</label>
-                        <input type="text" placeholder={isZh ? "请输入姓名" : "e.g. John Doe"} style={styles.cardInput} value={firstName} onChange={e => setFirstName(e.target.value)} />
-                    </div>
-                </div>
-            )}
-
             {paymentMethod === 'paypal' && (
                 <div style={{marginBottom: '20px', padding: '20px', textAlign: 'center', background: 'rgba(0,48,135,0.06)', borderRadius: '8px', border: '1px solid rgba(0,48,135,0.3)'}}>
                     <i className="fab fa-paypal" style={{fontSize: '3rem', color: '#0070ba', marginBottom: '10px'}}></i>
                     <p style={{fontSize: '0.9rem', color: '#ccc', margin: '0 0 10px 0'}}>
                         {isZh ? "使用您的 PayPal 账户或关联的付款源安全支付。" : "Pay securely with your PayPal account or linked bank sources."}
                     </p>
-                    <p style={{fontSize: '0.75rem', color: '#777', margin: 0}}>
-                        {isZh ? "点击下方按钮将打开 PayPal 支付跳转服务。" : "Redirecting protocol initiates upon clicking continue."}
+                    <p style={{fontSize: '0.75rem', color: '#777', margin: '0 0 15px 0'}}>
+                        {isZh ? "官方 PayPal 支付通道支持信用卡及账户余额支付" : "Official PayPal secure checkout gateway supports global payments."}
                     </p>
+                    
+                    <button 
+                        type="button"
+                        style={{
+                            width: '100%',
+                            background: '#ffc439',
+                            color: '#111',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '12px 20px',
+                            fontWeight: 'bold',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '10px',
+                            marginTop: '15px',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                            transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f2ba36'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#ffc439'}
+                        onClick={handlePaymentSubmit}
+                        disabled={processing || isRedirectingPaypal}
+                    >
+                        {processing ? (
+                            <><i className="fas fa-spinner fa-spin"></i> {t.processing}</>
+                        ) : isRedirectingPaypal ? (
+                            <><i className="fas fa-spinner fa-spin"></i> {isZh ? "正在安全跳转至 PayPal..." : "Redirecting to PayPal..."}</>
+                        ) : (
+                            <>
+                                <i className="fab fa-paypal" style={{fontSize: '1.2rem', color: '#003087'}}></i>
+                                {isZh ? "使用 PayPal 立即安全支付" : "Pay securely with PayPal"}
+                            </>
+                        )}
+                    </button>
                 </div>
             )}
 
-            {(paymentMethod === 'alipay' || paymentMethod === 'wechat') && (
-                <div style={{marginBottom: '20px', padding: '20px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid #333'}}>
-                    <div style={{ position: 'relative', display: 'inline-block', margin: '0 auto 15px auto' }}>
-                        <RenderQRCode type={paymentMethod} theme={theme} />
-                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, border: '2px solid rgba(212, 175, 55, 0.3)', borderRadius: '8px', pointerEvents: 'none', animation: 'pulse 2s infinite' }}></div>
-                    </div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: theme.gold, marginBottom: '8px' }}>
-                        ${priceVal.toFixed(2)}
-                    </div>
-                    <div style={{ fontSize: '0.85rem', color: '#ccc', marginBottom: '10px' }}>
-                        {isZh ? "请使用支付宝或微信扫码支付以完成交易模拟。" : (t.simulatedPaymentHint || "Please scan the QR code with your Alipay or WeChat mobile app to complete the transaction simulation.")}
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: '#888' }}>
-                        {isZh ? `二维码在 ${formatTime(qrCountdown)} 后失效` : `QR code expires in ${formatTime(qrCountdown)}`}
-                    </div>
-                </div>
+            {paymentMethod !== 'paypal' && (
+                <button 
+                    type="button"
+                    style={{
+                        ...styles.button, 
+                        width: '100%', 
+                        marginTop: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '10px'
+                    }} 
+                    onClick={handlePaymentSubmit}
+                    disabled={processing}
+                >
+                    {processing ? (
+                        <><i className="fas fa-spinner fa-spin"></i> {t.processing}</>
+                    ) : (
+                        isZh ? "安全信用卡结账" : "Pay Safely & Secure Checkout"
+                    )}
+                </button>
             )}
-
-            <button 
-                type="button"
-                style={{
-                    ...styles.button, 
-                    width: '100%', 
-                    marginTop: '10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px'
-                }} 
-                onClick={handlePaymentSubmit}
-                disabled={processing}
-            >
-                {processing ? (
-                    <><i className="fas fa-spinner fa-spin"></i> {t.processing}</>
-                ) : (
-                    paymentMethod === 'paypal' ? (isZh ? "使用 PayPal 继续支付" : "Continue with PayPal") :
-                    (paymentMethod === 'alipay' || paymentMethod === 'wechat') ? (isZh ? "我已完成支付" : "I Have Completed Payment") :
-                    (isZh ? "安全信用卡结账" : "Pay Safely & Secure Checkout")
-                )}
-            </button>
             
             <p style={{marginTop: '15px', fontSize: '0.75rem', color: '#666', textAlign: 'center', margin: '15px 0 0 0'}}>
                 <i className="fas fa-lock" style={{marginRight: '5px'}}></i> 256-bit SSL secured transaction processing container environment.

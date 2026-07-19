@@ -2,6 +2,7 @@
 import React from 'react';
 import { theme, styles } from '../theme';
 import { CartItem } from '../types';
+import { handleImageError } from '../utils';
 
 interface CartPageProps {
     t: any;
@@ -16,7 +17,7 @@ export const CartPage = ({ t, cart, onRemove, onCheckout }: CartPageProps) => {
     return (
         <div style={{maxWidth: '1200px', width: '95%', paddingBottom: '3rem'}}>
             <div style={{textAlign: 'center', marginBottom: '3rem'}}>
-                <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '2.5rem', marginBottom: '1rem'}}>{t.cartTitle}</h2>
+                <h2 style={{color: theme.gold, fontFamily: '"Space Grotesk", sans-serif', fontSize: '2.5rem', marginBottom: '1rem'}}>{t.cartTitle}</h2>
             </div>
 
             {cart.length === 0 ? (
@@ -44,27 +45,28 @@ export const CartPage = ({ t, cart, onRemove, onCheckout }: CartPageProps) => {
                                 gap: '15px'
                             }}>
                                 <div style={{display: 'flex', alignItems: 'center', gap: '15px', flex: '1 1 300px'}}>
-                                    <img src={imageUrl} alt={name} style={{width: '80px', height: '80px', borderRadius: '4px', objectFit: 'cover'}} />
+                                    <img src={imageUrl} alt={name} style={{width: '80px', height: '80px', borderRadius: '4px', objectFit: 'cover'}} referrerPolicy="no-referrer" onError={(e) => handleImageError(e, prod.id)} />
                                     <div>
-                                        <h3 style={{color: theme.gold, fontSize: '1.1rem', margin: '0 0 5px 0'}}>{name}</h3>
+                                        <h3 style={{color: theme.gold, fontSize: '1.1rem', margin: '0 0 5px 0', fontFamily: '"Space Grotesk", sans-serif'}}>{name}</h3>
                                         <div style={{color: '#ccc', fontSize: '0.9rem'}}>{prod.price}</div>
                                     </div>
                                 </div>
                                 
                                 <div style={{display: 'flex', alignItems: 'center', gap: '20px', justifyContent: 'flex-end', flex: '1 1 150px'}}>
-                                    <div style={{color: '#aaa', fontSize: '0.9rem'}}>
+                                    <div style={{color: '#aaa', fontSize: '0.9rem', fontFamily: '"Space Grotesk", sans-serif'}}>
                                         {t.quantity}: <span style={{color: '#fff', fontWeight: 'bold'}}>{item.quantity}</span>
                                     </div>
                                     <button 
                                         onClick={() => onRemove(prod.id)} 
                                         style={{
                                             background: 'transparent', 
-                                            border: '1px solid #c0392b', 
-                                            color: '#c0392b', 
+                                            border: '1px solid #ff4a4a', 
+                                            color: '#ff4a4a', 
                                             padding: '5px 10px', 
                                             borderRadius: '4px',
                                             cursor: 'pointer',
-                                            fontSize: '0.8rem'
+                                            fontSize: '0.8rem',
+                                            fontFamily: '"Space Grotesk", sans-serif'
                                         }}
                                     >
                                         <i className="fas fa-trash"></i> {t.remove}
@@ -77,13 +79,13 @@ export const CartPage = ({ t, cart, onRemove, onCheckout }: CartPageProps) => {
                     <div style={{
                         marginTop: '20px', 
                         padding: '20px', 
-                        borderTop: `1px solid ${theme.darkGold}`, 
+                        borderTop: `1px solid rgba(102, 192, 244, 0.15)`, 
                         display: 'flex', 
                         justifyContent: 'flex-end',
                         alignItems: 'center',
                         gap: '20px'
                     }}>
-                        <div style={{fontSize: '1.5rem', fontFamily: 'Cinzel, serif'}}>
+                        <div style={{fontSize: '1.5rem', fontFamily: '"Space Grotesk", sans-serif'}}>
                             <span style={{color: '#aaa'}}>{t.total}: </span>
                             <span style={{color: theme.gold, fontWeight: 'bold'}}>${total.toFixed(2)}</span>
                         </div>

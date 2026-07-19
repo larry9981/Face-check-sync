@@ -144,6 +144,64 @@ export const calculateWuXing = (year: string, month: string, day: string, hour: 
     return { scores: normalized, missingElement };
 };
 
+// --- GLOBAL AI IMAGE ERROR HANDLER (BUILT TO MAXIMIZE AI SUCCESS) ---
+export const handleImageError = (e: any, defaultText: string = 'mystic', seedInput: string = '') => {
+    const img = e.currentTarget;
+    if (!img) return;
+    const currentSrc = img.src || '';
+    
+    // Check retry level by data attribute
+    const retries = parseInt(img.getAttribute('data-retry-count') || '0', 10);
+    
+    if (retries >= 3) {
+        // Fallback to picsum with a deterministic seed as absolute last resort
+        const cleanSeed = seedInput ? hashCode(seedInput) : hashCode(defaultText);
+        img.src = `https://picsum.photos/seed/${cleanSeed}/400/400`;
+        return;
+    }
+    
+    const nextRetry = retries + 1;
+    img.setAttribute('data-retry-count', nextRetry.toString());
+    
+    const baseSeed = seedInput ? hashCode(seedInput) : hashCode(defaultText);
+    const nextSeed = baseSeed + nextRetry * 101;
+    
+    // If it's a Pollinations URL, we can tweak its query parameters
+    if (currentSrc.includes('pollinations.ai')) {
+        try {
+            const url = new URL(currentSrc);
+            url.searchParams.set('seed', nextSeed.toString());
+            
+            if (nextRetry === 1) {
+                // Try model=flux for premium rendering workers
+                url.searchParams.set('model', 'flux');
+            } else if (nextRetry === 2) {
+                // Try model=turbo for fast fallback rendering workers
+                url.searchParams.set('model', 'turbo');
+                // Simplify the prompt if it's super long and complex
+                const pathParts = url.pathname.split('/prompt/');
+                if (pathParts.length > 1 && decodeURIComponent(pathParts[1]).length > 80) {
+                    const simplified = `${defaultText} exquisite fortune jewelry ornament, digital painting, glowing sacred light`;
+                    img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(simplified)}?width=400&height=400&nologo=true&seed=${nextSeed}&model=turbo`;
+                    return;
+                }
+            } else if (nextRetry === 3) {
+                // Try a super simple, guaranteed prompt to ensure AI success
+                const ultraSimple = `${defaultText} elegant charm, studio photograph`;
+                img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(ultraSimple)}?width=400&height=400&nologo=true&seed=${nextSeed}`;
+                return;
+            }
+            img.src = url.toString();
+        } catch (err) {
+            // If URL parsing fails, load simplified Pollinations URL directly
+            img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(defaultText)}?width=400&height=400&nologo=true&seed=${nextSeed}`;
+        }
+    } else {
+        // Not a pollinations URL, but it failed. Force a simplified Pollinations AI image!
+        img.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(defaultText + " ornament glowing energy") || 'mystic'}?width=400&height=400&nologo=true&seed=${nextSeed}`;
+    }
+};
+
 // --- IMAGE PERSISTENCE (ROBUST & TOLERANT) ---
 export const ImagePersistence = {
     DB_NAME: 'MysticShopCache',
@@ -233,20 +291,8 @@ export const ImagePersistence = {
                 this.memoryCache.set(cacheKey, objectUrl);
                 return objectUrl;
             } catch (e) {
-                // If Pollinations fails, try to fetch from Picsum and cache it
-                const response = await fetch(fallbackUrl);
-                if (!response.ok) return fallbackUrl;
-
-                const blob = await response.blob();
-                if (db) {
-                    try {
-                        const tx = db.transaction(this.STORE_NAME, 'readwrite');
-                        tx.objectStore(this.STORE_NAME).put({ id: cacheKey, blob: blob, date: Date.now() });
-                    } catch (e) { /* Ignore write errors */ }
-                }
-                const objectUrl = URL.createObjectURL(blob);
-                this.memoryCache.set(cacheKey, objectUrl);
-                return objectUrl;
+                // Return remoteUrl directly. Standard <img> tags can load it directly bypass CORS
+                return remoteUrl;
             }
 
         } catch (error) {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { theme, styles } from '../theme';
+import { handleImageError } from '../utils';
 import { 
   Compass, 
   Sparkles, 
@@ -126,7 +127,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
   };
 
   return (
-    <div style={{ width: '100%', overflowX: 'hidden', background: '#0F0B08', color: theme.text }}>
+    <div style={{ width: '100%', overflowX: 'hidden', background: '#171A21', color: theme.text }}>
       
       {/* 1. ACADEMIC OBSERVATORY & HERO SECTION */}
       <section style={{ 
@@ -137,8 +138,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
         alignItems: 'center',
         justifyContent: 'center',
         padding: '80px 20px',
-        background: 'radial-gradient(circle at 50% 40%, #20130E 0%, #080504 100%)',
-        borderBottom: `1px solid rgba(212, 175, 55, 0.15)`
+        background: 'radial-gradient(circle at 50% 40%, #1B2838 0%, #171A21 100%)',
+        borderBottom: `1px solid rgba(102, 192, 244, 0.2)`
       }}>
         {/* Ancient stardust cosmic background */}
         <div style={{
@@ -147,7 +148,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundImage: 'radial-gradient(2px 2px at 30px 40px, #D4AF37, rgba(0,0,0,0)), radial-gradient(2px 2px at 80px 120px, #fff, rgba(0,0,0,0)), radial-gradient(3px 3px at 150px 250px, rgba(212,175,55,0.4), rgba(0,0,0,0))',
+          backgroundImage: 'radial-gradient(2px 2px at 30px 40px, #66C0F4, rgba(0,0,0,0)), radial-gradient(2px 2px at 80px 120px, #fff, rgba(0,0,0,0)), radial-gradient(3px 3px at 150px 250px, rgba(102,192,244,0.4), rgba(0,0,0,0))',
           backgroundSize: '300px 300px',
           opacity: 0.25,
           pointerEvents: 'none'
@@ -175,15 +176,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               display: 'inline-flex', 
               alignItems: 'center', 
               gap: '10px', 
-              background: 'rgba(212, 175, 55, 0.08)', 
+              background: 'rgba(102, 192, 244, 0.08)', 
               padding: '6px 14px', 
-              borderRadius: '0px', 
-              border: `1px solid rgba(212, 175, 55, 0.3)`,
+              borderRadius: '4px', 
+              border: `1px solid rgba(102, 192, 244, 0.3)`,
               marginBottom: '20px'
             }}>
               <Sparkles size={14} color={theme.gold} />
               <span style={{ 
-                fontFamily: 'Cinzel, serif', 
+                fontFamily: '"Space Grotesk", sans-serif', 
                 fontSize: '0.8rem', 
                 letterSpacing: '2px', 
                 color: theme.gold,
@@ -196,7 +197,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
 
             <h1 style={{ 
               fontSize: 'clamp(2.2rem, 4.5vw, 3.6rem)', 
-              fontFamily: 'Cinzel, serif', 
+              fontFamily: '"Space Grotesk", sans-serif', 
               color: theme.gold, 
               lineHeight: '1.25',
               fontWeight: 700,
@@ -217,7 +218,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               marginBottom: '35px',
               maxWidth: '620px',
               textAlign: 'justify',
-              fontFamily: 'Playfair Display, SimSun, serif'
+              fontFamily: '"Space Grotesk", sans-serif'
             }}>
               {isZh ? (
                 "我们摒弃世俗繁杂浮夸的图文混排，还原命理学术研究的纯粹与严肃。深度解构《周易》、《滴天髓》、《神相全编》等绝世典籍，结合现代高精密信息建模，从生物相理（面相与掌纹）、时空坐标（四柱八字）、星宿运转（紫微斗数）等唯物维度，为您还原最真实、客观、严谨的人生运势研判与五行调理指南。"
@@ -228,7 +229,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
 
             <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
               <motion.button
-                whileHover={{ scale: 1.04, boxShadow: `0 0 25px rgba(212, 175, 55, 0.35)` }}
+                whileHover={{ scale: 1.04, boxShadow: `0 0 25px rgba(102, 192, 244, 0.45)` }}
                 whileTap={{ scale: 0.97 }}
                 onClick={onExplore}
                 style={{
@@ -257,10 +258,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  background: 'rgba(0,0,0,0.5)',
-                  borderColor: 'rgba(212, 175, 55, 0.4)',
+                  background: 'rgba(27, 40, 56, 0.5)',
+                  borderColor: 'rgba(102, 192, 244, 0.45)',
                   color: theme.gold,
-                  borderRadius: '0px',
+                  borderRadius: '8px',
                   cursor: 'pointer'
                 }}
               >
@@ -282,7 +283,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               position: 'absolute',
               width: '340px',
               height: '340px',
-              border: '1px dashed rgba(212, 175, 55, 0.12)',
+              border: '1px dashed rgba(102, 192, 244, 0.15)',
               borderRadius: '50%',
               animation: 'spin 80s linear infinite'
             }} />
@@ -290,53 +291,38 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               position: 'absolute',
               width: '280px',
               height: '280px',
-              border: '1px solid rgba(212, 175, 55, 0.08)',
+              border: '1px solid rgba(102, 192, 244, 0.1)',
               borderRadius: '50%',
               animation: 'spin 50s linear infinite reverse'
             }} />
             
-            {/* Bagua Vector Map */}
+            {/* Bagua Vector Map replaced with Western Astrolabe Star Pattern */}
             <div style={{
               width: '240px',
               height: '240px',
-              opacity: 0.45,
+              opacity: 0.65,
               animation: 'spin 40s linear infinite',
-              filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.2))'
+              filter: 'drop-shadow(0 0 20px rgba(102, 192, 244, 0.45))'
             }}>
               <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
                 <circle cx="50" cy="50" r="48" fill="none" stroke={theme.gold} strokeWidth="0.8" />
                 <circle cx="50" cy="50" r="41" fill="none" stroke={theme.gold} strokeWidth="0.5" strokeDasharray="3,3" />
                 <circle cx="50" cy="50" r="28" fill="none" stroke={theme.gold} strokeWidth="0.5" />
+                <circle cx="50" cy="50" r="16" fill="none" stroke={theme.gold} strokeWidth="0.5" />
                 
-                {/* Axes */}
-                <line x1="50" y1="2" x2="50" y2="98" stroke={theme.gold} strokeWidth="0.2" strokeOpacity="0.4" />
-                <line x1="2" y1="50" x2="98" y2="50" stroke={theme.gold} strokeWidth="0.2" strokeOpacity="0.4" />
-                
-                {/* Trigrams */}
-                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, idx) => {
+                {/* 12 Astrological Houses Rays */}
+                {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle, idx) => {
                   const rad = (angle * Math.PI) / 180;
-                  const x = 50 + 34 * Math.cos(rad);
-                  const y = 50 + 34 * Math.sin(rad);
+                  const x2 = 50 + 41 * Math.cos(rad);
+                  const y2 = 50 + 41 * Math.sin(rad);
                   return (
-                    <g key={idx} transform={`translate(${x},${y}) rotate(${angle + 90})`}>
-                      <line x1="-3" y1="-2" x2="3" y2="-2" stroke={theme.gold} strokeWidth="0.7" />
-                      {idx % 2 === 0 ? (
-                        <line x1="-3" y1="0" x2="3" y2="0" stroke={theme.gold} strokeWidth="0.7" />
-                      ) : (
-                        <>
-                          <line x1="-3" y1="0" x2="-0.8" y2="0" stroke={theme.gold} strokeWidth="0.7" />
-                          <line x1="0.8" y1="0" x2="3" y2="0" stroke={theme.gold} strokeWidth="0.7" />
-                        </>
-                      )}
-                      <line x1="-3" y1="2" x2="3" y2="2" stroke={theme.gold} strokeWidth="0.7" />
-                    </g>
+                    <line key={idx} x1="50" y1="50" x2={x2} y2={y2} stroke={theme.gold} strokeWidth="0.25" strokeOpacity="0.45" />
                   );
                 })}
 
-                {/* Yin Yang Core */}
-                <path d="M 50,22 A 14,14 0 0,0 50,50 A 14,14 0 0,1 50,78 A 28,28 0 0,1 50,22 Z" fill={theme.gold} fillOpacity="0.15" />
-                <circle cx="50" cy="36" r="2.5" fill={theme.gold} fillOpacity="0.4" />
-                <circle cx="50" cy="64" r="2.5" fill="none" stroke={theme.gold} strokeWidth="0.5" />
+                {/* Celestial Sun/Star Core */}
+                <path d="M 50,30 L 53,44 L 67,44 L 56,52 L 60,66 L 50,58 L 40,66 L 44,52 L 33,44 L 47,44 Z" fill={theme.gold} fillOpacity="0.15" stroke={theme.gold} strokeWidth="0.4" />
+                <circle cx="50" cy="50" r="2.5" fill={theme.gold} />
               </svg>
             </div>
           </motion.div>
@@ -347,39 +333,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
       {/* 2. MYSTICAL METAPHYSICAL BANNERS (玄道开运锦囊 - Replaces Enter Natal Attributes) */}
       <section id="mystical-banners" style={{ 
         padding: '80px 20px', 
-        background: '#070504',
-        borderBottom: `1px solid rgba(212, 175, 55, 0.1)`,
+        background: '#12161A',
+        borderBottom: `1px solid rgba(102, 192, 244, 0.15)`,
         position: 'relative',
         overflow: 'hidden'
       }}>
         {/* Ambient background glows */}
-        <div style={{ position: 'absolute', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(212, 175, 55, 0.04) 0%, transparent 70%)', top: '10%', left: '5%', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(147, 51, 234, 0.03) 0%, transparent 70%)', bottom: '5%', right: '5%', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(102, 192, 244, 0.05) 0%, transparent 70%)', top: '10%', left: '5%', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(0, 255, 208, 0.03) 0%, transparent 70%)', bottom: '5%', right: '5%', pointerEvents: 'none' }} />
 
         <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
           
           <div style={{ textAlign: 'center', marginBottom: '45px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: theme.gold, marginBottom: '10px' }}>
               <Sparkles size={16} />
-              <span style={{ fontSize: '0.85rem', fontFamily: 'Cinzel, serif', letterSpacing: '2px', textTransform: 'uppercase' }}>
-                {isZh ? "五行气场 · 天机秘传" : "The Celestial Qi & Mystic Stems"}
+              <span style={{ fontSize: '0.85rem', fontFamily: '"Space Grotesk", sans-serif', letterSpacing: '2px', textTransform: 'uppercase' }}>
+                {isZh ? "五行气场 · 天机秘传" : "The Celestial Aura & Astrological Houses"}
               </span>
             </div>
             <h2 style={{ 
-              fontFamily: 'Cinzel, serif', 
+              fontFamily: '"Space Grotesk", sans-serif', 
               fontSize: '2.4rem', 
               color: theme.gold, 
               marginBottom: '15px',
               letterSpacing: '1px',
-              textShadow: '0 0 10px rgba(212, 175, 55, 0.3)'
+              textShadow: '0 0 10px rgba(102, 192, 244, 0.4)'
             }}>
-              {isZh ? "神妙开运气场 · 命理御守" : "Spiritual Guardians & Feng Shui Banners"}
+              {isZh ? "神妙开运气场 · 命理御守" : "Spiritual Guardians & Celestial Banners"}
             </h2>
-            <p style={{ color: '#aaa', fontSize: '0.95rem', maxWidth: '650px', margin: '0 auto', lineHeight: '1.6', fontFamily: 'SimSun, serif' }}>
+            <p style={{ color: '#aaa', fontSize: '0.95rem', maxWidth: '650px', margin: '0 auto', lineHeight: '1.6', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "调和阴阳乾坤，纳吉避凶。点击下方各大秘宝，即刻启动高精密 AI 面相/手相批命或寻访五行开运灵宝。"
               ) : (
-                "Harmonize your earthly path and cosmic elements. Select a mystical domain below to trigger deep predictive readings or consult elemental spiritual protectors."
+                "Harmonize your earthly path and cosmic elements. Select a celestial domain below to trigger deep biometric readings or consult elemental spiritual protectors."
               )}
             </p>
           </div>
@@ -395,34 +381,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               {
                 id: 'face',
                 titleZh: "乾坤面相 · 气数流转",
-                titleEn: "Celestial Mianxiang: Aura Flow",
+                titleEn: "Biometric Facemap: Celestial Aura Flow",
                 descZh: "面刻三世因果，眼藏神气盛衰。高精密 AI 扫描面部骨相与五岳比例，窥见天命。",
-                descEn: "Your facial features map three lifetimes of karma. Scan five sensory areas to interpret deep character traits & current fortune.",
+                descEn: "Your facial proportions map a singular birthright. Scan facial structures to interpret your deep temperament and current transits.",
                 btnZh: "立即面相测算",
-                btnEn: "Scan Face Reading",
-                imgPrompt: "gorgeous mystical ancient taoist mountain peak with glowing golden qi energy flows, starry sky, deep purple nebula, watercolor ink style, 16:9, cinematic lighting",
+                btnEn: "Scan Face Astro-Reading",
+                imgPrompt: "luxurious high-fashion portrait of face outline with neon astrological glowing nodes and gold lines, cosmic lavender space, stardust background, 16:9, cinematic lighting",
                 action: () => onExplore('face')
               },
               {
                 id: 'palm',
                 titleZh: "掌纹天机 · 命元轨迹",
-                titleEn: "Sacred Palmistry: Lifeline Destiny",
+                titleEn: "Chiromancy: Sacred Neural Palmistry",
                 descZh: "手揽日月星辰，纹显命格起伏。AI 捕捉生命线、智慧线、感情线之微妙交错。",
                 descEn: "Grasp the solar and lunar starlight. AI processes intersections of the life, head, heart, and fate lines with pixel-level precision.",
                 btnZh: "立即手相测算",
-                btnEn: "Scan Palm Reading",
-                imgPrompt: "spiritual celestial glowing hands with golden lines of destiny, sacred geometry constellations, high fantasy digital painting, deep violet and gold starry space, 16:9",
+                btnEn: "Scan Palm Astro-Reading",
+                imgPrompt: "gorgeous glowing hand with starry palmistry lines, chiromancy mapping, sacred geometry celestial lines, cosmic purple and gold nebula, 16:9, digital painting",
                 action: () => onExplore('palm')
               },
               {
                 id: 'shop',
                 titleZh: "五行灵宝 · 气场调理",
-                titleEn: "Spiritual Guardians: Feng Shui Charms",
+                titleEn: "Spiritual Treasury: Astral Amulets",
                 descZh: "依循先天生辰，查漏五行盈缺。迎请朱砂、黑曜石及开光灵宝，辟邪纳福。",
-                descEn: "Calculate your missing elemental energy. Invite natural crystals, cinnabar pendants, and consecrated charms to align your space's harmony.",
+                descEn: "Calculate your missing elemental nodes. Invite natural crystals, starry gold charms, and sacred amulets to align your spiritual harmony.",
                 btnZh: "寻访开运灵宝",
-                btnEn: "Visit Spiritual Shop",
-                imgPrompt: "gorgeous sacred zen water fountain with glowing crystal quartz, feng shui garden, starry night, misty ancient oriental courtyard, cinematic light, 16:9",
+                btnEn: "Visit Treasury Shop",
+                imgPrompt: "exquisite luxury gold and sapphire zodiac amulet, sparkling with starlight, floating in deep velvet indigo space, 16:9, cinematic lighting",
                 action: () => onExplore('shop')
               }
             ].map((banner, index) => {
@@ -432,8 +418,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                   key={banner.id}
                   style={{
                     position: 'relative',
-                    background: '#0B0806',
-                    border: '1px solid rgba(212, 175, 55, 0.25)',
+                    background: '#1B2838',
+                    border: '1px solid rgba(102, 192, 244, 0.25)',
                     borderRadius: '8px',
                     overflow: 'hidden',
                     height: '380px',
@@ -441,10 +427,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                     flexDirection: 'column',
                     justifyContent: 'flex-end',
                     padding: '25px',
-                    boxShadow: '0 15px 35px rgba(0,0,0,0.7), inset 0 0 20px rgba(212,175,55,0.03)',
+                    boxShadow: '0 15px 35px rgba(0,0,0,0.85), inset 0 0 20px rgba(102,192,244,0.05)',
                     transition: 'all 0.3s ease',
                   }}
-                  className="hover:border-amber-400 group cursor-pointer"
+                  className="hover:border-blue-400 group cursor-pointer"
                   onClick={banner.action}
                 >
                   {/* Background Image with hover zoom */}
@@ -465,6 +451,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                       }}
                       className="group-hover:scale-110"
                       loading="lazy"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => handleImageError(e, banner.titleEn || 'banner')}
                     />
                     {/* Shadow overlay to make text highly legible */}
                     <div style={{
@@ -540,13 +528,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
         <div style={{ textAlign: 'center', marginBottom: '60px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: theme.gold, marginBottom: '10px' }}>
             <BookOpen size={16} />
-            <span style={{ fontSize: '0.85rem', fontFamily: 'Cinzel, serif', letterSpacing: '2px', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '0.85rem', fontFamily: '"Space Grotesk", sans-serif', letterSpacing: '2px', textTransform: 'uppercase' }}>
               {isZh ? "学术正统 · 绝无玄虚" : "THE CANONICAL SCHOLARSHIP"}
             </span>
           </div>
           <h2 style={{ 
             fontSize: 'clamp(1.8rem, 4vw, 2.4rem)', 
-            fontFamily: 'Cinzel, serif', 
+            fontFamily: '"Space Grotesk", sans-serif', 
             color: '#fff',
             fontWeight: 600,
             letterSpacing: '1px',
@@ -566,100 +554,104 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
           
           {/* Pillar 1 */}
           <div style={{
-            background: 'rgba(212, 175, 55, 0.02)',
-            border: `1px solid rgba(212, 175, 55, 0.15)`,
+            background: 'rgba(23, 38, 54, 0.55)',
+            border: `1px solid rgba(102, 192, 244, 0.22)`,
+            borderRadius: '12px',
             padding: '35px',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <div style={{ background: 'rgba(212, 175, 55, 0.08)', padding: '10px', color: theme.gold }}>
+              <div style={{ background: 'rgba(102, 192, 244, 0.08)', borderRadius: '8px', padding: '10px', color: theme.gold }}>
                 <Eye size={24} />
               </div>
-              <h3 style={{ margin: 0, fontFamily: 'Cinzel, serif', fontSize: '1.3rem', color: theme.gold }}>
-                {isZh ? "古典相理学 (面相与手相)" : "Traditional Physiognomy"}
+              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
+                {isZh ? "古典相理学 (面相与手相)" : "Biometric Physiognomy & Chiromancy"}
               </h3>
             </div>
-            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: 'SimSun, serif' }}>
+            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "以相学术典籍《神相全编》、《麻衣相法》为骨架。我们的算法高精度追踪面部的一百零八个关键生物特征点，提取十二宫（命宫、财帛、官禄等）的轮廓。手相部分则对感情、智慧、生命、命运三大主线进行断点与走势识别，客观解析 querent 的性格、骨骼精力及生财容纳。相由心生，指纹命定，数据为证。"
               ) : (
-                "Guided strictly by classical textbooks of physiognomy such as 'Shenxiang Quanbian'. The system captures facial spatial proportions to analyze individual palaces (Life, Wealth, Career, and Marriage). It maps genetic contours to outline querents' base health status and capacity for stress management."
+                "Guided strictly by classical structural analysis. The system captures facial spatial proportions to analyze individual houses (such as Career, Ancestors, Partnership, and Abundance). It maps geometric contours and neural palm lines to outline querents' base temperament, stamina, and biological capacity for prosperity."
               )}
             </p>
           </div>
 
           {/* Pillar 2 */}
           <div style={{
-            background: 'rgba(212, 175, 55, 0.02)',
-            border: `1px solid rgba(212, 175, 55, 0.15)`,
+            background: 'rgba(23, 38, 54, 0.55)',
+            border: `1px solid rgba(102, 192, 244, 0.22)`,
+            borderRadius: '12px',
             padding: '35px',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <div style={{ background: 'rgba(212, 175, 55, 0.08)', padding: '10px', color: theme.gold }}>
+              <div style={{ background: 'rgba(102, 192, 244, 0.08)', borderRadius: '8px', padding: '10px', color: theme.gold }}>
                 <Calendar size={24} />
               </div>
-              <h3 style={{ margin: 0, fontFamily: 'Cinzel, serif', fontSize: '1.3rem', color: theme.gold }}>
-                {isZh ? "四柱八字先天运盘" : "Stems & Branches Bazi"}
+              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
+                {isZh ? "四柱八字先天运盘" : "Birth Chart Coordinates"}
               </h3>
             </div>
-            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: 'SimSun, serif' }}>
+            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "时间即是重力，宇宙重力决定五行流动。四柱八字利用Querent诞生之年、月、日、时对应的天干地支，计算出其先天气场状态。通过精细演算大运流年与日干的关系，找出最核心的‘喜用神’，在人生的周期波动中，提供趋吉避凶、进退自如的绝佳战略节点建议。"
               ) : (
-                "Formulates the cosmic energy imprint from the precise solar coordinates of your birth time. We construct your primary Eight Characters matrix (Bazi) to locate the crucial Balancing Element (Yong Shen). This maps specific chronological trajectories to determine career and resource tides."
+                "Formulates the cosmic energy imprint from the precise spatial coordinates of your birth time. We construct your primary energetic matrix to locate your crucial Balancing Element. This maps specific planetary transits across temporal arcs to determine career windows and abundance trends."
               )}
             </p>
           </div>
 
           {/* Pillar 3 */}
           <div style={{
-            background: 'rgba(212, 175, 55, 0.02)',
-            border: `1px solid rgba(212, 175, 55, 0.15)`,
+            background: 'rgba(23, 38, 54, 0.55)',
+            border: `1px solid rgba(102, 192, 244, 0.22)`,
+            borderRadius: '12px',
             padding: '35px',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <div style={{ background: 'rgba(212, 175, 55, 0.08)', padding: '10px', color: theme.gold }}>
+              <div style={{ background: 'rgba(102, 192, 244, 0.08)', borderRadius: '8px', padding: '10px', color: theme.gold }}>
                 <Star size={24} />
               </div>
-              <h3 style={{ margin: 0, fontFamily: 'Cinzel, serif', fontSize: '1.3rem', color: theme.gold }}>
-                {isZh ? "紫微斗数帝王星盘" : "Zi Wei Dou Shu Astrolabe"}
+              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
+                {isZh ? "紫微斗数帝王星盘" : "Royal Astrolabe System"}
               </h3>
             </div>
-            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: 'SimSun, serif' }}>
+            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
-                "紫微斗数为华夏古代极具精密度的‘帝王学’。通过排布北斗、南斗百余颗主客星曜至您的十二命宫（如兄弟、夫妻、子女、福德等），以紫微星为中枢，精确展现命盘一生的社会层级、六亲因缘、大限变数。其繁复精密，乃数字推演天命之最佳底层工具。"
+                "紫微斗数为华夏古代极具精密度的‘帝王学’。通过排布北斗、南斗百余颗主客星曜至您的十二命宫（如兄弟、夫妻、子女、福德等），以紫微星为中枢，精确展现命盘一生的社会层级、六亲因缘、大限变数。其繁复精密，乃数字推推天命之最佳底层工具。"
               ) : (
-                "Often referred to as the 'Emperor Study' of metaphysics. Zi Wei Dou Shu constructs a highly elaborate chart mapping 108 celestial transits across 12 distinct palaces of social existence. This provides queried profiles with deep character matrices and relational forecasts."
+                "The ultimate royal science of destiny charts. The astrolabe constructs a highly elaborate chart mapping major stellar constellations across twelve distinct houses of physical and spiritual existence. This provides queried profiles with deep character matrices and lifetime evolutionary maps."
               )}
             </p>
           </div>
 
           {/* Pillar 4 */}
           <div style={{
-            background: 'rgba(212, 175, 55, 0.02)',
-            border: `1px solid rgba(212, 175, 55, 0.15)`,
+            background: 'rgba(23, 38, 54, 0.55)',
+            border: `1px solid rgba(102, 192, 244, 0.22)`,
+            borderRadius: '12px',
             padding: '35px',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <div style={{ background: 'rgba(212, 175, 55, 0.08)', padding: '10px', color: theme.gold }}>
+              <div style={{ background: 'rgba(102, 192, 244, 0.08)', borderRadius: '8px', padding: '10px', color: theme.gold }}>
                 <Compass size={24} />
               </div>
-              <h3 style={{ margin: 0, fontFamily: 'Cinzel, serif', fontSize: '1.3rem', color: theme.gold }}>
-                {isZh ? "易理乾坤与五行平衡" : "Wu Xing Harmony & Remedies"}
+              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
+                {isZh ? "易理乾坤与五行平衡" : "Universal Elemental Harmony"}
               </h3>
             </div>
-            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: 'SimSun, serif' }}>
+            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "我们不仅算命，更看重五行能量场的健康平衡。通过计算，量化解析您命格中金、木、水、火、土之多寡盈缺。根据《易经》六十四卦的生克变化之道，提供从饮食、居住方向选择、随身配伍法宝到心理调理等一站式开运指南，化煞生旺，调顺全身元气磁场。"
               ) : (
@@ -671,18 +663,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
         </div>
       </section>
 
-      {/* 4. ANCIENT COMPASS BRONZE SANDBOX (司南调气盘) */}
+      {/* 4. ANCIENT COMPASS BRONZE SANDBOX replaced with Celestial Astrolabe */}
       <section style={{ 
         padding: '100px 20px', 
-        background: '#0B0806',
-        borderTop: `1px solid rgba(212, 175, 55, 0.1)`,
-        borderBottom: `1px solid rgba(212, 175, 55, 0.1)`
+        background: '#171A21',
+        borderTop: `1px solid rgba(102, 192, 244, 0.15)`,
+        borderBottom: `1px solid rgba(102, 192, 244, 0.15)`
       }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
           
           <div style={{ marginBottom: '45px' }}>
             <h2 style={{ 
-              fontFamily: 'Cinzel, serif', 
+              fontFamily: '"Space Grotesk", sans-serif', 
               fontSize: '2rem', 
               color: theme.gold, 
               marginBottom: '15px',
@@ -690,7 +682,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             }}>
               {isZh ? "乾坤开运青铜司南星盘" : "The Astrolabe of Cosmic Alignment"}
             </h2>
-            <p style={{ color: '#aaa', fontSize: '0.95rem', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6', fontFamily: 'SimSun, serif' }}>
+            <p style={{ color: '#aaa', fontSize: '0.95rem', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "点击启动古法青铜司南，排除杂念，调理气场。罗盘停止转动之时，便是乾坤定位、吉兆宣示之刻，获取属于您的当下箴言。"
               ) : (
@@ -700,11 +692,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
           </div>
 
           <div style={{
-            background: 'linear-gradient(180deg, rgba(20, 15, 10, 0.95) 0%, rgba(5, 4, 3, 0.98) 100%)',
-            border: `1.5px solid ${theme.darkGold}`,
+            background: 'linear-gradient(180deg, rgba(23, 38, 54, 0.95) 0%, rgba(17, 26, 38, 0.98) 100%)',
+            border: `1.5px solid rgba(102, 192, 244, 0.3)`,
             padding: '50px 30px',
-            borderRadius: '0px',
-            boxShadow: '0 15px 50px rgba(0,0,0,0.8)',
+            borderRadius: '16px',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.85), inset 0 0 30px rgba(102, 192, 244, 0.05)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center'
@@ -725,7 +717,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                 borderRight: '10px solid transparent',
                 borderTop: `18px solid ${theme.gold}`,
                 zIndex: 15,
-                filter: 'drop-shadow(0 2px 5px rgba(212,175,55,0.5))'
+                filter: 'drop-shadow(0 2px 5px rgba(102,192,244,0.5))'
               }} />
 
               {/* Disk rotation */}
@@ -737,15 +729,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                 position: 'relative'
               }}>
                 <svg viewBox="0 0 200 200" style={{ width: '100%', height: '100%' }}>
-                  <circle cx="100" cy="100" r="98" fill="#1C1410" stroke={theme.gold} strokeWidth="1.5" />
-                  <circle cx="100" cy="100" r="90" fill="#160E0A" stroke={theme.darkGold} strokeWidth="1" />
-                  <circle cx="100" cy="100" r="65" fill="#110A07" stroke={theme.gold} strokeWidth="0.5" strokeDasharray="3,3" />
+                  <circle cx="100" cy="100" r="98" fill="#1b2838" stroke={theme.gold} strokeWidth="1.5" />
+                  <circle cx="100" cy="100" r="90" fill="#121e2a" stroke={theme.darkGold} strokeWidth="1" />
+                  <circle cx="100" cy="100" r="65" fill="#171a21" stroke={theme.gold} strokeWidth="0.5" strokeDasharray="3,3" />
                   <circle cx="100" cy="100" r="35" fill="none" stroke={theme.gold} strokeWidth="1" />
                   
-                  {/* Stem and Branch Rings (Ancient letters representation) */}
+                  {/* Stem and Branch Rings (Western Zodiac representation) */}
                   {[
-                    "子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥",
-                    "甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"
+                    "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
                   ].map((char, index, arr) => {
                     const angle = (index * 360) / arr.length;
                     const rad = (angle * Math.PI) / 180;
@@ -757,10 +748,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                           x="0" 
                           y="4" 
                           fill={theme.gold} 
-                          fontSize="7" 
-                          fontFamily="SimSun, serif" 
+                          fontSize="6.5" 
+                          fontFamily="'Space Grotesk', sans-serif" 
                           textAnchor="middle"
-                          opacity="0.8"
+                          opacity="0.9"
                         >
                           {char}
                         </text>
@@ -768,8 +759,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                     );
                   })}
 
-                  {/* Inner trigrams */}
-                  {["乾", "兑", "离", "震", "巽", "坎", "艮", "坤"].map((char, index, arr) => {
+                  {/* Inner planetary bodies */}
+                  {["Sun ☉", "Moon ☽", "Mercury ☿", "Venus ♀", "Mars ♂", "Jupiter ♃", "Saturn ♄", "Uranus ♅"].map((char, index, arr) => {
                     const angle = (index * 360) / arr.length;
                     const rad = (angle * Math.PI) / 180;
                     const x = 100 + 48 * Math.cos(rad);
@@ -780,19 +771,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                           x="0" 
                           y="3" 
                           fill={theme.gold} 
-                          fontSize="9" 
+                          fontSize="7.5" 
                           fontWeight="bold"
-                          fontFamily="SimSun, serif" 
+                          fontFamily="'Space Grotesk', sans-serif" 
                           textAnchor="middle"
                         >
                           {char}
                         </text>
-                        <circle cx="0" cy="-10" r="1.5" fill={theme.gold} />
+                        <circle cx="0" cy="-8" r="1.5" fill={theme.gold} />
                       </g>
                     );
                   })}
 
-                  <circle cx="100" cy="100" r="12" fill="#1C1410" stroke={theme.gold} strokeWidth="1" />
+                  <circle cx="100" cy="100" r="12" fill="#121e2a" stroke={theme.gold} strokeWidth="1" />
                   <circle cx="100" cy="100" r="5" fill={theme.gold} />
                 </svg>
               </div>
@@ -808,11 +799,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                 marginTop: 0,
                 width: '100%',
                 maxWidth: '320px',
-                background: isSpinning ? 'rgba(212,175,55,0.1)' : `linear-gradient(180deg, ${theme.gold} 0%, ${theme.darkGold} 100%)`,
-                borderColor: isSpinning ? 'rgba(212,175,55,0.2)' : '#fff',
-                color: isSpinning ? theme.gold : '#0F0B08',
+                background: isSpinning ? 'rgba(102,192,244,0.1)' : `linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)`,
+                borderColor: isSpinning ? 'rgba(102,192,244,0.2)' : '#ffffff',
+                color: isSpinning ? theme.gold : '#FFFFFF',
                 cursor: isSpinning ? 'default' : 'pointer',
-                borderRadius: '0px'
+                borderRadius: '12px'
               }}
             >
               {isSpinning ? (
@@ -836,7 +827,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                   transition={{ duration: 0.5 }}
                   style={{
                     marginTop: '35px',
-                    borderTop: '1px solid rgba(212,175,55,0.15)',
+                    borderTop: '1px solid rgba(192,132,252,0.15)',
                     paddingTop: '25px',
                     width: '100%',
                     maxWidth: '650px',
@@ -861,10 +852,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                     {oracles[oracleIndex].source}
                   </p>
                   <div style={{
-                    background: 'rgba(212, 175, 55, 0.04)',
-                    border: `1px solid rgba(212,175,55,0.2)`,
+                    background: 'rgba(192, 132, 252, 0.04)',
+                    border: `1px solid rgba(192,132,252,0.2)`,
                     padding: '15px 20px',
-                    borderRadius: '0px',
+                    borderRadius: '8px',
                     textAlign: 'left'
                   }}>
                     <div style={{ 
@@ -893,7 +884,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
       {/* 5. ETHICAL STANDARDS & RIGOR CREDENTIALS (学术严谨性背书) */}
       <section style={{ 
         padding: '80px 20px', 
-        background: '#0F0B08',
+        background: '#05040a',
         maxWidth: '1000px',
         margin: '0 auto'
       }}>
@@ -943,8 +934,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
       <section style={{ 
         padding: '100px 20px', 
         textAlign: 'center',
-        background: 'linear-gradient(to bottom, #0F0B08, #20130E)',
-        borderTop: `1px solid rgba(212, 175, 55, 0.15)`
+        background: 'linear-gradient(to bottom, #05040a, #0D0924)',
+        borderTop: `1px solid rgba(192, 132, 252, 0.15)`
       }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <h2 style={{ 
@@ -974,17 +965,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
           </p>
 
           <motion.button
-            whileHover={{ scale: 1.05, boxShadow: '0 0 35px rgba(212, 175, 55, 0.45)' }}
+            whileHover={{ scale: 1.05, boxShadow: '0 0 35px rgba(192, 132, 252, 0.45)' }}
             whileTap={{ scale: 0.95 }}
             onClick={onExplore}
             style={{
               ...styles.button,
               padding: '1.6rem 5rem',
               fontSize: '1.25rem',
-              borderRadius: '0px',
-              background: `linear-gradient(135deg, ${theme.gold}, ${theme.darkGold})`,
-              border: `1.5px solid #FFF`,
-              color: '#0F0B08',
+              borderRadius: '12px',
+              border: `1px solid rgba(192, 132, 252, 0.4)`,
               fontWeight: 'bold',
               letterSpacing: '3px'
             }}
