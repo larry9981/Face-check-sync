@@ -3,19 +3,23 @@ import React from 'react';
 import { theme, styles } from '../theme';
 import { CartItem } from '../types';
 import { handleImageError } from '../utils';
+import { TopHeaderNav } from '../components/HeaderControls';
 
 interface CartPageProps {
     t: any;
     cart: CartItem[];
     onRemove: (productId: string) => void;
     onCheckout: (total: number) => void;
+    onBack?: () => void;
+    onClose?: () => void;
 }
 
-export const CartPage = ({ t, cart, onRemove, onCheckout }: CartPageProps) => {
+export const CartPage = ({ t, cart, onRemove, onCheckout, onBack, onClose }: CartPageProps) => {
     const total = cart.reduce((sum, item) => sum + (item.product.numericPrice * item.quantity), 0);
 
     return (
         <div style={{maxWidth: '1200px', width: '95%', paddingBottom: '3rem'}}>
+            <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.cartTitle || "购物车"} />
             <div style={{textAlign: 'center', marginBottom: '3rem'}}>
                 <h2 style={{color: theme.gold, fontFamily: '"Space Grotesk", sans-serif', fontSize: '2.5rem', marginBottom: '1rem'}}>{t.cartTitle}</h2>
             </div>

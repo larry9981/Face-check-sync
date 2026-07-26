@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { theme, styles } from './theme';
 import { LANGUAGES, TRANSLATIONS } from './translations';
 import { calculateAge, calculateWuXing, getWesternZodiac } from './utils';
-import { UserState, Plan, CartItem, Product, HistoryRecord, Order, AppConfig, HomepageConfig } from './types';
+import { UserState, Plan, CartItem, Product, HistoryRecord, Order, AppConfig, HomepageConfig, ServiceTierOption } from './types';
 import { BaguaSVG } from './components/Icons';
 import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './components/Modals';
 import { PrivacyPolicy, TermsOfService, RefundPolicy, AboutPage } from './pages/StaticPages';
@@ -32,7 +32,7 @@ const AMBIENT_MUSIC_URL = "https://cdn.pixabay.com/audio/2022/02/07/audio_191983
 
 const AIService = {
     // Call AI securely through server-side proxy
-    callAI: async (prompt: string, base64Image?: string, config?: AppConfig, userId?: string) => {
+    callAI: async (prompt: string, base64Image?: string | string[] | null, config?: AppConfig, userId?: string) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s timeout
 
@@ -40,15 +40,48 @@ const AIService = {
             const provider = config?.textProvider || 'Google';
             console.log(`[AIService] Proxying ${provider} request via server...`);
 
-            const response = await fetch('/api/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, base64Image, provider, config, userId }),
-                signal: controller.signal
-            });
+            // Resize images before sending to prevent heavy payload fetch failures
+            let processedImages: string | string[] | null = null;
+            if (Array.isArray(base64Image)) {
+                processedImages = await Promise.all(
+                    base64Image.map(async (img) => {
+                        const fullStr = img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`;
+                        return await resizeImage(fullStr, 800, 800);
+                    })
+                );
+            } else if (base64Image) {
+                const fullStr = base64Image.startsWith('data:') ? base64Image : `data:image/jpeg;base64,${base64Image}`;
+                processedImages = await resizeImage(fullStr, 800, 800);
+            }
+
+            const payload: any = { prompt, provider, config, userId };
+            if (Array.isArray(processedImages)) {
+                payload.base64Images = processedImages;
+                payload.base64Image = processedImages[0];
+            } else {
+                payload.base64Image = processedImages;
+            }
+
+            let response: Response;
+            try {
+                response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
+                });
+            } catch (fetchErr: any) {
+                console.warn("[AIService] Network or fetch error:", fetchErr);
+                throw new Error(`Fetch request failed: ${fetchErr.message || 'Server connection error'}`);
+            }
 
             if (!response.ok) {
-                const errData = await response.json();
+                let errData: any = {};
+                try {
+                    errData = await response.json();
+                } catch (e) {
+                    errData = { error: `Server Error: ${response.status}` };
+                }
                 throw new Error(errData.error || `Server Error: ${response.status}`);
             }
 
@@ -70,10 +103,21 @@ const callBackendAPI = async (endpoint: string, body: any = {}, method = 'POST',
         };
         if (method === 'POST') options.body = JSON.stringify({ ...body, config });
 
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        let response: Response;
+        try {
+            response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+        } catch (fetchErr: any) {
+            console.warn(`[callBackendAPI] Network fetch error for ${endpoint}:`, fetchErr);
+            throw new Error(`Fetch request failed: ${fetchErr.message || 'Server connection error'}`);
+        }
 
         if (!response.ok) {
-            const errData = await response.json();
+            let errData: any = {};
+            try {
+                errData = await response.json();
+            } catch (e) {
+                errData = { error: `Server Error: ${response.status}` };
+            }
             throw new Error(errData.error || `Server Error: ${response.status}`);
         }
         return await response.json();
@@ -237,8 +281,8 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
 
     return (
         <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)'}}>
-            <div style={{...styles.glassPanel, maxWidth: '400px', width: '90%', padding: '30px'}}>
-                <button onClick={onClose} style={{position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer'}}>&times;</button>
+            <div style={{...styles.glassPanel, maxWidth: '400px', width: '90%', padding: '30px', position: 'relative'}}>
+                <button onClick={onClose} aria-label="Close" style={{position: 'absolute', top: '15px', right: '15px', background: 'rgba(231, 76, 60, 0.15)', border: '1px solid rgba(231, 76, 60, 0.4)', color: '#ff6b6b', width: '32px', height: '32px', borderRadius: '50%', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>&times;</button>
                 
                 <div style={{textAlign: 'center', marginBottom: '20px'}}>
                     <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.8rem', margin: 0}}>
@@ -385,6 +429,11 @@ const App = () => {
   const uploadIntervalRef = useRef<any>(null);
   const progressIntervalRef = useRef<any>(null);
   const toastTimeoutRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const speakTextRef = useRef<{ chunks: string[]; index: number; isSpeaking: boolean }>({ chunks: [], index: 0, isSpeaking: false });
 
   useEffect(() => {
     isMounted.current = true;
@@ -434,6 +483,8 @@ const App = () => {
   }, []);
 
   const [currentPage, setCurrentPage] = useState<'home' | 'analysis' | 'pricing' | 'shop' | 'product-detail' | 'about' | 'privacy' | 'terms' | 'refund' | 'history' | 'cart'>('home');
+  const [selectedServiceTier, setSelectedServiceTier] = useState<ServiceTierOption | null>(null);
+  const [unlockedTiers, setUnlockedTiers] = useState<string[]>([]);
   const [previousPageConfig, setPreviousPageConfig] = useState<{ page: any; view: any } | null>(null);
   const [cookieConsent, setCookieConsent] = useState<string | null>(localStorage.getItem('cookieConsent'));
 
@@ -549,6 +600,7 @@ const App = () => {
 
   // Handle Login and Sync State from Server Data
   const handleLoginSuccess = (user: any) => {
+      const isSuper = Boolean(user?.isSuperUser || (user?.email && user.email.toLowerCase() === '314104801@qq.com'));
       setUserState(prev => ({
           ...prev,
           isLoggedIn: true,
@@ -556,15 +608,23 @@ const App = () => {
           email: user.email,
           name: user.name,
           authType: user.authType,
-          // Sync Subscription Status from Server DB
-          isSubscribed: user.isSubscribed || false,
+          // Sync Subscription Status from Server DB or Super User override
+          isSubscribed: isSuper || user.isSubscribed || false,
           trialStartDate: user.trialStartDate || prev.trialStartDate,
           totalTests: user.totalTests !== undefined ? user.totalTests : prev.totalTests,
-          hasPaidSingle: user.hasPaidSingle || false,
-          // Welcome free remains: defaulting to 3
-          freeFaceRemaining: user.freeFaceRemaining !== undefined ? user.freeFaceRemaining : 3,
-          freePalmRemaining: user.freePalmRemaining !== undefined ? user.freePalmRemaining : 3
+          hasPaidSingle: isSuper || user.hasPaidSingle || false,
+          isSuperUser: isSuper,
+          // Welcome free remains: defaulting to 3 (or unlimited for super user)
+          freeFaceRemaining: isSuper ? 99999 : (user.freeFaceRemaining !== undefined ? user.freeFaceRemaining : 3),
+          freePalmRemaining: isSuper ? 99999 : (user.freePalmRemaining !== undefined ? user.freePalmRemaining : 3)
       }));
+
+      // If user had a pending payment plan (e.g. clicked unlock full report before login/signup), trigger payment modal now
+      if (pendingPaymentPlan) {
+          setSelectedPlan(pendingPaymentPlan);
+          setShowPaymentModal(true);
+          setPendingPaymentPlan(null);
+      }
   };
 
   const handleLogout = () => {
@@ -589,7 +649,11 @@ const App = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showToast, setShowToast] = useState(false);
   const [view, setView] = useState<'start' | 'selection' | 'camera' | 'analyzing' | 'result'>('start');
-  const [readingType, setReadingType] = useState<'face' | 'palm'>('face'); 
+  const [readingType, setReadingType] = useState<'face' | 'palm' | 'both'>('face'); 
+  const [activeCameraSlot, setActiveCameraSlot] = useState<'face' | 'palm'>('face');
+  const [bothStep, setBothStep] = useState<'none' | 'face' | 'face_captured' | 'palm' | 'palm_captured' | 'both_captured'>('none');
+  const [faceImage, setFaceImage] = useState<string | null>(null);
+  const [palmImage, setPalmImage] = useState<string | null>(null);
   const [image, setImage] = useState<string | null>(null);
   const [resultText, setResultText] = useState<string>("");
   const [showPaywall, setShowPaywall] = useState(false);
@@ -598,6 +662,7 @@ const App = () => {
   const [balanceAiAdvice, setBalanceAiAdvice] = useState<string | undefined>(undefined); 
   const [isTranslating, setIsTranslating] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | Product | null>(null);
+  const [pendingPaymentPlan, setPendingPaymentPlan] = useState<Plan | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [calculatedElements, setCalculatedElements] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -614,13 +679,7 @@ const App = () => {
   const [userName, setUserName] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
-  const [useAdvancedAnalysis, setUseAdvancedAnalysis] = useState(false);
-
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const speakTextRef = useRef<{ chunks: string[]; index: number; isSpeaking: boolean }>({ chunks: [], index: 0, isSpeaking: false });
+  const [useAdvancedAnalysis, setUseAdvancedAnalysis] = useState(true);
 
   useEffect(() => {
     if (!audioRef.current) { 
@@ -674,9 +733,9 @@ const App = () => {
   };
 
   const getFreeTestsRemaining = () => {
-      if (userState.isSubscribed) return 999;
+      if (userState.isSubscribed || userState.hasPaidSingle) return 999;
       const totalTests = getTotalTestsCount();
-      return Math.max(0, 10 - totalTests);
+      return Math.max(0, 3 - totalTests);
   };
 
   const getDailyFreeRemaining = () => {
@@ -773,7 +832,10 @@ This is a demonstration of the result layout.
         return;
     }
 
-    setReadingType(type);
+    setActiveCameraSlot(type);
+    if (readingType !== 'both') {
+      setReadingType(type);
+    }
     if (useAdvancedAnalysis && !birthDate) { alert("Please complete your birth date."); return; }
     
     // Stop any previous stream
@@ -846,18 +908,60 @@ This is a demonstration of the result layout.
     }
   };
   
+  const handleSubmitSingleAnalysis = () => {
+    if (useAdvancedAnalysis && (!dobYear || !dobMonth || !dobDay)) {
+      alert(language.startsWith('zh') ? "请先完整填写出生日期信息。" : "Please complete your birth date first.");
+      return;
+    }
+    const targetImage = readingType === 'face' ? faceImage : palmImage;
+    if (!targetImage) {
+      alert(language.startsWith('zh') ? "请先完成照片采集！" : "Please complete photo capture first!");
+      return;
+    }
+    processImage(targetImage);
+  };
+
+  const handleSubmitDualAnalysis = () => {
+    if (useAdvancedAnalysis && (!dobYear || !dobMonth || !dobDay)) {
+      alert(language.startsWith('zh') ? "请先完整填写出生日期信息。" : "Please complete your birth date first.");
+      return;
+    }
+    if (!faceImage || !palmImage) {
+      alert(language.startsWith('zh') ? "请先完成面部和手掌两张照片的采集！" : "Please complete both face and palm photo captures first!");
+      return;
+    }
+    processImage(palmImage, faceImage);
+  };
+
+  const handleCapturedImage = (dataUrl: string, targetSlot?: 'face' | 'palm') => {
+    setImage(dataUrl);
+    const slot = targetSlot || activeCameraSlot;
+    if (readingType === 'both') {
+      if (slot === 'face') {
+        setFaceImage(dataUrl);
+        setBothStep(palmImage ? 'both_captured' : 'palm');
+      } else {
+        setPalmImage(dataUrl);
+        setBothStep(faceImage ? 'both_captured' : 'face');
+      }
+    } else if (readingType === 'face') {
+      setFaceImage(dataUrl);
+    } else if (readingType === 'palm') {
+      setPalmImage(dataUrl);
+    }
+    stopCamera();
+    setView('selection');
+  };
+
   const capturePhoto = async (): Promise<boolean> => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
-      // Ensure video has actual data
       if (video.readyState < 2) return false;
       
       const canvas = canvasRef.current; 
-      // Handle orientation changes or simple aspect ratio
       const videoWidth = video.videoWidth;
       const videoHeight = video.videoHeight;
       
-      // Set reasonable size but keep aspect ratio
       const targetWidth = 1024;
       const targetHeight = (videoHeight / videoWidth) * targetWidth;
 
@@ -865,22 +969,23 @@ This is a demonstration of the result layout.
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d'); 
       if (ctx) { 
-          // Mirror image ONLY if using front camera (face mode typically)
-          if (readingType === 'face') {
+          const slot = activeCameraSlot;
+          if (slot === 'face' || readingType === 'face') {
               ctx.translate(canvas.width, 0); 
               ctx.scale(-1, 1); 
           }
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height); 
           const dataUrl = canvas.toDataURL('image/jpeg', 0.8); 
-          setImage(dataUrl); stopCamera(); processImage(dataUrl);
+          stopCamera();
+          handleCapturedImage(dataUrl, slot);
           return true;
       }
     }
     return false;
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (useAdvancedAnalysis && !birthDate) { alert("Please complete your birth date."); e.target.value = ''; return; }
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, targetSlot?: 'face' | 'palm') => {
+    if (useAdvancedAnalysis && (!dobYear || !dobMonth || !dobDay)) { alert("Please complete your birth date."); e.target.value = ''; return; }
     if (!isPlayingMusic) setIsPlayingMusic(true);
     const file = e.target.files?.[0];
     if (file) {
@@ -902,9 +1007,9 @@ This is a demonstration of the result layout.
           dataUrl = await resizeImage(dataUrl);
           setTimeout(() => { 
               if (isMounted.current) {
-                  setImage(dataUrl); 
                   setUploadProgress(0); 
-                  processImage(dataUrl); 
+                  const slot = targetSlot || activeCameraSlot;
+                  handleCapturedImage(dataUrl, slot); 
               }
           }, 300);
       };
@@ -956,51 +1061,13 @@ This is a demonstration of the result layout.
       `.trim();
   };
 
-  const processImage = async (base64Image: string) => {
+  const processImage = async (base64Image: string, faceImgOverride?: string) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
     const isZh = language.startsWith('zh');
 
-    // Check subscription plan limits (Monthly/Single month: 300 uses, Annual: 3600 uses)
-    // Paywall restrictions deactivated as per user request to allow unlimited readings starting directly
-    /*
-    if (userState.isSubscribed) {
-        const plan = userState.subscriptionPlan || '';
-        const isAnnual = plan.includes('year') || plan === 'sub_year';
-        const limit = isAnnual ? 3600 : 300;
-        const totalTests = getTotalTestsCount();
-
-        if (totalTests >= limit) {
-            const limitMsg = isZh 
-                ? `您的${isAnnual ? '年度' : '月度'}订阅已达到最大使用次数限制（最高 ${limit} 次），请联系客服或更新订阅。`
-                : `Your ${isAnnual ? 'annual' : 'monthly'} subscription has reached its maximum usage limit (${limit} tests). Please contact support or renew your subscription.`;
-            alert(limitMsg);
-            setShowPaywall(true);
-            setView('start');
-            return;
-        }
-    }
-
-    // Free trial policy: everyone gets 3 days free trial, max 10 tests total.
-    // Subscribed users or single-reading paid users are exempt.
-    if (!userState.isSubscribed && !userState.hasPaidSingle) {
-        const daysRemaining = getDaysRemaining();
-        if (daysRemaining <= 0) {
-            alert(t.trialExpiredMsg || "您的3天免费试用期已结束，请订阅或购买单次测算继续使用。");
-            setShowPaywall(true);
-            setView('start');
-            return;
-        }
-
-        const totalTests = getTotalTestsCount();
-        if (totalTests >= 10) {
-            alert(t.trialLimitExceededMsg || "您已达到全站点10次免费测试的总上限，请购买订阅或单次付费以继续使用。");
-            setShowPaywall(true);
-            setView('start');
-            return;
-        }
-    }
-    */
+    // Free scan flow: Allow non-subscribed & non-logged-in users to perform scans without payment prompt beforehand.
+    // 30% preview restriction is applied when viewing the result.
 
     // Initialize trialStartDate upon first test if not set yet
     if (!userState.trialStartDate) {
@@ -1072,15 +1139,57 @@ This is a demonstration of the result layout.
       const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image;
       
       let prompt = '';
-      if (readingType === 'palm') {
+      let imageInputForAI: string | string[] = base64Data;
+
+      if (readingType === 'both') {
+           const fImg = (faceImgOverride || faceImage || '').replace(/^data:image\/\w+;base64,/, '');
+           const pImg = base64Data;
+           imageInputForAI = [fImg, pImg].filter(Boolean);
+
+           prompt = `
+            You are a supreme grandmaster of both Mianxiang (Face Reading) and Chiromancy (Palmistry), possessing quantum bio-scanner algorithms and ancient Taoist metaphysics. User: ${gender}. Date: ${currentDateStr}.${height ? ` Height: ${height}cm.` : ''}${weight ? ` Weight: ${weight}kg.` : ''}
+            You have received TWO images: Image 1 is the FACE, and Image 2 is the PALM.
+
+            CRITICAL DIRECTIVES:
+            1. Make the analysis extremely rich, highly detailed, exhaustive, and beautifully written with high literary flair. Write long, complete paragraphs for every single section.
+            2. First major section MUST analyze the FACE (12 Palaces, facial structure, complexion, nose of wealth, eye spirit).
+            3. Second major section MUST analyze the PALM (Life Line, Wisdom/Head Line, Heart Line, Fate Line, Palm Mounts).
+            4. Final major section MUST provide an OVERALL COMBINED CONCLUSION (Master Synthesis) cross-referencing facial features with palmistry lines to reveal their ultimate destiny, career trajectory, emotional fortune, and holistic energetic balance.
+
+            Structure:
+            ## 👤 ${t.faceAnalysisSection || '面部分析结果'}
+            (Detailed analysis of facial structure, 12 palaces, nose, eyes, and facial aura...)
+
+            ## ✋ ${t.palmAnalysisSection || '掌纹分析结果'}
+            (Detailed analysis of Life Line, Wisdom Line, Heart Line, Fate Line, and Palm Mounts...)
+
+            ## 🔮 ${t.overallConclusionSection || '双相合璧·总分析结论'}
+            (Exhaustive final conclusion cross-referencing face and palm insights to synthesize ultimate destiny, wealth peaks, career paths, and relationship timing...)
+
+            ## ⚖️ ${headers.elements} ... (Include emojis 🪙, 🌲, 💧, 🔥, ⛰️)
+
+            ## 📜 ${headers.advice}
+            Based on both face and palm analysis above, provide extremely detailed personalized actionable advice:
+            *   **${t.adviceCategoryDiet}**: (Bio-energetic nutrients)
+            *   **${t.adviceCategoryHome}**: (Feng Shui spatial guidance)
+            *   **${t.adviceCategoryJewelry}**: (Amulets & gemstones)
+            *   **${t.namingAdvice}**: (Destiny mindset alignment)
+
+            IMPORTANT: Output STRICTLY in ${targetLangName} (${targetLangCode}).
+           `;
+           if (useAdvancedAnalysis && wuXingResult) {
+               prompt += ` Context: Born ${birthDate}. WuXing: Metal:${wuXingResult.scores.Metal}%, Wood:${wuXingResult.scores.Wood}%, Water:${wuXingResult.scores.Water}%, Fire:${wuXingResult.scores.Fire}%, Earth:${wuXingResult.scores.Earth}%. Weak: ${wuXingResult.missingElement}. Zodiac: ${starSign}. Name: ${userName}. Add combined analysis for these.`;
+           }
+      } else if (readingType === 'palm') {
            prompt = `
             You are a supreme grandmaster of Palmistry, commanding state-of-the-art quantum cybernetic bio-mapping scanners and ancient esoteric Taoist magic. User: ${gender}. Date: ${currentDateStr}.${height ? ` Height: ${height}cm.` : ''}${weight ? ` Weight: ${weight}kg.` : ''}
             Analyze Life Line, Head Line, Heart Line, Fate Line.
 
             CRITICAL DIRECTIVES:
-            1. Make the analysis extremely rich, highly detailed, exhaustive, and beautifully written with high literary flair. Write long, complete paragraphs for every single section. Do NOT write short summaries.
-            2. Infuse the reading with both MYSTICAL/FANTASY elements (ancient Taoist sorcery, celestial alignments, astral threads, soul contracts, Qi meridian paths, ancestral karma) and HIGH-TECH/SCIENTIFIC elements (quantum resonance frequency, holographic palm topography, biophoton emission dynamics, neural path mapping, holographic spatial matrix, timeline probability branches, spatial frequency vector fields).
-            3. Intelligently connect their physical metrics (${height ? `${height}cm height` : 'N/A'}, ${weight ? `${weight}kg weight` : 'N/A'}) to their constitutional vitality, metabolic Qi, and cellular reserve analysis in the Life Line section.
+            1. DO NOT INCLUDE ANY FACE OR FACIAL FEATURE ANALYSIS DATA IN THIS PALM READING. FOCUS EXCLUSIVELY ON PALMISTRY (PALM LINES, MOUNTS, HAND TOPOGRAPHY, AND HAND GEOMETRY).
+            2. Make the analysis extremely rich, highly detailed, exhaustive, and beautifully written with high literary flair. Write long, complete paragraphs for every single section. Do NOT write short summaries.
+            3. Infuse the reading with both MYSTICAL/FANTASY elements (ancient Taoist sorcery, celestial alignments, astral threads, soul contracts, Qi meridian paths, ancestral karma) and HIGH-TECH/SCIENTIFIC elements (quantum resonance frequency, holographic palm topography, biophoton emission dynamics, neural path mapping, holographic spatial matrix, timeline probability branches, spatial frequency vector fields).
+            4. Intelligently connect their physical metrics (${height ? `${height}cm height` : 'N/A'}, ${weight ? `${weight}kg weight` : 'N/A'}) to their constitutional vitality, metabolic Qi, and cellular reserve analysis in the Life Line section.
             
             Structure:
             ## 🔮 ${headers.dailyLuck} ...
@@ -1131,7 +1240,7 @@ This is a demonstration of the result layout.
           }
       }
 
-      const result = await callWithRetry(() => AIService.callAI(prompt, base64Data, appConfig, userState.userId), 2, 1500, (retryMsg) => {
+      const result = await callWithRetry(() => AIService.callAI(prompt, imageInputForAI, appConfig, userState.userId), 2, 1500, (retryMsg) => {
           if (isMounted.current) setLoadingMessage(retryMsg);
       });
       
@@ -1224,7 +1333,7 @@ This is a demonstration of the result layout.
             });
         }
         setView('result');
-        alert(`${t.connectionFailedAlert || "AI service is currently unavailable."} (${errorMsg})\n\n${t.demoModeAlert || "Switching to celestial demo/offline mode so you can view the results."}`);
+        console.warn(`[Analysis Fallback] ${errorMsg}. Switched to offline celestial mode.`);
     }
   };
 
@@ -1439,11 +1548,18 @@ This is a demonstration of the result layout.
       setView('start'); 
   };
 
-  const handleExplore = (type?: 'face' | 'palm' | 'shop') => {
+  const handleExplore = (type?: 'face' | 'palm' | 'both' | 'shop') => {
       if (type === 'shop') {
           setCurrentPage('shop');
-      } else if (type === 'palm' || type === 'face') {
+      } else if (type === 'palm' || type === 'face' || type === 'both') {
           setReadingType(type);
+          setFaceImage(null);
+          setPalmImage(null);
+          setImage(null);
+          setResultText("");
+          if (type === 'both') {
+              setBothStep('face');
+          }
           setView('selection');
           setCurrentPage('analysis');
       } else {
@@ -1487,6 +1603,10 @@ This is a demonstration of the result layout.
       }
 
       // Update Client State
+      if (selectedServiceTier) {
+          setUnlockedTiers(prev => [...prev, selectedServiceTier.id]);
+      }
+
       if (activePlan.id === 'cart_checkout') { 
           setCart([]); 
           setCurrentPage('home'); 
@@ -1503,6 +1623,24 @@ This is a demonstration of the result layout.
       setShowPaymentModal(false); 
       setShowPaywall(false);
       if (currentPage === 'pricing') handleGoHome(); 
+  };
+
+  const handleSelectTierAndStart = (tier: ServiceTierOption) => {
+      setSelectedServiceTier(tier);
+      setReadingType(tier.type === 'combined' ? 'face' : tier.type);
+      setCurrentPage('analysis');
+      setView('selection');
+  };
+
+  const handleUnlockTier = (tier: ServiceTierOption) => {
+      setSelectedPlan({
+          id: tier.id,
+          title: tier.title,
+          price: tier.price,
+          desc: tier.description,
+          isSub: false
+      });
+      setShowPaymentModal(true);
   };
   
   const handleGoHome = () => { 
@@ -1592,10 +1730,6 @@ This is a demonstration of the result layout.
                </div>
                <div style={styles.heroSection}>
                     <AdminPage t={t} />
-                    <button onClick={() => setShowSettings(true)} style={{...styles.secondaryButton, marginTop: '20px'}}>
-                        <i className="fas fa-cog"></i> Configure AI
-                    </button>
-                    {showSettings && <SettingsModal t={t} config={appConfig} onSave={saveConfig} onClose={() => setShowSettings(false)} />}
                </div>
           </div>
       );
@@ -1681,8 +1815,6 @@ This is a demonstration of the result layout.
         {/* AUTH MODAL */}
         {showAuthModal && <AuthModal t={t} onClose={() => setShowAuthModal(false)} onLoginSuccess={handleLoginSuccess} />}
 
-        {showSettings && <SettingsModal t={t} config={appConfig} onSave={saveConfig} onClose={() => setShowSettings(false)} />}
-
         {currentPage === 'product-detail' && selectedProduct && (
             <div style={{...styles.heroSection, justifyContent: 'flex-start', paddingTop: '100px'}}>
                 <ProductDetailModal 
@@ -1712,22 +1844,70 @@ This is a demonstration of the result layout.
 
         {currentPage === 'analysis' && (
              <div style={{...styles.heroSection, paddingTop: '1rem'}}>
-                {view === 'start' && <RenderStartView t={t} freeTrials={getDailyFreeRemaining()} isLoggedIn={userState.isLoggedIn} freeFaceRemaining={userState.freeFaceRemaining} freePalmRemaining={userState.freePalmRemaining} daysRemaining={getDaysRemaining()} language={language} onStart={(type: 'face' | 'palm') => { setReadingType(type); setView('selection'); }} />}
+                {view === 'start' && <RenderStartView t={t} freeTrials={getDailyFreeRemaining()} isLoggedIn={userState.isLoggedIn} isPaidUser={Boolean(userState.isSubscribed || userState.hasPaidSingle)} freeFaceRemaining={userState.freeFaceRemaining} freePalmRemaining={userState.freePalmRemaining} daysRemaining={getDaysRemaining()} language={language} onStart={(type: 'face' | 'palm' | 'both') => { setReadingType(type); if (type === 'both') { setBothStep('face'); setFaceImage(null); setPalmImage(null); } else { setFaceImage(null); setPalmImage(null); } setView('selection'); }} />}
                 {view === 'selection' && <RenderSelectionView 
-                    t={t} readingType={readingType} gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
+                    t={t} readingType={readingType} bothStep={bothStep} gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
                     uploadProgress={uploadProgress} userName={userName} onSetUserName={setUserName} onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
-                    onStartCamera={() => startCamera(readingType)} onUpload={handleFileUpload} onBack={() => setView('start')}
+                    faceImage={faceImage} palmImage={palmImage}
+                    onClearFaceImage={() => { setFaceImage(null); setBothStep('face'); }}
+                    onClearPalmImage={() => { setPalmImage(null); setBothStep('palm'); }}
+                    onSubmitDualAnalysis={handleSubmitDualAnalysis}
+                    onSubmitSingleAnalysis={handleSubmitSingleAnalysis}
+                    onStartCamera={(mode?: 'face' | 'palm') => {
+                        const targetMode = mode || (bothStep === 'palm' ? 'palm' : (readingType === 'palm' ? 'palm' : 'face'));
+                        if (readingType === 'both') setBothStep(targetMode);
+                        setActiveCameraSlot(targetMode);
+                        startCamera(targetMode);
+                    }} 
+                    onUpload={(e: any, targetSlot?: 'face' | 'palm') => handleFileUpload(e, targetSlot)} 
+                    onBack={() => setView('start')}
                     language={language} useAdvancedAnalysis={useAdvancedAnalysis} onToggleAdvanced={() => setUseAdvancedAnalysis(!useAdvancedAnalysis)}
                     height={height} onSetHeight={setHeight} weight={weight} onSetWeight={setWeight}
                 />}
-                {view === 'camera' && <RenderCameraView t={t} readingType={readingType} videoRef={videoRef} canvasRef={canvasRef} onStopCamera={() => { stopCamera(); setView('selection'); }} onCapture={capturePhoto} />}
+                {view === 'camera' && <RenderCameraView t={t} readingType={readingType} bothStep={bothStep} videoRef={videoRef} canvasRef={canvasRef} onStopCamera={() => { stopCamera(); setView('selection'); }} onCapture={capturePhoto} />}
                 {view === 'analyzing' && <LoadingSpinner t={t} progress={analysisProgress} message={loadingMessage} />}
                 {view === 'result' && <RenderResultView 
                     t={t} readingType={readingType} birthDate={birthDate} gender={gender} calculatedElements={calculatedElements} resultText={resultText} 
                     language={language} isSpeaking={isSpeaking} isTranslating={isTranslating} LANGUAGES={LANGUAGES}
-                    onLanguageChange={(e: any) => switchLanguage(e.target.value)} onToggleSpeech={toggleSpeech} onAnalyzeAnother={() => { setView('selection'); setImage(null); setResultText(""); }}
+                    onLanguageChange={(e: any) => switchLanguage(e.target.value)} onToggleSpeech={toggleSpeech} onAnalyzeAnother={() => { setView('selection'); setImage(null); setResultText(""); setBothStep('none'); setFaceImage(null); setPalmImage(null); }}
                     onBuyProduct={handleBuyProduct} onOpenBalance={handleOpenBalance} onViewProduct={handleViewProduct}
                     image={image}
+                    faceImage={faceImage}
+                    palmImage={palmImage}
+                    selectedServiceTier={selectedServiceTier}
+                    unlockedTiers={unlockedTiers}
+                    onUnlockTier={handleUnlockTier}
+                    isPaidUser={Boolean(userState.isSubscribed || userState.hasPaidSingle)}
+                    isLoggedIn={Boolean(userState.isLoggedIn)}
+                    daysRemaining={getDaysRemaining()}
+                    onUnlockFullReport={() => {
+                        const isDual = readingType === 'both';
+                        const priceStr = isDual ? '$9.99' : '$6.99';
+                        const reportTitle = isDual
+                            ? (language === 'zh-TW' || language === 'zht' ? '面相+手相雙重互證 100% 深度精批報告' : language.startsWith('zh') ? '面相+手相双重互证 100% 深度精批报告' : 'Face + Palm Dual 100% Comprehensive Report')
+                            : (readingType === 'palm'
+                                ? (language === 'zh-TW' || language === 'zht' ? '掌紋全息 100% 深度精批報告' : language.startsWith('zh') ? '掌纹全息 100% 深度精批报告' : 'Palmistry 100% Comprehensive Report')
+                                : (language === 'zh-TW' || language === 'zht' ? '面相全息 100% 深度精批報告' : language.startsWith('zh') ? '面相全息 100% 深度精批报告' : 'Face Physiognomy 100% Comprehensive Report'));
+
+                        const targetPlan: Plan = { 
+                            id: 'single', 
+                            title: reportTitle, 
+                            price: priceStr, 
+                            desc: language === 'zh-TW' || language === 'zht' ? '解鎖全量命理精批與開運調理建議' : language.startsWith('zh') ? '解锁全量命理精批与开运调理建议' : 'Unlock full analysis and remedies', 
+                            isSub: false 
+                        };
+
+                        if (!userState.isLoggedIn) {
+                            setPendingPaymentPlan(targetPlan);
+                            setShowAuthModal(true);
+                        } else {
+                            setSelectedPlan(targetPlan);
+                            setShowPaymentModal(true);
+                        }
+                    }}
+                    onOpenPricing={() => {
+                        setCurrentPage('pricing');
+                    }}
                 />}
                 {view === 'start' && (
                     <div style={{marginTop: '4rem', maxWidth: '1000px', width: '100%'}} className="desktop-only">
@@ -1741,7 +1921,7 @@ This is a demonstration of the result layout.
                 )}
              </div>
         )}
-        {currentPage === 'pricing' && <div style={styles.heroSection}><PricingPage t={t} onSelectPlan={triggerPayment} /></div>}
+        {currentPage === 'pricing' && <div style={styles.heroSection}><PricingPage t={t} onSelectPlan={triggerPayment} onBack={() => setCurrentPage('analysis')} onClose={() => setCurrentPage('analysis')} /></div>}
         {currentPage === 'shop' && <div style={styles.heroSection}><ShopPage t={t} onViewProduct={handleViewProduct} /></div>}
         {currentPage === 'cart' && <div style={styles.heroSection}><CartPage t={t} cart={cart} onRemove={handleRemoveFromCart} onCheckout={handleCartCheckout} /></div>}
         {currentPage === 'about' && <div style={styles.heroSection}><AboutPage t={t} /></div>}
@@ -1775,6 +1955,8 @@ This is a demonstration of the result layout.
                     onRemoveFromCart={handleRemoveFromCart}
                     onCartCheckout={() => handleCartCheckout(cart.reduce((total, c) => total + (c.product.numericPrice * c.quantity), 0))}
                     onGoToShop={() => setCurrentPage('shop')}
+                    onBack={() => { setCurrentPage('home'); setView('start'); }}
+                    onClose={() => { setCurrentPage('home'); setView('start'); }}
                 />
             </div>
         )}
@@ -1807,8 +1989,8 @@ This is a demonstration of the result layout.
                   We use cookies and Google Analytics to analyze our site traffic and enhance your mystic personalized reading experience. By clicking "Accept All", you agree to our privacy standards.
               </p>
               <div style={{display: 'flex', gap: '10px', justifyContent: 'flex-end'}}>
-                  <button onClick={handleDeclineCookies} style={{background: 'transparent', border: '1px solid #555', color: '#aaa', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem'}}>Decline</button>
-                  <button onClick={handleAcceptCookies} style={{background: theme.gold, border: `1px solid ${theme.gold}`, color: '#000', fontWeight: 'bold', padding: '6px 15px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem'}}>Accept All</button>
+                  <button onClick={handleDeclineCookies} style={{background: 'transparent', border: '1px solid #555', color: '#aaa', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem'}}>{t.declineCookies || "Decline"}</button>
+                  <button onClick={handleAcceptCookies} style={{background: theme.gold, border: `1px solid ${theme.gold}`, color: '#000', fontWeight: 'bold', padding: '6px 15px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem'}}>{t.acceptCookies || "Accept All"}</button>
               </div>
           </div>
       )}

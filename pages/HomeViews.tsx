@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { theme, styles } from '../theme';
 import { BaguaSVG, FaceMapSVG } from '../components/Icons';
 import { FiveElementsChart } from '../components/Charts';
 import { getChineseZodiac, getWesternZodiac, calculateAge, handleImageError } from '../utils';
 import { SHOP_PRODUCTS } from '../products';
 import { HistoryRecord } from '../types';
+import { TopHeaderNav } from '../components/HeaderControls';
 
 export const LoadingSpinner = ({ t, progress, message }: { t: any, progress?: number, message?: string }) => (
   <div style={{ textAlign: 'center', padding: '3rem 1rem', width: '100%', maxWidth: '400px' }}>
@@ -40,8 +42,21 @@ export const LoadingSpinner = ({ t, progress, message }: { t: any, progress?: nu
   </div>
 );
 
-export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, freeFaceRemaining, freePalmRemaining, daysRemaining, language }: { t: any, freeTrials: number, onStart: (type: 'face' | 'palm') => void, isLoggedIn?: boolean, freeFaceRemaining?: number, freePalmRemaining?: number, daysRemaining?: number, language?: string }) => {
+export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, isPaidUser, freeFaceRemaining, freePalmRemaining, daysRemaining, language, onBack, onClose }: { t: any, freeTrials: number, onStart: (type: 'face' | 'palm' | 'both') => void, isLoggedIn?: boolean, isPaidUser?: boolean, freeFaceRemaining?: number, freePalmRemaining?: number, daysRemaining?: number, language?: string, onBack?: () => void, onClose?: () => void }) => {
     const boxSize = '200px'; 
+    const isZh = language === 'zh' || language === 'zh-CN' || language?.startsWith('zh');
+    const isZht = language === 'zh-TW' || language === 'zht';
+    const isUnpaid = !isLoggedIn || !isPaidUser;
+    const isVip = Boolean(isLoggedIn && isPaidUser);
+    const basicPredictionLabel = isZht ? "基本預測" : isZh ? "基本预测" : "Basic Prediction"; 
+    
+    const cardPriceLabel1 = isVip 
+        ? (isZht ? "VIP客戶沒有限制" : isZh ? "VIP客户没有限制" : "Unlimited for VIP Members")
+        : (isZht ? "單次使用 $6.99" : isZh ? "单次使用 $6.99" : "One-time use only $6.99");
+
+    const cardPriceLabel2 = isVip
+        ? (isZht ? "VIP客戶沒有限制" : isZh ? "VIP客户没有限制" : "Unlimited for VIP Members")
+        : (isZht ? "單次使用 $9.99" : isZh ? "单次使用 $9.99" : "One-time use only $9.99"); 
     const imageBoxStyle = {
         width: boxSize, 
         height: boxSize, 
@@ -63,7 +78,7 @@ export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, freeFaceRe
     <div style={{
       ...styles.glassPanel, 
       border: `2px solid rgba(102, 192, 244, 0.22)`, 
-      padding: '4rem 2rem', 
+      padding: '2rem 2rem 4rem 2rem', 
       boxShadow: `0px 15px 50px rgba(0, 0, 0, 0.9), inset 0px 0px 35px rgba(102, 192, 244, 0.05)`, 
       borderRadius: '16px',
       position: 'relative',
@@ -71,6 +86,7 @@ export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, freeFaceRe
       background: 'linear-gradient(145deg, #172636 0%, #171a21 100%)'
     }} className="glass-panel-mobile">
       
+      <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.navAnalysis || "AI 算命选单"} />
       {/* Decorative Celestial Corners */}
       <div style={{ position: 'absolute', top: '15px', left: '15px', width: '25px', height: '25px', borderLeft: `2px solid ${theme.accent}`, borderTop: `2px solid ${theme.accent}`, opacity: 0.5 }} />
       <div style={{ position: 'absolute', top: '15px', right: '15px', width: '25px', height: '25px', borderRight: `2px solid ${theme.accent}`, borderTop: `2px solid ${theme.accent}`, opacity: 0.5 }} />
@@ -146,6 +162,21 @@ export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, freeFaceRe
                   </div>
                   <h3 style={{color: theme.gold, fontSize: '1.45rem', fontFamily: '"Space Grotesk", sans-serif', letterSpacing: '1px', margin: '0 0 15px 0', textTransform: 'uppercase'}}>{t.startBtn}</h3>
                   <button style={{...styles.button, width: '100%', marginTop: 'auto', letterSpacing: '1px', fontWeight: 'bold'}}>{t.scanBtn}</button>
+                  <div style={{
+                      marginTop: '12px',
+                      padding: '5px 12px',
+                      borderRadius: '12px',
+                      fontSize: '0.78rem',
+                      fontWeight: 'bold',
+                      background: isVip ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 215, 0, 0.15)',
+                      border: isVip ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(255, 215, 0, 0.4)',
+                      color: isVip ? '#2ecc71' : '#FFD700',
+                      textAlign: 'center',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                  }}>
+                      {cardPriceLabel1}
+                  </div>
               </div>
     
               {/* PALM READING CARD */}
@@ -182,6 +213,136 @@ export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, freeFaceRe
                   </div>
                   <h3 style={{color: theme.gold, fontSize: '1.45rem', fontFamily: '"Space Grotesk", sans-serif', letterSpacing: '1px', margin: '0 0 15px 0', textTransform: 'uppercase'}}>{t.palmBtn}</h3>
                   <button style={{...styles.button, width: '100%', marginTop: 'auto', letterSpacing: '1px', fontWeight: 'bold'}}>{t.scanPalmBtn}</button>
+                  <div style={{
+                      marginTop: '12px',
+                      padding: '5px 12px',
+                      borderRadius: '12px',
+                      fontSize: '0.78rem',
+                      fontWeight: 'bold',
+                      background: isVip ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 215, 0, 0.15)',
+                      border: isVip ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(255, 215, 0, 0.4)',
+                      color: isVip ? '#2ecc71' : '#FFD700',
+                      textAlign: 'center',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                  }}>
+                      {cardPriceLabel1}
+                  </div>
+              </div>
+
+              {/* DUAL READING CARD (FACE + PALM) */}
+              <div style={{
+                  flex: '1 1 290px', 
+                  maxWidth: '330px',
+                  background: 'linear-gradient(135deg, rgba(23, 38, 54, 0.9) 0%, rgba(17, 26, 38, 0.95) 100%)', 
+                  border: `1.5px solid rgba(102, 192, 244, 0.22)`, 
+                  borderRadius: '12px', 
+                  padding: '35px 25px', 
+                  cursor: 'pointer',
+                  transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.7), inset 0 0 15px rgba(102,192,244,0.02)',
+                  position: 'relative'
+              }}
+              onClick={() => onStart('both')}
+              onMouseOver={(e) => {
+                  e.currentTarget.style.borderColor = theme.accent;
+                  e.currentTarget.style.transform = 'translateY(-8px)';
+                  e.currentTarget.style.boxShadow = `0 15px 45px rgba(102, 192, 244, 0.35)`;
+              }}
+              onMouseOut={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(102, 192, 244, 0.22)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.7)';
+              }}
+              >
+                  <div style={{
+                      position: 'absolute',
+                      top: '-12px',
+                      background: 'rgba(102, 192, 244, 0.18)',
+                      border: '1px solid rgba(102, 192, 244, 0.5)',
+                      color: theme.gold,
+                      padding: '3px 14px',
+                      borderRadius: '15px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      letterSpacing: '1px',
+                      boxShadow: '0 0 10px rgba(102, 192, 244, 0.25)'
+                  }}>
+                      {t.bothBadge || '双相合璧'}
+                  </div>
+                  <div style={imageBoxStyle}>
+                      <div style={{display: 'flex', gap: '8px', alignItems: 'center', zIndex: 2}}>
+                          {/* Standard Face Vector Badge */}
+                          <div style={{
+                              width: '58px',
+                              height: '58px',
+                              borderRadius: '50%',
+                              background: 'rgba(102, 192, 244, 0.12)',
+                              border: '1.5px solid rgba(102, 192, 244, 0.6)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 0 12px rgba(102, 192, 244, 0.3)'
+                          }}>
+                              <svg viewBox="0 0 80 90" style={{width: '38px', height: '42px', filter: 'drop-shadow(0 0 4px rgba(102, 192, 244, 0.5))'}}>
+                                  <g stroke="#66c0f4" strokeWidth="2" fill="none">
+                                      <path d="M15,25 C15,8 65,8 65,25 C65,48 58,78 40,85 C22,78 15,48 15,25 Z" />
+                                      <path d="M22,30 Q30,26 36,30" />
+                                      <path d="M44,30 Q50,26 58,30" />
+                                      <path d="M24,37 Q30,33 36,37 Q30,41 24,37 Z" fill="rgba(102,192,244,0.3)" />
+                                      <path d="M44,37 Q50,33 56,37 Q50,41 44,37 Z" fill="rgba(102,192,244,0.3)" />
+                                      <path d="M40,37 L37,52 Q40,56 43,52 Z" />
+                                      <path d="M30,66 Q40,71 50,66" />
+                                      <circle cx="40" cy="18" r="3" fill="#FFD700" stroke="#fff" strokeWidth="0.5" />
+                                      <circle cx="40" cy="32" r="2.5" fill="#2ecc71" />
+                                      <circle cx="40" cy="54" r="2.5" fill="#FFD700" />
+                                      <circle cx="40" cy="76" r="3" fill="#66c0f4" stroke="#fff" strokeWidth="0.5" />
+                                  </g>
+                              </svg>
+                          </div>
+
+                          <i className="fas fa-plus" style={{fontSize: '0.9rem', color: theme.accent, opacity: 0.8}}></i>
+
+                          {/* Standard Palm Vector Badge */}
+                          <div style={{
+                              width: '58px',
+                              height: '58px',
+                              borderRadius: '50%',
+                              background: 'rgba(102, 192, 244, 0.12)',
+                              border: '1.5px solid rgba(102, 192, 244, 0.6)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 0 12px rgba(102, 192, 244, 0.3)'
+                          }}>
+                              <i className="fas fa-hand-sparkles" style={{fontSize: '2.2rem', color: theme.accent, textShadow: '0 0 10px rgba(102,192,244,0.6)'}}></i>
+                          </div>
+                      </div>
+                      <div style={{position: 'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width: '145px', height:'145px', borderRadius:'50%', border:`1.5px dashed ${theme.accent}`, animation: 'slowSpin 15s linear infinite', opacity: 0.5}}></div>
+                  </div>
+                  <h3 style={{color: theme.gold, fontSize: '1.45rem', fontFamily: '"Space Grotesk", sans-serif', letterSpacing: '1px', margin: '0 0 10px 0', textTransform: 'uppercase'}}>{t.startBothBtn || '面部+手掌'}</h3>
+                  <p style={{color: '#B0C0D0', fontSize: '0.8rem', textAlign: 'center', margin: '0 0 15px 0', lineHeight: '1.4'}}>
+                      {t.startBothDesc || '面相与手相双重互证，深度解构人生终极命局'}
+                  </p>
+                  <button style={{...styles.button, width: '100%', marginTop: 'auto', letterSpacing: '1px', fontWeight: 'bold'}}>{t.scanBtn || 'SCAN NOW'}</button>
+                  <div style={{
+                      marginTop: '12px',
+                      padding: '5px 12px',
+                      borderRadius: '12px',
+                      fontSize: '0.78rem',
+                      fontWeight: 'bold',
+                      background: isVip ? 'rgba(46, 204, 113, 0.15)' : 'rgba(255, 215, 0, 0.15)',
+                      border: isVip ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(255, 215, 0, 0.4)',
+                      color: isVip ? '#2ecc71' : '#FFD700',
+                      textAlign: 'center',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                  }}>
+                      {cardPriceLabel2}
+                  </div>
               </div>
     
           </div>
@@ -191,33 +352,53 @@ export const RenderStartView = ({ t, freeTrials, onStart, isLoggedIn, freeFaceRe
           <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'center', marginTop: '10px'}}>
               <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(102, 192, 244, 0.08)', padding: '8px 22px', borderRadius: '25px', border: `1px solid rgba(102, 192, 244, 0.25)`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
                   <i className="fas fa-calendar-alt" style={{marginRight: '8px', color: theme.accent}}></i>
-                  {t.freeTrialsHint ? t.freeTrialsHint.replace('{count}', (daysRemaining !== undefined ? daysRemaining : 3).toString()) : `Free trial active (${daysRemaining !== undefined ? daysRemaining : 3} days remaining)`}
+                  {isUnpaid ? basicPredictionLabel : (t.freeTrialsHint ? t.freeTrialsHint.replace('{count}', (daysRemaining !== undefined ? daysRemaining : 3).toString()) : `Free trial active (${daysRemaining !== undefined ? daysRemaining : 3} days remaining)`)}
               </div>
               <div style={{fontSize: '0.9rem', color: theme.gold, fontWeight: 'bold', background: 'rgba(102, 192, 244, 0.08)', padding: '8px 22px', borderRadius: '25px', border: `1px solid rgba(102, 192, 244, 0.25)`, letterSpacing: '1px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)'}}>
                   <i className="fas fa-magic" style={{marginRight: '8px', color: theme.accent}}></i>
-                  {language === 'zh' ? `免费测试剩余: ${freeTrials}/10次` : language === 'zht' ? `免費測試剩餘: ${freeTrials}/10次` : `Free readings remaining: ${freeTrials}/10`}
+                  {isUnpaid ? basicPredictionLabel : (isZh ? `免费测试额度: ${freeTrials}/3次` : isZht ? `免費測試額度: ${freeTrials}/3次` : `Free readings: ${freeTrials}/3`)}
               </div>
           </div>
           <div style={{fontSize: '0.8rem', color: '#888', marginTop: '5px', fontStyle: 'italic', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>
-              {language === 'zh' ? "✧ 全站用户享有自首次使用起3天免费试用，总计最多可进行10次测试 ✧" : language === 'zht' ? "✧ 全站用戶享有自首次使用起3天免費試用，總計最多可進行10次測試 ✧" : "✧ All users enjoy a 3-day free trial from first use, up to 10 total readings across the site ✧"}
+              {isZh ? "✧ 未注册及未订阅付费用户提供基础测算服务" : "✧ Basic readings for non-subscribed users"}
           </div>
       </div>
     </div>
   );
 };
 
-export const RenderSelectionView = ({ t, readingType, gender, dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond, uploadProgress, userName, onSetUserName, onSetGender, onSetDobYear, onSetDobMonth, onSetDobDay, onSetDobHour, onSetDobMinute, onSetDobSecond, onStartCamera, onUpload, onBack, language, useAdvancedAnalysis, onToggleAdvanced, height, onSetHeight, weight, onSetWeight }: any) => {
+export const RenderSelectionView = ({ 
+    t, 
+    readingType, 
+    bothStep, 
+    faceImage,
+    palmImage,
+    gender, dobYear, dobMonth, dobDay, dobHour, dobMinute, dobSecond, 
+    uploadProgress, userName, onSetUserName, onSetGender, 
+    onSetDobYear, onSetDobMonth, onSetDobDay, 
+    onSetDobHour, onSetDobMinute, onSetDobSecond, 
+    onStartCamera, onUpload, onClearFaceImage, onClearPalmImage, onSubmitDualAnalysis, onSubmitSingleAnalysis,
+    onBack, onClose, language, 
+    useAdvancedAnalysis, onToggleAdvanced, height, onSetHeight, weight, onSetWeight 
+}: any) => {
     const years = Array.from({length: 151}, (_, i) => 1900 + i);
     const months = Array.from({length: 12}, (_, i) => i + 1);
     const days = Array.from({length: 31}, (_, i) => i + 1);
     const hours = Array.from({length: 24}, (_, i) => i);
     const minutesSeconds = Array.from({length: 60}, (_, i) => i);
     
-    // Check if we should show Name Input (China context)
     const isPalm = readingType === 'palm';
+    const isBoth = readingType === 'both';
+    const isZh = language ? language.startsWith('zh') : true;
+    const isZht = language === 'zh-TW' || language === 'zht';
+
+    const headerTitle = isBoth 
+        ? (isZht ? "面相+手相雙重測算資訊錄入" : isZh ? "面相+手相双重测算信息录入" : "Face + Palm Dual Reading")
+        : (isPalm ? (isZht ? "手相測算資訊錄入" : isZh ? "手相测算信息录入" : "Palmistry Info Entry") : (isZht ? "面相測算資訊錄入" : isZh ? "面相测算信息录入" : "Physiognomy Info Entry"));
 
     return (
       <div style={{...styles.glassPanel, border: `1px solid rgba(102, 192, 244, 0.22)`, position: 'relative'}} className="glass-panel-mobile">
+          <TopHeaderNav t={t} onBack={onBack} onClose={onClose || onBack} title={headerTitle} />
           {/* Top Right Close Button */}
           <button 
               onClick={onBack} 
@@ -245,16 +426,22 @@ export const RenderSelectionView = ({ t, readingType, gender, dobYear, dobMonth,
               <h3 style={{color: theme.accent, fontSize: '1.05rem', borderBottom: '1px solid rgba(102, 192, 244, 0.15)', paddingBottom: '5px', marginBottom: '15px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.profileTitle}</h3>
               
                {/* Advanced Analysis Checkbox */}
-               <div style={{marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '4px', cursor: 'pointer'}} onClick={onToggleAdvanced}>
+               <div style={{marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '4px', cursor: 'default'}}>
                   <div style={{
                       width: '20px', height: '20px', 
                       border: `1px solid ${theme.accent}`, 
-                      background: useAdvancedAnalysis ? theme.accent : 'transparent',
+                      background: theme.accent,
+                      borderRadius: '3px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center'
                   }}>
-                      {useAdvancedAnalysis && <i className="fas fa-check" style={{color: '#05040a', fontSize: '0.8rem'}}></i>}
+                      <i className="fas fa-check" style={{color: '#05040a', fontSize: '0.85rem', fontWeight: 'bold'}}></i>
                   </div>
-                  <span style={{color: theme.text, fontSize: '0.9rem', fontFamily: '"Space Grotesk", sans-serif'}}>{t.combineAnalysis}</span>
+                  <span style={{color: theme.text, fontSize: '0.9rem', fontFamily: '"Space Grotesk", sans-serif', display: 'flex', alignItems: 'center', gap: '6px'}}>
+                      {t.combineAnalysis}
+                      <span style={{fontSize: '0.75rem', color: theme.gold, background: 'rgba(212,175,55,0.15)', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(212,175,55,0.3)'}}>
+                          {isZht ? "必選" : isZh ? "必选" : "Required"}
+                      </span>
+                  </span>
                </div>
 
               {useAdvancedAnalysis && (
@@ -352,30 +539,270 @@ export const RenderSelectionView = ({ t, readingType, gender, dobYear, dobMonth,
               </div>
 
           </div>
-          <button style={{...styles.button, width: '100%', color: '#fff'}} onClick={onStartCamera}>
-            <i className={`fas ${isPalm ? 'fa-hand-sparkles' : 'fa-camera'}`}></i> {isPalm ? t.scanPalmBtn : t.scanBtn}
-          </button>
-          <div style={{marginTop: '15px', position: 'relative'}}>
-            <button style={{...styles.secondaryButton, width: '100%'}} onClick={() => document.getElementById('file-upload')?.click()}>
-               <i className="fas fa-upload"></i> {t.uploadBtn}
-            </button>
-            <input type="file" id="file-upload" accept="image/*" style={styles.input} onChange={onUpload} />
-             {/* Upload Progress Bar */}
-             {uploadProgress > 0 && (
-                  <div style={{width: '100%', marginTop: '10px'}}>
-                      <div style={{width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden'}}>
-                          <div style={{width: `${uploadProgress}%`, height: '100%', background: theme.accent, transition: 'width 0.2s'}}></div>
+
+          {/* DUAL MODE IMAGE SLOTS */}
+          {isBoth ? (
+              <div style={{ marginTop: '20px', textAlign: 'left' }}>
+                  <h3 style={{ color: theme.gold, fontSize: '1.05rem', borderBottom: '1px solid rgba(212,175,55,0.2)', paddingBottom: '8px', marginBottom: '15px' }}>
+                      <i className="fas fa-layer-group" style={{ marginRight: '8px' }} />
+                      {isZht ? "面相 + 手相 雙重影像採集" : isZh ? "面相 + 手相 双重影像采集" : "Face + Palm Dual Image Capture"}
+                  </h3>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '18px' }} className="dual-capture-grid">
+                      {/* Slot 1: Face Image */}
+                      <div style={{
+                          background: faceImage ? 'rgba(46, 204, 113, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                          border: `1.5px ${faceImage ? 'solid #2ecc71' : 'dashed rgba(102, 192, 244, 0.4)'}`,
+                          borderRadius: '12px',
+                          padding: '12px',
+                          textAlign: 'center',
+                          position: 'relative'
+                      }}>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: faceImage ? '#2ecc71' : theme.gold, marginBottom: '8px' }}>
+                              1. {isZht ? "面部照片" : isZh ? "面部照片" : "Face Photo"}
+                          </div>
+                          {faceImage ? (
+                              <div>
+                                  <div style={{ width: '80px', height: '80px', margin: '0 auto 8px auto', borderRadius: '50%', overflow: 'hidden', border: '2px solid #2ecc71', boxShadow: '0 0 10px rgba(46,204,113,0.3)' }}>
+                                      <img src={faceImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Face" />
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#2ecc71', marginBottom: '8px', fontWeight: 'bold' }}>
+                                      <i className="fas fa-check-circle" /> {isZht ? "已捕獲面部" : isZh ? "已捕获面部" : "Face Captured"}
+                                  </div>
+                                  <button
+                                      style={{ ...styles.secondaryButton, padding: '4px 10px', fontSize: '0.75rem', width: '100%' }}
+                                      onClick={onClearFaceImage}
+                                  >
+                                      {isZht ? "刪除重新抓取" : isZh ? "删除重新抓取" : "Retake"}
+                                  </button>
+                              </div>
+                          ) : (
+                              <div>
+                                  <div style={{ width: '60px', height: '60px', margin: '0 auto 8px auto', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed #66c0f4' }}>
+                                      <i className="fas fa-user-astronaut" style={{ fontSize: '1.5rem', color: '#66c0f4' }} />
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#aaa', marginBottom: '10px' }}>
+                                      {isZht ? "待拍攝/上傳面部" : isZh ? "待拍摄/上传面部" : "Pending Face"}
+                                  </div>
+                                  <button
+                                      style={{ ...styles.button, padding: '6px 8px', fontSize: '0.75rem', width: '100%', marginBottom: '6px' }}
+                                      onClick={() => onStartCamera('face')}
+                                  >
+                                      <i className="fas fa-camera" /> {isZht ? "拍攝面部" : isZh ? "拍摄面部" : "Scan Face"}
+                                  </button>
+                                  <button
+                                      style={{ ...styles.secondaryButton, padding: '6px 8px', fontSize: '0.75rem', width: '100%' }}
+                                      onClick={() => document.getElementById('file-upload-face')?.click()}
+                                  >
+                                      <i className="fas fa-upload" /> {isZht ? "上傳照片" : isZh ? "上传照片" : "Upload"}
+                                  </button>
+                                  <input type="file" id="file-upload-face" accept="image/*" style={{ display: 'none' }} onChange={(e) => onUpload(e, 'face')} />
+                              </div>
+                          )}
                       </div>
-                      <div style={{fontSize: '0.8rem', color: theme.accent, marginTop: '5px', textAlign: 'right'}}>{Math.round(uploadProgress)}%</div>
+
+                      {/* Slot 2: Palm Image */}
+                      <div style={{
+                          background: palmImage ? 'rgba(46, 204, 113, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                          border: `1.5px ${palmImage ? 'solid #2ecc71' : 'dashed rgba(102, 192, 244, 0.4)'}`,
+                          borderRadius: '12px',
+                          padding: '12px',
+                          textAlign: 'center',
+                          position: 'relative'
+                      }}>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: palmImage ? '#2ecc71' : theme.gold, marginBottom: '8px' }}>
+                              2. {isZht ? "手掌照片" : isZh ? "手掌照片" : "Palm Photo"}
+                          </div>
+                          {palmImage ? (
+                              <div>
+                                  <div style={{ width: '80px', height: '80px', margin: '0 auto 8px auto', borderRadius: '12px', overflow: 'hidden', border: '2px solid #2ecc71', boxShadow: '0 0 10px rgba(46,204,113,0.3)' }}>
+                                      <img src={palmImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Palm" />
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#2ecc71', marginBottom: '8px', fontWeight: 'bold' }}>
+                                      <i className="fas fa-check-circle" /> {isZht ? "已捕獲手掌" : isZh ? "已捕获手掌" : "Palm Captured"}
+                                  </div>
+                                  <button
+                                      style={{ ...styles.secondaryButton, padding: '4px 10px', fontSize: '0.75rem', width: '100%' }}
+                                      onClick={onClearPalmImage}
+                                  >
+                                      {isZht ? "刪除重新抓取" : isZh ? "删除重新抓取" : "Retake"}
+                                  </button>
+                              </div>
+                          ) : (
+                              <div>
+                                  <div style={{ width: '60px', height: '60px', margin: '0 auto 8px auto', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed #66c0f4' }}>
+                                      <i className="fas fa-hand-sparkles" style={{ fontSize: '1.5rem', color: '#66c0f4' }} />
+                                  </div>
+                                  <div style={{ fontSize: '0.75rem', color: '#aaa', marginBottom: '10px' }}>
+                                      {isZht ? "待拍攝/上傳手掌" : isZh ? "待拍摄/上传手掌" : "Pending Palm"}
+                                  </div>
+                                  <button
+                                      style={{ ...styles.button, padding: '6px 8px', fontSize: '0.75rem', width: '100%', marginBottom: '6px' }}
+                                      onClick={() => onStartCamera('palm')}
+                                  >
+                                      <i className="fas fa-hand-sparkles" /> {isZht ? "拍攝手掌" : isZh ? "拍摄手掌" : "Scan Palm"}
+                                  </button>
+                                  <button
+                                      style={{ ...styles.secondaryButton, padding: '6px 8px', fontSize: '0.75rem', width: '100%' }}
+                                      onClick={() => document.getElementById('file-upload-palm')?.click()}
+                                  >
+                                      <i className="fas fa-upload" /> {isZht ? "上傳照片" : isZh ? "上传照片" : "Upload"}
+                                  </button>
+                                  <input type="file" id="file-upload-palm" accept="image/*" style={{ display: 'none' }} onChange={(e) => onUpload(e, 'palm')} />
+                              </div>
+                          )}
+                      </div>
                   </div>
-              )}
-          </div>
-          {/* Back Button Removed from Bottom */}
+
+                  {/* Upload Progress Bar if active */}
+                  {uploadProgress > 0 && (
+                      <div style={{ width: '100%', marginBottom: '15px' }}>
+                          <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ width: `${uploadProgress}%`, height: '100%', background: theme.accent, transition: 'width 0.2s' }}></div>
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: theme.accent, marginTop: '5px', textAlign: 'right' }}>{Math.round(uploadProgress)}%</div>
+                      </div>
+                  )}
+
+                  {/* Big Submit Button */}
+                  <button
+                      disabled={!faceImage || !palmImage}
+                      style={{
+                          width: '100%',
+                          background: (faceImage && palmImage) 
+                              ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' 
+                              : 'rgba(255, 255, 255, 0.08)',
+                          color: (faceImage && palmImage) ? '#0D121A' : '#777',
+                          fontWeight: 'bold',
+                          fontSize: '1.05rem',
+                          padding: '14px 20px',
+                          borderRadius: '10px',
+                          border: (faceImage && palmImage) ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                          cursor: (faceImage && palmImage) ? 'pointer' : 'not-allowed',
+                          boxShadow: (faceImage && palmImage) ? '0 8px 25px rgba(255, 215, 0, 0.4)' : 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '8px',
+                          transition: 'all 0.3s ease'
+                      }}
+                      onClick={onSubmitDualAnalysis}
+                  >
+                      <i className="fas fa-paper-plane" />
+                      <span>
+                          {faceImage && palmImage 
+                              ? (isZht ? "🚀 提交面相+手相雙重 AI 綜合分析" : isZh ? "🚀 提交面相+手相双重 AI 综合分析" : "🚀 Submit Dual Face + Palm AI Analysis")
+                              : (isZht ? "請先完成面部與手掌兩張照片採集" : isZh ? "请先完成面部与手掌两张照片采集" : "Please capture both face & palm photos")
+                          }
+                      </span>
+                  </button>
+              </div>
+          ) : (
+              /* Single Mode Camera / Upload / Confirmation Section */
+              (() => {
+                  const currentImg = isPalm ? palmImage : faceImage;
+                  const clearImgFunc = isPalm ? onClearPalmImage : onClearFaceImage;
+
+                  if (currentImg) {
+                      return (
+                          <div style={{
+                              marginTop: '20px',
+                              background: 'rgba(46, 204, 113, 0.06)',
+                              border: '1.5px solid #2ecc71',
+                              borderRadius: '12px',
+                              padding: '16px',
+                              textAlign: 'center'
+                          }}>
+                              <div style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '1rem', marginBottom: '12px' }}>
+                                  <i className="fas fa-check-circle" style={{ marginRight: '6px' }} />
+                                  {isPalm 
+                                      ? (isZht ? "手掌照片已捕獲，請確認是否滿意" : isZh ? "手掌照片已捕获，请确认是否满意" : "Palm photo captured, please confirm")
+                                      : (isZht ? "面部照片已捕獲，請確認是否滿意" : isZh ? "面部照片已捕获，请确认是否满意" : "Face photo captured, please confirm")
+                                  }
+                              </div>
+
+                              <div style={{
+                                  width: '120px',
+                                  height: '120px',
+                                  margin: '0 auto 15px auto',
+                                  borderRadius: isPalm ? '16px' : '50%',
+                                  overflow: 'hidden',
+                                  border: '3px solid #2ecc71',
+                                  boxShadow: '0 0 15px rgba(46,204,113,0.3)'
+                              }}>
+                                  <img src={currentImg} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Captured Preview" />
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '15px' }}>
+                                  <button
+                                      style={{
+                                          ...styles.secondaryButton,
+                                          flex: 1,
+                                          padding: '12px',
+                                          color: '#ff6b6b',
+                                          borderColor: 'rgba(255, 107, 107, 0.4)',
+                                          fontSize: '0.9rem',
+                                          marginTop: 0
+                                      }}
+                                      onClick={clearImgFunc}
+                                  >
+                                      <i className="fas fa-trash-alt" style={{ marginRight: '6px' }} />
+                                      {isZht ? "不滿意，刪除重新抓取" : isZh ? "不满意，删除重新抓取" : "Delete & Retake"}
+                                  </button>
+
+                                  <button
+                                      style={{
+                                          ...styles.button,
+                                          flex: 1.5,
+                                          padding: '12px 18px',
+                                          background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
+                                          color: '#0D121A',
+                                          fontWeight: 'bold',
+                                          fontSize: '0.95rem',
+                                          boxShadow: '0 6px 20px rgba(255, 215, 0, 0.35)',
+                                          marginTop: 0
+                                      }}
+                                      onClick={onSubmitSingleAnalysis}
+                                  >
+                                      <i className="fas fa-paper-plane" style={{ marginRight: '6px' }} />
+                                      {isPalm
+                                          ? (isZht ? "🚀 滿意，提交手相 AI 分析" : isZh ? "🚀 满意，提交手相 AI 分析" : "🚀 Submit Palm AI Analysis")
+                                          : (isZht ? "🚀 滿意，提交面相 AI 分析" : isZh ? "🚀 满意，提交面相 AI 分析" : "🚀 Submit Face AI Analysis")
+                                      }
+                                  </button>
+                              </div>
+                          </div>
+                      );
+                  }
+
+                  return (
+                      <>
+                          <button style={{ ...styles.button, width: '100%', color: '#fff' }} onClick={() => onStartCamera(isPalm ? 'palm' : 'face')}>
+                              <i className={`fas ${isPalm ? 'fa-hand-sparkles' : 'fa-camera'}`}></i> {isPalm ? t.scanPalmBtn : t.scanBtn}
+                          </button>
+                          <div style={{ marginTop: '15px', position: 'relative' }}>
+                              <button style={{ ...styles.secondaryButton, width: '100%' }} onClick={() => document.getElementById('file-upload')?.click()}>
+                                  <i className="fas fa-upload"></i> {t.uploadBtn}
+                              </button>
+                              <input type="file" id="file-upload" accept="image/*" style={styles.input} onChange={(e) => onUpload(e, isPalm ? 'palm' : 'face')} />
+                              {uploadProgress > 0 && (
+                                  <div style={{ width: '100%', marginTop: '10px' }}>
+                                      <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                          <div style={{ width: `${uploadProgress}%`, height: '100%', background: theme.accent, transition: 'width 0.2s' }}></div>
+                                      </div>
+                                      <div style={{ fontSize: '0.8rem', color: theme.accent, marginTop: '5px', textAlign: 'right' }}>{Math.round(uploadProgress)}%</div>
+                                  </div>
+                              )}
+                          </div>
+                      </>
+                  );
+              })()
+          )}
       </div>
     );
 };
 
-export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onBuyProduct, onOpenBalance, userState, onProfileUpdate, onUnsubscribe, cart, onRemoveFromCart, onCartCheckout, onGoToShop, onViewProduct }: any) => {
+export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onBuyProduct, onOpenBalance, userState, onProfileUpdate, onUnsubscribe, cart, onRemoveFromCart, onCartCheckout, onGoToShop, onViewProduct, onBack, onClose }: any) => {
     // Local state to manage showing detail view inside history tab
     const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
     const [subTab, setSubTab] = useState<'profile' | 'orders' | 'readings'>('profile');
@@ -517,7 +944,8 @@ export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaki
 
     if (!userState?.isLoggedIn) {
         return (
-            <div style={{...styles.glassPanel, maxWidth: '800px', width: '95%', textAlign: 'center', padding: '3rem 2rem'}}>
+            <div style={{...styles.glassPanel, maxWidth: '800px', width: '95%', textAlign: 'center', padding: '3rem 2rem', position: 'relative'}}>
+                <TopHeaderNav t={t} onBack={onBack} onClose={onClose || onBack} title="个人信息 / Personal Info" />
                 <i className="fas fa-user-lock" style={{fontSize: '3rem', color: theme.accent, marginBottom: '1rem'}}></i>
                 <h2 style={{color: theme.gold, fontFamily: '"Space Grotesk", sans-serif', marginBottom: '1rem'}}>Access Restricted</h2>
                 <p style={{color: '#aaa', maxWidth: '500px', margin: '0 auto 1.5rem', lineHeight: '1.6', fontFamily: '"Space Grotesk", sans-serif'}}>Please log in or sign up to save shipping addresses, manage subscriptions, secure your billing info, and view analytical palm/face reading logs.</p>
@@ -526,7 +954,47 @@ export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaki
     }
 
     return (
-        <div style={{...styles.glassPanel, maxWidth: '850px', width: '95%', padding: '2rem'}}>
+        <div style={{...styles.glassPanel, maxWidth: '850px', width: '95%', padding: '2rem', position: 'relative'}}>
+            <TopHeaderNav t={t} onBack={onBack} onClose={onClose || onBack} title={t.historyTitle || "个人中心 / Personal Dashboard"} />
+            
+            {/* Top Right Close Icon Button */}
+            {(onClose || onBack) && (
+                <button 
+                    onClick={onClose || onBack} 
+                    aria-label="Close"
+                    style={{
+                        position: 'absolute', 
+                        top: '15px', 
+                        right: '15px', 
+                        background: 'rgba(231, 76, 60, 0.15)', 
+                        border: '1px solid rgba(231, 76, 60, 0.4)', 
+                        color: '#ff6b6b', 
+                        fontSize: '1.2rem', 
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        zIndex: 10,
+                        padding: 0,
+                        lineHeight: 1,
+                        transition: 'all 0.2s ease'
+                    }}
+                    onMouseOver={(e) => {
+                        e.currentTarget.style.background = 'rgba(231, 76, 60, 0.3)';
+                        e.currentTarget.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseOut={(e) => {
+                        e.currentTarget.style.background = 'rgba(231, 76, 60, 0.15)';
+                        e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                >
+                    ✕
+                </button>
+            )}
+
             <h2 style={{color: theme.gold, textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif', marginBottom: '0.5rem'}}>{t.historyTitle || "Personal Dashboard"}</h2>
             <p style={{color: '#888', textAlign: 'center', fontSize: '0.9rem', marginBottom: '2rem', fontFamily: '"Space Grotesk", sans-serif'}}>Control center for your spiritual readings, transactions, and membership settings.</p>
             
@@ -574,7 +1042,7 @@ export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaki
                 <form onSubmit={handleSaveAddress} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
                     <div style={{background: 'rgba(102,192,244,0.05)', padding: '15px', borderLeft: `3px solid ${theme.accent}`, marginBottom: '10px', borderRadius: '4px'}}>
                         <h4 style={{color: theme.accent, margin: '0 0 5px 0', fontSize: '1rem', fontFamily: '"Space Grotesk", sans-serif'}}>Logged In Account Status</h4>
-                        <div style={{color: '#ddd', fontSize: '0.9rem', marginBottom: '4px', fontFamily: '"Space Grotesk", sans-serif'}}>Email: {userState.email}</div>
+                        <div style={{color: '#ddd', fontSize: '0.9rem', marginBottom: '4px', fontFamily: '"Space Grotesk", sans-serif'}}>{userState.isSuperUser ? 'Account: Super User' : `Email: ${userState.email}`}</div>
                         <div style={{color: theme.accent, fontSize: '0.85rem', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>Personal Account ID: <span style={{letterSpacing: '1px', fontFamily: 'monospace', background: 'rgba(0,0,0,0.3)', padding: '2px 6px', borderRadius: '4px', color: '#fff'}}>{userState.id || userState.userId}</span></div>
                         
                         {/* Welcome Free Quotas */}
@@ -789,7 +1257,7 @@ export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaki
                                 No transaction invoices registered yet for {userState.email}.
                             </div>
                         ) : (
-                            <div style={{overflowX: 'auto', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)'}}>
+                            <div style={{overflowX: 'auto', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)'}} className="table-responsive">
                                 <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: '#ccc', fontFamily: '"Space Grotesk", sans-serif'}}>
                                     <thead>
                                         <tr style={{background: 'rgba(102, 192, 244, 0.1)', borderBottom: '1px solid rgba(102, 192, 244, 0.15)'}}>
@@ -883,10 +1351,14 @@ export const RenderHistoryView = ({ t, history, onViewResult, language, isSpeaki
     );
 };
 
-export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCamera, onCapture }: any) => {
-    const isPalm = readingType === 'palm';
+export const RenderCameraView = ({ t, readingType, bothStep, videoRef, canvasRef, onStopCamera, onCapture, onBack, onClose }: any) => {
+    const isPalm = readingType === 'palm' || (readingType === 'both' && bothStep === 'palm');
     const accentColor = theme.accent;
     const [countdown, setCountdown] = useState(5);
+
+    const cameraTitle = readingType === 'both'
+        ? (bothStep === 'palm' ? "【步骤 2/2】手掌图像采集" : "【步骤 1/2】脸部图像采集")
+        : (isPalm ? "手相拍照采集" : "面相拍照采集");
 
     // Auto-capture countdown logic
     useEffect(() => {
@@ -906,7 +1378,7 @@ export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCa
             ...styles.glassPanel, 
             maxWidth: '500px', 
             width: '95%', 
-            padding: '0', 
+            padding: '10px 0 0 0', 
             overflow: 'hidden', 
             display: 'flex', 
             flexDirection: 'column', 
@@ -916,6 +1388,7 @@ export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCa
             border: `1px solid ${accentColor}`,
             boxShadow: `0 0 20px rgba(212, 175, 55, 0.2)`
         }}>
+           <TopHeaderNav t={t} onBack={onBack || onStopCamera} onClose={onClose || onStopCamera} title={cameraTitle} />
            <div style={{flex: 1, position: 'relative', background: '#000', overflow: 'hidden'}}>
                {/* Important: playsInline for iOS, muted for autoplay policy */}
                <video 
@@ -1027,11 +1500,177 @@ export const RenderCameraView = ({ t, readingType, videoRef, canvasRef, onStopCa
     );
 };
 
-export const RenderResultView = ({ t, readingType, birthDate, gender, calculatedElements, resultText, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onAnalyzeAnother, onBuyProduct, onOpenBalance, onViewProduct, image }: any) => {
+export const FaceVector2DSketch = ({ readingType, forcedType, selectedNode, onSelectNode, language, missingElement }: any) => {
+    const isZH = language && language.startsWith('zh');
+    const activeType = forcedType || readingType;
+    
+    if (activeType === 'palm') {
+        return (
+            <div style={{ position: 'relative', width: '100%', minHeight: '260px', borderRadius: '12px', border: '1.5px solid rgba(102, 192, 244, 0.4)', background: 'radial-gradient(circle at center, #0e1a2b 0%, #050b14 100%)', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '15px 10px', boxShadow: 'inset 0 0 25px rgba(0,0,0,0.8)' }}>
+                <div style={{ position: 'absolute', top: '8px', left: '12px', background: 'rgba(102,192,244,0.15)', border: '1px solid rgba(102,192,244,0.3)', borderRadius: '20px', padding: '3px 10px', fontSize: '0.68rem', color: '#66c0f4', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#2ecc71', boxShadow: '0 0 6px #2ecc71' }} />
+                    {isZH ? "AI 动态生成 · 手相二维矢量线条图" : "AI 2D Palm Vector Sketch"}
+                </div>
+                
+                <svg viewBox="0 0 260 280" width="100%" height="220" style={{ maxWidth: '240px', margin: '20px 0 10px 0' }}>
+                    <defs>
+                        <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="2" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                        <filter id="glowGold" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="2" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+
+                    <path d="M 30,0 L 30,280 M 80,0 L 80,280 M 130,0 L 130,280 M 180,0 L 180,280 M 230,0 L 230,280" stroke="rgba(102,192,244,0.06)" strokeWidth="1" strokeDasharray="2,2" />
+                    <path d="M 0,50 L 260,50 M 0,100 L 260,100 M 0,150 L 260,150 M 0,200 L 260,200 M 0,250 L 260,250" stroke="rgba(102,192,244,0.06)" strokeWidth="1" strokeDasharray="2,2" />
+
+                    <path d="M 75,270 L 70,220 C 50,210 40,180 35,150 C 30,120 20,80 28,60 C 32,50 42,50 45,62 C 50,85 55,100 55,110 C 55,80 50,40 58,22 C 62,12 72,12 76,24 C 82,50 85,85 85,105 C 90,75 95,28 105,10 C 110,2 120,2 125,12 C 132,35 130,80 130,105 C 138,80 152,38 162,25 C 168,18 178,20 180,30 C 182,55 175,95 170,120 C 185,125 198,140 205,165 C 215,200 210,240 185,270 Z" fill="rgba(102,192,244,0.03)" stroke="#66c0f4" strokeWidth="1.8" filter="url(#glowCyan)" />
+
+                    <path d="M 60,115 C 75,135 85,175 80,230" fill="none" stroke="#2ecc71" strokeWidth="2.5" filter="url(#glowCyan)" />
+                    <path d="M 58,115 C 95,120 145,140 180,180" fill="none" stroke="#ffdd57" strokeWidth="2.5" filter="url(#glowGold)" />
+                    <path d="M 195,125 C 150,115 110,105 85,80" fill="none" stroke="#e74c3c" strokeWidth="2.5" />
+                    <path d="M 125,250 C 125,200 128,150 120,80" fill="none" stroke="#3498db" strokeWidth="2" strokeDasharray="4,2" />
+
+                    <g onClick={() => onSelectNode('life')} style={{ cursor: 'pointer' }}>
+                        <circle cx="78" cy="175" r="5" fill="#2ecc71" stroke="#fff" strokeWidth="1.5" />
+                        <text x="50" y="180" fill="#2ecc71" fontSize="9" fontWeight="bold">{isZH ? "生命线" : "Life Line"}</text>
+                    </g>
+                    <g onClick={() => onSelectNode('head')} style={{ cursor: 'pointer' }}>
+                        <circle cx="125" cy="135" r="5" fill="#ffdd57" stroke="#fff" strokeWidth="1.5" />
+                        <text x="135" y="132" fill="#ffdd57" fontSize="9" fontWeight="bold">{isZH ? "智慧线" : "Head Line"}</text>
+                    </g>
+                    <g onClick={() => onSelectNode('heart')} style={{ cursor: 'pointer' }}>
+                        <circle cx="140" cy="112" r="5" fill="#e74c3c" stroke="#fff" strokeWidth="1.5" />
+                        <text x="150" y="108" fill="#e74c3c" fontSize="9" fontWeight="bold">{isZH ? "感情线" : "Heart Line"}</text>
+                    </g>
+                    <g onClick={() => onSelectNode('fate')} style={{ cursor: 'pointer' }}>
+                        <circle cx="124" cy="195" r="5" fill="#3498db" stroke="#fff" strokeWidth="1.5" />
+                        <text x="134" y="200" fill="#3498db" fontSize="9" fontWeight="bold">{isZH ? "事业线" : "Fate Line"}</text>
+                    </g>
+                </svg>
+
+                <div style={{ position: 'absolute', left: 0, right: 0, height: '2px', background: 'linear-gradient(90deg, transparent, #2ecc71, #47BFFF, transparent)', boxShadow: '0 0 10px #2ecc71', animation: 'scanLine 3s linear infinite' }} />
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ position: 'relative', width: '100%', minHeight: '290px', borderRadius: '12px', border: '1.5px solid rgba(212, 175, 55, 0.4)', background: 'radial-gradient(circle at center, #0e1726 0%, #050b14 100%)', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '12px 10px', boxShadow: 'inset 0 0 30px rgba(0,0,0,0.85)' }}>
+            
+            <div style={{ position: 'absolute', top: '8px', left: '12px', background: 'rgba(212, 175, 55, 0.12)', border: '1px solid rgba(212, 175, 55, 0.3)', borderRadius: '20px', padding: '3px 10px', fontSize: '0.68rem', color: '#d4af37', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px', zIndex: 2 }}>
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#d4af37', boxShadow: '0 0 8px #d4af37' }} />
+                {isZH ? "✨ AI 动态生成 · 二维面相矢量线条图" : "✨ AI 2D Face Vector Line Map"}
+            </div>
+
+            <svg viewBox="0 0 280 320" width="100%" height="250" style={{ maxWidth: '260px', margin: '15px 0 5px 0' }}>
+                <defs>
+                    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#ffd700" />
+                        <stop offset="100%" stopColor="#b8860b" />
+                    </linearGradient>
+                    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="2.5" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="2" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                </defs>
+
+                <circle cx="140" cy="160" r="130" fill="none" stroke="rgba(212, 175, 55, 0.08)" strokeWidth="1" strokeDasharray="3,3" />
+                <circle cx="140" cy="160" r="90" fill="none" stroke="rgba(102, 192, 244, 0.08)" strokeWidth="1" strokeDasharray="2,2" />
+                <line x1="140" y1="10" x2="140" y2="310" stroke="rgba(212, 175, 55, 0.1)" strokeWidth="1" strokeDasharray="2,2" />
+
+                <line x1="15" y1="50" x2="265" y2="50" stroke="rgba(212, 175, 55, 0.3)" strokeWidth="1" strokeDasharray="3,2" />
+                <text x="25" y="45" fill="#d4af37" fontSize="8" opacity="0.85">{isZH ? "上庭 (发际线)" : "Upper (Hairline)"}</text>
+
+                <line x1="15" y1="120" x2="265" y2="120" stroke="rgba(212, 175, 55, 0.3)" strokeWidth="1" strokeDasharray="3,2" />
+                <text x="25" y="115" fill="#d4af37" fontSize="8" opacity="0.85">{isZH ? "中庭 (眉眼鼻)" : "Mid (Brows & Nose)"}</text>
+
+                <line x1="15" y1="200" x2="265" y2="200" stroke="rgba(212, 175, 55, 0.3)" strokeWidth="1" strokeDasharray="3,2" />
+                <text x="25" y="195" fill="#d4af37" fontSize="8" opacity="0.85">{isZH ? "下庭 (人中嘴颌)" : "Lower (Mouth & Chin)"}</text>
+
+                <line x1="15" y1="280" x2="265" y2="280" stroke="rgba(212, 175, 55, 0.3)" strokeWidth="1" strokeDasharray="3,2" />
+
+                <path d="M 75,100 C 60,70 90,30 140,30 C 190,30 220,70 205,100" fill="none" stroke="#66c0f4" strokeWidth="1.2" strokeDasharray="2,2" />
+                
+                <path d="M 65,115 C 60,160 70,220 100,260 C 120,285 160,285 180,260 C 210,220 220,160 215,115 C 205,80 185,50 140,50 C 95,50 75,80 65,115 Z" fill="rgba(212, 175, 55, 0.02)" stroke="#d4af37" strokeWidth="2" filter="url(#goldGlow)" />
+
+                <path d="M 65,120 C 50,130 50,170 68,185" fill="none" stroke="#d4af37" strokeWidth="1.5" />
+                <path d="M 215,120 C 230,130 230,170 212,185" fill="none" stroke="#d4af37" strokeWidth="1.5" />
+
+                <path d="M 85,118 C 100,108 120,112 128,118" fill="none" stroke="#66c0f4" strokeWidth="2.5" filter="url(#cyanGlow)" />
+                <path d="M 152,118 C 160,112 180,108 195,118" fill="none" stroke="#66c0f4" strokeWidth="2.5" filter="url(#cyanGlow)" />
+
+                <path d="M 88,135 C 100,126 118,128 124,136 C 118,144 100,144 88,135 Z" fill="rgba(102,192,244,0.08)" stroke="#66c0f4" strokeWidth="1.5" />
+                <circle cx="106" cy="135" r="3.5" fill="#66c0f4" />
+
+                <path d="M 156,136 C 162,128 180,126 192,135 C 180,144 162,144 156,136 Z" fill="rgba(102,192,244,0.08)" stroke="#66c0f4" strokeWidth="1.5" />
+                <circle cx="174" cy="135" r="3.5" fill="#66c0f4" />
+
+                <path d="M 140,118 L 138,165 C 132,175 130,190 140,195 C 150,190 148,175 142,165 L 140,118" fill="rgba(212,175,55,0.05)" stroke="#d4af37" strokeWidth="1.8" filter="url(#goldGlow)" />
+                <path d="M 125,190 C 122,198 135,202 140,200 C 145,202 158,198 155,190" fill="none" stroke="#d4af37" strokeWidth="1.5" />
+
+                <line x1="140" y1="202" x2="140" y2="218" stroke="#d4af37" strokeWidth="1" strokeDasharray="1,2" />
+
+                <path d="M 115,225 C 130,220 150,220 165,225 C 150,240 130,240 115,225 Z" fill="rgba(231,76,60,0.08)" stroke="#e74c3c" strokeWidth="1.6" />
+                <line x1="115" y1="225" x2="165" y2="225" stroke="#e74c3c" strokeWidth="1" />
+
+                <path d="M 120,262 C 130,270 150,270 160,262" fill="none" stroke="#3498db" strokeWidth="1.8" />
+
+                <g onClick={() => onSelectNode('tianting')} style={{ cursor: 'pointer' }}>
+                    <circle cx="140" cy="75" r="5" fill="#ffdd57" stroke="#fff" strokeWidth="1.5" />
+                    <text x="140" y="66" fill="#ffdd57" fontSize="8" fontWeight="bold" textAnchor="middle">{isZH ? "官禄/天庭" : "Career"}</text>
+                </g>
+
+                <g onClick={() => onSelectNode('tianting')} style={{ cursor: 'pointer' }}>
+                    <circle cx="140" cy="115" r="4.5" fill="#e74c3c" stroke="#fff" strokeWidth="1.5" />
+                    <text x="140" y="108" fill="#e74c3c" fontSize="7.5" fontWeight="bold" textAnchor="middle">{isZH ? "命宫" : "Life"}</text>
+                </g>
+
+                <g onClick={() => onSelectNode('caibo')} style={{ cursor: 'pointer' }}>
+                    <circle cx="140" cy="192" r="5.5" fill="#2ecc71" stroke="#fff" strokeWidth="1.5" />
+                    <text x="140" y="210" fill="#2ecc71" fontSize="8" fontWeight="bold" textAnchor="middle">{isZH ? "财帛宫" : "Wealth"}</text>
+                </g>
+
+                <g onClick={() => onSelectNode('spouse')} style={{ cursor: 'pointer' }}>
+                    <circle cx="78" cy="135" r="4.5" fill="#e74c3c" stroke="#fff" strokeWidth="1.2" />
+                    <circle cx="202" cy="135" r="4.5" fill="#e74c3c" stroke="#fff" strokeWidth="1.2" />
+                    <text x="50" y="138" fill="#e74c3c" fontSize="7.5" fontWeight="bold">{isZH ? "夫妻" : "Spouse"}</text>
+                </g>
+
+                <g onClick={() => onSelectNode('dige')} style={{ cursor: 'pointer' }}>
+                    <circle cx="140" cy="268" r="5" fill="#3498db" stroke="#fff" strokeWidth="1.5" />
+                    <text x="140" y="280" fill="#3498db" fontSize="8" fontWeight="bold" textAnchor="middle">{isZH ? "地阁/奴仆" : "Chin"}</text>
+                </g>
+            </svg>
+
+            <div style={{ position: 'absolute', left: 0, right: 0, height: '2.5px', background: 'linear-gradient(90deg, transparent, #d4af37, #66c0f4, transparent)', boxShadow: '0 0 12px #d4af37', animation: 'scanLine 3s linear infinite' }} />
+
+            <div style={{ fontSize: '0.65rem', color: '#888', fontStyle: 'italic', marginTop: '2px' }}>
+                {isZH ? "根据面相特征实时生成二维矢量线条，点击高亮部位解构命理" : "2D line topography vector dynamically generated from features"}
+            </div>
+        </div>
+    );
+};
+
+export const RenderResultView = ({ t, readingType, birthDate, gender, calculatedElements, resultText, language, isSpeaking, isTranslating, LANGUAGES, onLanguageChange, onToggleSpeech, onAnalyzeAnother, onBuyProduct, onOpenBalance, onViewProduct, image, faceImage, palmImage, selectedServiceTier, unlockedTiers = [], onUnlockTier, isPaidUser = false, isLoggedIn = false, daysRemaining, onUnlockFullReport, onOpenPricing }: any) => {
     const [sliderIndex, setSliderIndex] = useState(0);
     const [viewMode, setViewMode] = useState<'slider' | 'full'>('slider');
     const [selectedNode, setSelectedNode] = useState<string | null>(null);
     const [pdfDownloading, setPdfDownloading] = useState(false);
+
+    const isZh = language.startsWith('zh') || language === 'zh-CN';
+    const isZht = language === 'zh-TW' || language === 'zht';
+    const isUnpaid = !isLoggedIn || !isPaidUser;
+    const basicPredictionText = isZht ? "基本預測" : isZh ? "基本预测" : "Basic Prediction";
+    const isTierLocked = false;
+    const isDualMode = readingType === 'both';
+    const requiredPrice = isDualMode ? "$9.99" : "$6.99";
 
     const age = calculateAge(birthDate);
     const zodiac = getChineseZodiac(birthDate);
@@ -1098,6 +1737,136 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
         };
 
         const list = [
+            {
+                id: 'facemap',
+                title: isZH ? "👤 AI 二维面相矢量线条图 & 三庭十二宫全息解构" : "👤 AI 2D Face Vector Sketch & Physiognomy Map",
+                illustrationType: 'facemap' as const,
+                content: isZH
+                  ? `系统已成功将您上传的面部影像，实时高维解构并动态生成为**二维线条面相矢量图**。
+                  
+                  **三庭精细量化分析**：
+                  1. **上庭（天庭：发际线至眉心）**：上庭开阔饱满，骨相平整无凹陷，代表您早年根基扎实，领悟力极高，易受长辈与长官提携庇佑。
+                  2. **中庭（人中：眉心至鼻准）**：中庭梁柱挺拔，双眼明亮神藏，象征中年运势稳固，财帛宫（鼻准）与疾厄宫（山根）气色红润，主掌财权与事业中流砥柱。
+                  3. **下庭（地阁：鼻准至下巴）**：下庭方圆有重厚感，晚年福德宫与田宅宫汇聚，家宅基业安稳，晚运昌隆绵长。
+                  
+                  **十二宫位气场聚焦**：
+                  点击上方矢量图中的高亮宫位节点（命宫、官禄宫、财帛宫、夫妻宫、地阁），可进一步调取该微观部位的具体气场解读。`
+                  : `The system has converted your biometric face image into a dynamic **2D Face Vector Line Sketch**.
+                  
+                  **Three Divisions (San Ting) Analysis**:
+                  1. **Upper Division (Forehead)**: Broad and smooth, indicating strong early intellectual clarity and support from mentors.
+                  2. **Middle Division (Brows, Eyes & Nose)**: Straight nose bridge and clear eye spirit indicate robust middle-age career authority and wealth control.
+                  3. **Lower Division (Chin & Jaw)**: Full chin structure points to deep family stability, land assets, and peaceful later years.
+                  
+                  **Twelve Palaces Matrix**:
+                  Click the interactive nodes on the 2D vector sketch above to inspect specific palaces.`
+            },
+            {
+                id: 'daily_fortune',
+                title: isZH ? "📅 当日财运结果分析与日课开运" : "📅 Today's Wealth Fortune & Lucky Alignment",
+                illustrationType: 'daily' as const,
+                content: isZH
+                  ? `**当日财运结果分析（流日财星 88分 · 吉星高照）**：
+                  今日天干地支财星正位，正财运势极其稳健，非常适合进行商务会面、合同签署、账目理财与项目盘点。偏财运势小吉，逢高宜收，切忌贪婪盲目追高。
+                  
+                  **今日宜做事项**：
+                  ✅ 宜：签订商业契约、拜访核心客户与贵人、置办稳健资产、团队沟通、走入大自然吸纳气场、定心冥想。
+                  
+                  **今日避忌事项**：
+                  🚫 忌：盲目外借大额资金、发生无谓口舌争吵、高杠杆冲动投资、熬夜损耗肝胆元气。
+                  
+                  **适合穿的衣服与开运穿搭**：
+                  👔 穿搭颜色推荐：首选**「${
+                    missingElement === 'Metal' ? '白色、杏色、浅金色系（金气生财正装）' :
+                    missingElement === 'Wood' ? '青色、橄榄绿、浅绿色系（木气生机休闲风）' :
+                    missingElement === 'Water' ? '黑色、深蓝、天蓝色系（水气润泽优雅风）' :
+                    missingElement === 'Fire' ? '红色、紫色、朱红、暖橘色系（火气旺盛热情风）' :
+                    '黄色、棕色、卡其色系（土气厚德稳重风）'
+                  }」**。可搭配天然质感面料与特定吉祥饰品，提升今日整体电磁场吸引力。
+                  
+                  **吉利方向与适合去的地方**：
+                  🧭 吉利方位：**${
+                    missingElement === 'Metal' ? '正西方 / 西北方（金气旺发之地）' :
+                    missingElement === 'Wood' ? '正东方 / 东南方（朝阳生木之地）' :
+                    missingElement === 'Water' ? '正北方（坎水聚财之地）' :
+                    missingElement === 'Fire' ? '正南方（九紫离火之地）' :
+                    '中央 / 东北方（坤土承载之地）'
+                  }**。
+                  🏞️ 适合去的地方：高楼景观咖啡厅、茶室、文化公园、清幽书房、水边露台，在此类气场清纯之地可快速充盈自身生机。`
+                  : `**Today's Wealth Fortune Analysis (Wealth Index: 88/100 · Auspicious)**:
+                  Today's daily transit aligns smoothly with your Wealth Star. Steady career income is highlighted. Favorable for business discussions and asset consolidation. Avoid high-risk leverage.
+                  
+                  **Suitable Activities Today**:
+                  ✅ Do: Sign business contracts, meet key allies, perform financial checkups, meditate, spend time in natural environments.
+                  🚫 Avoid: Lending large funds blindly, engaging in heated arguments, speculative gambling.
+                  
+                  **Lucky Wardrobe & Clothing**:
+                  👔 Recommended Attire: **「${
+                    missingElement === 'Metal' ? 'White, Cream, or Metallic tones' :
+                    missingElement === 'Wood' ? 'Green, Olive, or Teal natural tones' :
+                    missingElement === 'Water' ? 'Black, Dark Blue, or Sky Blue elegant wear' :
+                    missingElement === 'Fire' ? 'Red, Purple, or Warm Orange bright wear' :
+                    'Yellow, Khaki, or Earth-tone relaxed wear'
+                  }」**.
+                  
+                  **Auspicious Directions & Lucky Places**:
+                  🧭 Lucky Directions: **${
+                    missingElement === 'Metal' ? 'West / Northwest' :
+                    missingElement === 'Wood' ? 'East / Southeast' :
+                    missingElement === 'Water' ? 'North' :
+                    missingElement === 'Fire' ? 'South' :
+                    'Center / Northeast'
+                  }**.
+                  🏞️ Recommended Places to Visit: Scenic high-floor cafes, teahouses, peaceful parks, libraries, and waterfront walkways.`
+            },
+            {
+                id: 'annual_fortune',
+                title: isZH ? "🐲 本年度财运、官运、生意与职场详批" : "🐲 Annual Wealth, Career & Business Masterplan",
+                illustrationType: 'annual' as const,
+                content: isZH
+                  ? `**一、本年度财运详批**：
+                  本年度您的财帛宫与流年岁星形成合汇之局，财富走势呈现**“前稳后爆”**的阶梯式上升。上半年宜稳扎稳打、积累本金与客户资源；进入下半年后，偏财星与贵人星同宫，容易获得意料之外的财富进账或投资回报。
+                  
+                  **二、本年度官运与职场晋升分析**：
+                  官禄宫紫微星高照，本年度在职场中易获高层领导赏识重用，有接手核心项目、升职加薪或权力扩充的大吉征兆。需要特别注意：木秀于林风必摧之，行事需低调谦逊，主动与同僚分享利益，即可避开小人中伤。
+                  
+                  **三、本年度生意与创业商机分析**：
+                  生意场上“驿马星”动，非常利于跨界拓展、线上转型或异地业务合作。适合寻找与水木或金土属性相关的商业契机。资金流转方面宜保持30%以上的流动储备，避免过度杠杆质押。
+                  
+                  **四、推荐做出的行为改变与习惯调整**：
+                  1. **仪表气场改变**：每日清晨打理印堂，保持前额无发丝遮挡，时刻展现明亮干练的精气神。
+                  2. **决策模式改变**：建立“高维思考，敏捷落地”的行动习惯，克服因追求完美而导致的犹疑拖延。
+                  3. **人际圈子改变**：主动远离抱怨与负能量群体，每周接触至少一位德行高尚、事业有成的尊长。
+                  
+                  **五、推荐佩戴的开运物件与吉祥物**：
+                  推荐您随身佩戴**「${
+                    missingElement === 'Metal' ? '天然白水晶吊坠 / 18K金太白星君文昌塔饰品' :
+                    missingElement === 'Wood' ? '天然绿幽灵生财手链 / 小叶紫檀佛珠串' :
+                    missingElement === 'Water' ? '天然黑曜石貔貅手串 / 海蓝宝吊坠' :
+                    missingElement === 'Fire' ? '天然朱砂辟邪葫芦 / 红玛瑙九紫离火佩' :
+                    '天然黄水晶财神饰品 / 虎眼石转运手串'
+                  }」**。此类吉祥物件能精准补足您命理缺失的五行${t[`element${missingElement}`] || missingElement}气场，全天候谐振您的生物电磁场，辟邪招财，助您在本年度突破重围！`
+                  : `**1. Annual Wealth Fortune**:
+                  Your Wealth Palace forms a harmonic constellation alignment this year. Income trajectory follows a steady stair-step rise. H2 brings major opportunities for unexpected windfalls and asset growth.
+                  
+                  **2. Annual Career & Official Promotions**:
+                  Guanlu Palace receives strong support from executive stars. Promising signs for promotions, expanded leadership roles, or salary raises. Maintain humility to shield against workplace jealousy.
+                  
+                  **3. Annual Business & Enterprise Opportunities**:
+                  E-commerce, digital ventures, and cross-border collaborations show exceptional momentum. Ensure you maintain healthy cash reserves.
+                  
+                  **4. Recommended Behavioral & Life Changes**:
+                  - **Grooming & Presence**: Keep your forehead clear and bright every morning.
+                  - **Action Rhythm**: Shift to a "High-Vision, Rapid Execution" mindset.
+                  - **Social Circle**: Limit exposure to negative energy and connect with visionary mentors.
+                  - **Wearable Talismans**: Wear **「${
+                    missingElement === 'Metal' ? 'Clear Quartz / Gold Pagoda' :
+                    missingElement === 'Wood' ? 'Green Phantom / Sandalwood' :
+                    missingElement === 'Water' ? 'Obsidian Pixiu / Aquamarine' :
+                    missingElement === 'Fire' ? 'Cinnabar Gourd / Red Agate' :
+                    'Yellow Citrine / Tiger Eye'
+                  }」** to replenish missing ${missingElement} energy and boost overall prosperity.`
+            },
             {
                 id: 'aura',
                 title: isZH ? "🔮 综合命格与玄学气场" : "🔮 Aura & Destiny Portal",
@@ -1288,273 +2057,133 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
         return list;
     }, [language, elementScores, missingElement, zodiacName, starSignName, t]);
 
-    // Handle PDF Generation using jsPDF
+    // Handle PDF Generation using html2canvas & jsPDF for 1:1 webpage match
     const generatePDF = async () => {
+        if (!isPaidUser) {
+            if (onUnlockFullReport) onUnlockFullReport();
+            return;
+        }
         if (pdfDownloading) return;
         setPdfDownloading(true);
+
+        const prevMode = viewMode;
+        // Temporarily switch to full report mode so all content & products are rendered in DOM
+        if (viewMode === 'slider') {
+            setViewMode('full');
+            await new Promise(resolve => setTimeout(resolve, 400));
+        }
+
         try {
-            const doc = new jsPDF('p', 'mm', 'a4');
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const margin = 15;
-            const contentWidth = pageWidth - 2 * margin;
+            const reportElement = document.getElementById('pdf-report-content');
+            if (!reportElement) {
+                throw new Error("Report container element not found");
+            }
 
-            // Page 1: Title & Cover
-            doc.setFillColor(11, 21, 36); // Dark Blue Celestial Background
-            doc.rect(0, 0, pageWidth, pageHeight, 'F');
-            
-            // Draw golden border
-            doc.setDrawColor(212, 175, 55);
-            doc.setLineWidth(1.5);
-            doc.rect(5, 5, pageWidth - 10, pageHeight - 10);
-            doc.rect(7, 7, pageWidth - 14, pageHeight - 14);
-
-            // Cover graphics - simple mystical circles
-            doc.setDrawColor(212, 175, 55);
-            doc.setLineWidth(0.5);
-            doc.circle(pageWidth / 2, 80, 45, 'S');
-            doc.circle(pageWidth / 2, 80, 43, 'S');
-            doc.circle(pageWidth / 2, 80, 20, 'S');
-            
-            // Draw central cross lines
-            doc.line(pageWidth / 2 - 45, 80, pageWidth / 2 + 45, 80);
-            doc.line(pageWidth / 2, 80 - 45, pageWidth / 2, 80 + 45);
-
-            // Title Texts
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(22);
-            doc.text("CELESTIAL DESTINY MAP", pageWidth / 2, 145, { align: 'center' });
-            
-            doc.setTextColor(212, 175, 55); // Gold
-            doc.setFontSize(14);
-            doc.text("QUANTUM BIOMETRIC DESTINY REPORT", pageWidth / 2, 155, { align: 'center' });
-
-            // Subject Details Card Box
-            doc.setFillColor(23, 38, 54);
-            doc.roundedRect(20, 175, pageWidth - 40, 75, 4, 4, 'F');
-            doc.setDrawColor(102, 192, 244);
-            doc.setLineWidth(0.5);
-            doc.roundedRect(20, 175, pageWidth - 40, 75, 4, 4, 'S');
-
-            doc.setTextColor(255, 255, 255);
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(12);
-            doc.text("SUBJECT PROFILE DETAILS", pageWidth / 2, 190, { align: 'center' });
-
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(10);
-            doc.setTextColor(200, 200, 200);
-            doc.text(`Biometric Scan Method: ${readingType === 'face' ? 'Physiognomy (Face)' : 'Chiromancy (Palm)'}`, 30, 205);
-            doc.text(`Subject Birth Date: ${birthDate || "N/A"}`, 30, 213);
-            doc.text(`Computed Age: ${age} years`, 30, 221);
-            doc.text(`Gender Identity: ${gender === 'male' ? 'Male' : 'Female'}`, 30, 229);
-            doc.text(`Zodiac Sign: ${zodiacName} (${starSignName})`, 30, 237);
-
-            // Footer of cover
-            doc.setTextColor(150, 150, 150);
-            doc.setFontSize(8);
-            doc.text("Generated by Celestial Biometrics - AI Astrologer Engine", pageWidth / 2, 280, { align: 'center' });
-
-            // Helper to wrap & draw text over multiple pages safely
-            const drawWrappedText = (text: string, x: number, startY: number, maxW: number, lineH: number) => {
-                const lines = doc.splitTextToSize(text, maxW);
-                let currentY = startY;
-                for (let i = 0; i < lines.length; i++) {
-                    if (currentY > pageHeight - 20) {
-                        doc.addPage();
-                        // Draw header and line
-                        doc.setDrawColor(212, 175, 55);
-                        doc.setLineWidth(0.5);
-                        doc.line(margin, 12, pageWidth - margin, 12);
-                        doc.setTextColor(150, 150, 150);
-                        doc.setFont('helvetica', 'normal');
-                        doc.setFontSize(8);
-                        doc.text("CELESTIAL DESTINY MAP - INDIVIDUAL ARCHIVE", margin, 10);
-                        
-                        currentY = 20;
-                    }
-                    doc.setTextColor(60, 60, 60);
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(10.5);
-                    doc.text(lines[i], x, currentY);
-                    currentY += lineH;
-                }
-                return currentY;
-            };
-
-            // Loop and add subsequent reports on clean pages
-            reportData.forEach((section) => {
-                doc.addPage();
-                
-                // Draw Golden Page Header Border
-                doc.setDrawColor(212, 175, 55);
-                doc.setLineWidth(0.5);
-                doc.line(margin, 15, pageWidth - margin, 15);
-                
-                doc.setTextColor(100, 100, 100);
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8);
-                doc.text(`SECTION: ${section.title}`, margin, 12);
-
-                // Section Title Block
-                doc.setFont('helvetica', 'bold');
-                doc.setFontSize(15);
-                doc.setTextColor(11, 21, 36);
-                doc.text(section.title, margin, 28);
-                
-                // Content text drawing
-                let cursorY = drawWrappedText(section.content, margin, 38, contentWidth, 6);
-
-                // Render specific section highlights / diagrams in PDF
-                if (section.id === 'elements') {
-                    cursorY += 10;
-                    doc.setFillColor(240, 245, 250);
-                    doc.roundedRect(margin, cursorY, contentWidth, 35, 3, 3, 'F');
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(11);
-                    doc.setTextColor(212, 175, 55);
-                    doc.text("CELESTIAL ELEMENTS BREAKDOWN", margin + 10, cursorY + 10);
-
-                    doc.setFont('helvetica', 'normal');
-                    doc.setFontSize(10);
-                    doc.setTextColor(50, 50, 50);
-                    doc.text(`Metal: ${calculatedElements.Metal}%`, margin + 15, cursorY + 18);
-                    doc.text(`Wood: ${calculatedElements.Wood}%`, margin + 65, cursorY + 18);
-                    doc.text(`Water: ${calculatedElements.Water}%`, margin + 115, cursorY + 18);
-                    doc.text(`Fire: ${calculatedElements.Fire}%`, margin + 15, cursorY + 26);
-                    doc.text(`Earth: ${calculatedElements.Earth}%`, margin + 65, cursorY + 26);
-                    doc.text(`Weakest Element: ${missingElement}`, margin + 115, cursorY + 26);
-                }
-
-                if (section.fableTitle && section.fableText) {
-                    cursorY += 10;
-                    doc.setFillColor(254, 250, 240); // Antique parchment style
-                    doc.roundedRect(margin, cursorY, contentWidth, 55, 4, 4, 'F');
-                    doc.setDrawColor(212, 175, 55);
-                    doc.setLineWidth(0.5);
-                    doc.roundedRect(margin, cursorY, contentWidth, 55, 4, 4, 'S');
-
-                    doc.setFont('helvetica', 'bold');
-                    doc.setFontSize(11);
-                    doc.setTextColor(212, 175, 55);
-                    doc.text(`Ancient Fable: ${section.fableTitle}`, margin + 10, cursorY + 10);
-                    
-                    doc.setFont('helvetica', 'italic');
-                    doc.setFontSize(9.5);
-                    doc.setTextColor(80, 80, 80);
-                    drawWrappedText(section.fableText, margin + 10, cursorY + 17, contentWidth - 20, 5);
-                }
-
-                if (section.id === 'remedy') {
-                    if (section.warningText) {
-                        cursorY += 8;
-                        doc.setFillColor(255, 235, 235); // Alert warning style
-                        doc.roundedRect(margin, cursorY, contentWidth, 22, 3, 3, 'F');
-                        doc.setFont('helvetica', 'bold');
-                        doc.setFontSize(10);
-                        doc.setTextColor(180, 40, 40);
-                        doc.text("DESTINY WARNING INDEX", margin + 10, cursorY + 7);
-                        doc.setFont('helvetica', 'normal');
-                        doc.setFontSize(9);
-                        doc.setTextColor(80, 80, 80);
-                        drawWrappedText(section.warningText, margin + 10, cursorY + 13, contentWidth - 20, 5);
-                        cursorY += 24;
-                    }
-
-                    if (section.remedyText) {
-                        cursorY += 4;
-                        doc.setFillColor(235, 248, 240); // Safe alignment green style
-                        doc.roundedRect(margin, cursorY, contentWidth, 55, 4, 4, 'F');
-                        doc.setFont('helvetica', 'bold');
-                        doc.setFontSize(11);
-                        doc.setTextColor(30, 130, 70);
-                        doc.text("SUGGESTED DEFENSE & PROTECTIVE ACTIONS", margin + 10, cursorY + 8);
-                        doc.setFont('helvetica', 'normal');
-                        doc.setFontSize(9.5);
-                        doc.setTextColor(50, 50, 50);
-                        drawWrappedText(section.remedyText, margin + 10, cursorY + 15, contentWidth - 20, 5);
-                    }
-                }
-
-                // Page numbering footer
-                doc.setFontSize(8);
-                doc.setTextColor(150, 150, 150);
-                doc.text("Celestial Biometrics Destiny Archive | Page " + doc.getNumberOfPages(), pageWidth / 2, pageHeight - 8, { align: 'center' });
+            const canvas = await html2canvas(reportElement, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#0b1524',
+                logging: false
             });
 
-            // Save the document
-            doc.save(`Celestial_Destiny_Report_${birthDate || 'Subject'}.pdf`);
-        } catch (err) {
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            const imgWidth = pageWidth;
+            const imgHeight = (canvas.height * pageWidth) / canvas.width;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            pdf.save(`Celestial_Destiny_Report_${birthDate || 'Subject'}.pdf`);
+        } catch (err: any) {
             console.error("PDF Export Failure:", err);
-            alert("PDF Generation error: " + err);
+            alert((isZh ? "PDF 生成错误: " : "PDF Generation error: ") + (err.message || err));
         } finally {
+            setViewMode(prevMode);
             setPdfDownloading(false);
         }
     };
 
     // Rendering Active Illustration for each section - compact and space-efficient
     const renderActiveIllustration = (type: string) => {
+        const isZH = language && language.startsWith('zh');
         switch (type) {
-            case 'aura':
+            case 'palmmap':
                 return (
-                    <div style={{ position: 'relative', width: '100%', height: '160px', borderRadius: '12px', border: '1px solid rgba(102, 192, 244, 0.4)', background: '#090d16', overflow: 'hidden', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)' }}>
-                        {image ? (
-                            <img src={image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt="Subject Biometrics" />
-                        ) : (
-                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', color: '#555' }}>
-                                <i className={`fas ${readingType === 'face' ? 'fa-user-circle' : 'fa-hand-paper'}`} style={{ fontSize: '2.5rem', color: 'rgba(102,192,244,0.15)', marginBottom: '4px' }} />
-                                <div style={{ fontSize: '0.7rem', color: '#666', fontFamily: '"Space Grotesk", sans-serif' }}>Biometric Frame Active</div>
-                            </div>
-                        )}
-                        
-                        {/* Scanning beam animation */}
-                        <div style={{
-                            position: 'absolute',
-                            left: 0,
-                            right: 0,
-                            height: '2px',
-                            background: 'linear-gradient(90deg, transparent, #47BFFF, transparent)',
-                            boxShadow: '0 0 10px #47BFFF',
-                            animation: 'scanLine 3s linear infinite'
-                        }} />
-
-                        {/* Interactive overlay dots for Face Palace Annotation */}
-                        {readingType === 'face' ? (
-                            <>
-                                <button id="dot-tianting" style={{ position: 'absolute', top: '15%', left: '50%', transform: 'translate(-50%, -50%)', width: '10px', height: '10px', borderRadius: '50%', background: '#ffdd57', border: '1.5px solid #fff', cursor: 'pointer', boxShadow: '0 0 6px #ffdd57', outline: 'none' }} onClick={() => setSelectedNode('tianting')} />
-                                <button id="dot-caibo" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '10px', height: '10px', borderRadius: '50%', background: '#2ecc71', border: '1.5px solid #fff', cursor: 'pointer', boxShadow: '0 0 6px #2ecc71', outline: 'none' }} onClick={() => setSelectedNode('caibo')} />
-                                <button id="dot-spouse-l" style={{ position: 'absolute', top: '40%', left: '35%', transform: 'translate(-50%, -50%)', width: '10px', height: '10px', borderRadius: '50%', background: '#e74c3c', border: '1.5px solid #fff', cursor: 'pointer', boxShadow: '0 0 6px #e74c3c', outline: 'none' }} onClick={() => setSelectedNode('spouse')} />
-                                <button id="dot-spouse-r" style={{ position: 'absolute', top: '40%', left: '65%', transform: 'translate(-50%, -50%)', width: '10px', height: '10px', borderRadius: '50%', background: '#e74c3c', border: '1.5px solid #fff', cursor: 'pointer', boxShadow: '0 0 6px #e74c3c', outline: 'none' }} onClick={() => setSelectedNode('spouse')} />
-                                <button id="dot-dige" style={{ position: 'absolute', top: '80%', left: '50%', transform: 'translate(-50%, -50%)', width: '10px', height: '10px', borderRadius: '50%', background: '#3498db', border: '1.5px solid #fff', cursor: 'pointer', boxShadow: '0 0 6px #3498db', outline: 'none' }} onClick={() => setSelectedNode('dige')} />
-                            </>
-                        ) : (
-                            /* Palm Line Annotations */
-                            <>
-                                <button id="dot-life" style={{ position: 'absolute', top: '70%', left: '42%', width: '10px', height: '10px', borderRadius: '50%', background: '#2ecc71', border: '1.5px solid #fff', cursor: 'pointer', boxShadow: '0 0 6px #2ecc71' }} onClick={() => setSelectedNode('life')} />
-                                <button id="dot-head" style={{ position: 'absolute', top: '52%', left: '52%', width: '10px', height: '10px', borderRadius: '50%', background: '#ffdd57', border: '1.5px solid #fff', cursor: 'pointer', boxShadow: '0 0 6px #ffdd57' }} onClick={() => setSelectedNode('head')} />
-                                <button id="dot-heart" style={{ position: 'absolute', top: '35%', left: '65%', width: '10px', height: '10px', borderRadius: '50%', background: '#e74c3c', border: '1.5px solid #fff', cursor: 'pointer', boxShadow: '0 0 6px #e74c3c' }} onClick={() => setSelectedNode('heart')} />
-                                <button id="dot-fate" style={{ position: 'absolute', top: '58%', left: '32%', width: '10px', height: '10px', borderRadius: '50%', background: '#3498db', border: '1.5px solid #fff', cursor: 'pointer', boxShadow: '0 0 6px #3498db' }} onClick={() => setSelectedNode('fate')} />
-                            </>
-                        )}
-
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <FaceVector2DSketch 
+                            readingType={readingType} 
+                            forcedType="palm"
+                            selectedNode={selectedNode} 
+                            onSelectNode={setSelectedNode} 
+                            language={language} 
+                            missingElement={missingElement} 
+                        />
                         {/* Interactive popup display */}
                         {selectedNode && (
-                            <div style={{ position: 'absolute', bottom: '5px', left: '5px', right: '5px', background: 'rgba(5, 12, 22, 0.98)', border: '1px solid #47BFFF', borderRadius: '6px', padding: '6px 10px', zIndex: 10 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px', alignItems: 'center' }}>
-                                    <span style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.75rem' }}>
-                                        {selectedNode === 'tianting' && (language.startsWith('zh') ? "额头 (Tianting)" : "Forehead (Tianting)")}
-                                        {selectedNode === 'caibo' && (language.startsWith('zh') ? "鼻梁 (Caibo)" : "Nose (Caibo)")}
-                                        {selectedNode === 'spouse' && (language.startsWith('zh') ? "眼角 (Spouse)" : "Eyes (Spouse)")}
-                                        {selectedNode === 'dige' && (language.startsWith('zh') ? "地阁 (Dige)" : "Chin (Dige)")}
-                                        {selectedNode === 'life' && (language.startsWith('zh') ? "生命线" : "Life Line")}
-                                        {selectedNode === 'head' && (language.startsWith('zh') ? "智慧线" : "Wisdom Line")}
-                                        {selectedNode === 'heart' && (language.startsWith('zh') ? "感情线" : "Heart Line")}
-                                        {selectedNode === 'fate' && (language.startsWith('zh') ? "事业线" : "Career Line")}
+                            <div style={{ background: 'rgba(5, 12, 22, 0.98)', border: '1px solid #47BFFF', borderRadius: '8px', padding: '8px 12px', zIndex: 10 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', alignItems: 'center' }}>
+                                    <span style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.8rem' }}>
+                                        {selectedNode === 'life' && (language.startsWith('zh') ? "手相生命线" : "Life Line")}
+                                        {selectedNode === 'head' && (language.startsWith('zh') ? "手相智慧线" : "Wisdom Line")}
+                                        {selectedNode === 'heart' && (language.startsWith('zh') ? "手相感情线" : "Heart Line")}
+                                        {selectedNode === 'fate' && (language.startsWith('zh') ? "手相事业线" : "Career Line")}
                                     </span>
-                                    <button style={{ background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.9rem', padding: 0 }} onClick={() => setSelectedNode(null)}>×</button>
+                                    <button style={{ background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', padding: 0 }} onClick={() => setSelectedNode(null)}>×</button>
                                 </div>
-                                <p style={{ fontSize: '0.7rem', color: '#eee', margin: 0, lineHeight: '1.3' }}>
+                                <p style={{ fontSize: '0.75rem', color: '#eee', margin: 0, lineHeight: '1.4' }}>
+                                    {selectedNode === 'life' && (language.startsWith('zh') ? "掌心生命线弧度开阔，不中断，象征生物元气极其旺盛，能逢凶化吉。" : "Wide, continuous life line represents robust physical energy, high vitality, and recovery power.")}
+                                    {selectedNode === 'head' && (language.startsWith('zh') ? "智慧线深长且向下倾斜，提示您极具哲学深度，决策理智客观。" : "Deep, slanted head line represents exceptional analytical capability and calm, objective decision-making.")}
+                                    {selectedNode === 'heart' && (language.startsWith('zh') ? "感情线直达食指下方，说明重情重义，感情纯粹，与爱人灵魂深深契合。" : "Clear heart line indicates pure-hearted devotion, emotional intelligence, and excellent empathy.")}
+                                    {selectedNode === 'fate' && (language.startsWith('zh') ? "事业线由掌底延伸向上，说明凭借自身才智与贵人引路实现人生腾飞。" : "Strong fate line shows career self-reliance, with major breakthroughs at ages 35 and 48.")}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                );
+            case 'aura':
+            case 'facemap':
+                return (
+                    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <FaceVector2DSketch 
+                            readingType={readingType} 
+                            forcedType={type === 'facemap' ? 'face' : undefined}
+                            selectedNode={selectedNode} 
+                            onSelectNode={setSelectedNode} 
+                            language={language} 
+                            missingElement={missingElement} 
+                        />
+                        {/* Interactive popup display */}
+                        {selectedNode && (
+                            <div style={{ background: 'rgba(5, 12, 22, 0.98)', border: '1px solid #47BFFF', borderRadius: '8px', padding: '8px 12px', zIndex: 10 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', alignItems: 'center' }}>
+                                    <span style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.8rem' }}>
+                                        {selectedNode === 'tianting' && (language.startsWith('zh') ? "额头官禄宫 (Tianting Palace)" : "Forehead (Tianting Palace)")}
+                                        {selectedNode === 'caibo' && (language.startsWith('zh') ? "鼻梁财帛宫 (Caibo Palace)" : "Nose (Caibo Palace)")}
+                                        {selectedNode === 'spouse' && (language.startsWith('zh') ? "眼角夫妻宫 (Spouse Palace)" : "Eyes (Spouse Palace)")}
+                                        {selectedNode === 'dige' && (language.startsWith('zh') ? "地阁奴仆宫 (Dige Palace)" : "Chin (Dige Palace)")}
+                                        {selectedNode === 'life' && (language.startsWith('zh') ? "手相生命线" : "Life Line")}
+                                        {selectedNode === 'head' && (language.startsWith('zh') ? "手相智慧线" : "Wisdom Line")}
+                                        {selectedNode === 'heart' && (language.startsWith('zh') ? "手相感情线" : "Heart Line")}
+                                        {selectedNode === 'fate' && (language.startsWith('zh') ? "手相事业线" : "Career Line")}
+                                    </span>
+                                    <button style={{ background: 'none', border: 'none', color: '#ff4d4d', cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem', padding: 0 }} onClick={() => setSelectedNode(null)}>×</button>
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: '#eee', margin: 0, lineHeight: '1.4' }}>
                                     {selectedNode === 'tianting' && (language.startsWith('zh') ? "额头高耸莹润，代表早年有长辈关照，学术悟性极高，易得神明保佑，适宜考学及官禄升迁。" : "High forehead indicates strong early guidance, academic intuition, and high career advancement potential.")}
                                     {selectedNode === 'caibo' && (language.startsWith('zh') ? "鼻头圆润丰隆，主中晚年财运极其旺盛。地支中土气稳固，能锁存金钱资产。" : "Fleshy nose bridges secure solid financial growth and abundance in your mid-to-late life stages.")}
                                     {selectedNode === 'spouse' && (language.startsWith('zh') ? "夫妻宫平满无纹侵，表明配偶温和贤惠，两人灵魂频率相近，能和睦相处。" : "Smooth corners indicate harmonious spousal contracts, warm family values, and high soul affinity.")}
@@ -1562,12 +2191,129 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                                     {selectedNode === 'life' && (language.startsWith('zh') ? "掌心生命线弧度开阔，不中断，象征生物元气极其旺盛，能逢凶化吉。" : "Wide, continuous life line represents robust physical energy, high vitality, and recovery power.")}
                                     {selectedNode === 'head' && (language.startsWith('zh') ? "智慧线深长且向下倾斜，提示您极具哲学深度，决策理智客观。" : "Deep, slanted head line represents exceptional analytical capability and calm, objective decision-making.")}
                                     {selectedNode === 'heart' && (language.startsWith('zh') ? "感情线直达食指下方，说明重情重义，感情纯粹，与爱人灵魂深深契合。" : "Clear heart line indicates pure-hearted devotion, emotional intelligence, and excellent empathy.")}
-                                    {selectedNode === 'fate' && (language.startsWith('zh') ? "事业线由掌底延伸向上，说明凭借自身才智 and 贵人引路实现人生腾飞。" : "Strong fate line shows career self-reliance, with major breakthroughs at ages 35 and 48.")}
+                                    {selectedNode === 'fate' && (language.startsWith('zh') ? "事业线由掌底延伸向上，说明凭借自身才智与贵人引路实现人生腾飞。" : "Strong fate line shows career self-reliance, with major breakthroughs at ages 35 and 48.")}
                                 </p>
                             </div>
                         )}
-                        <div style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.7)', padding: '2px 6px', borderRadius: '3px', fontSize: '0.65rem', color: '#aaa' }}>
-                            {language.startsWith('zh') ? "点击高亮节点" : "Click dots"}
+                    </div>
+                );
+            case 'daily':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(5, 12, 22, 0.4)', borderRadius: '12px', padding: '12px', border: '1px solid rgba(212, 175, 55, 0.3)', width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className="fas fa-calendar-day" style={{ fontSize: '1.3rem', color: '#d4af37' }} />
+                                <span style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                    {isZH ? "今日流日财运吉星指引" : "Today's Daily Fortune Radar"}
+                                </span>
+                            </div>
+                            <div style={{ background: 'rgba(46, 204, 113, 0.15)', border: '1px solid #2ecc71', borderRadius: '12px', padding: '2px 8px', color: '#2ecc71', fontSize: '0.72rem', fontWeight: 'bold' }}>
+                                {isZH ? "财运指数: 88分" : "Wealth: 88/100"}
+                            </div>
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
+                            <div style={{ background: 'rgba(212, 175, 55, 0.06)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '8px', padding: '8px', textAlign: 'left' }}>
+                                <div style={{ color: '#d4af37', fontSize: '0.72rem', fontWeight: 'bold', marginBottom: '3px' }}>
+                                    ✅ {isZH ? "今日宜干事项" : "Auspicious Tasks"}
+                                </div>
+                                <div style={{ color: '#ccc', fontSize: '0.68rem', lineHeight: '1.3' }}>
+                                    {isZH ? "商务洽谈、签约合作、财路规划、会面贵人、冥想" : "Business talks, signing contracts, wealth planning"}
+                                </div>
+                            </div>
+
+                            <div style={{ background: 'rgba(231, 76, 60, 0.06)', border: '1px solid rgba(231,76,60,0.2)', borderRadius: '8px', padding: '8px', textAlign: 'left' }}>
+                                <div style={{ color: '#e74c3c', fontSize: '0.72rem', fontWeight: 'bold', marginBottom: '3px' }}>
+                                    🚫 {isZH ? "今日避忌事项" : "Tasks to Avoid"}
+                                </div>
+                                <div style={{ color: '#ccc', fontSize: '0.68rem', lineHeight: '1.3' }}>
+                                    {isZH ? "盲目外借资金、争吵冲突、高风险炒作" : "Lending funds blindly, trivial disputes, gambling"}
+                                </div>
+                            </div>
+
+                            <div style={{ background: 'rgba(102, 192, 244, 0.06)', border: '1px solid rgba(102,192,244,0.2)', borderRadius: '8px', padding: '8px', textAlign: 'left' }}>
+                                <div style={{ color: '#66c0f4', fontSize: '0.72rem', fontWeight: 'bold', marginBottom: '3px' }}>
+                                    👔 {isZH ? "开运穿搭色彩" : "Lucky Outfit & Colors"}
+                                </div>
+                                <div style={{ color: '#ccc', fontSize: '0.68rem', lineHeight: '1.3' }}>
+                                    {missingElement === 'Metal' ? (isZH ? '白色、杏色、浅金系精干装' : 'White, Cream, Gold tones') :
+                                     missingElement === 'Wood' ? (isZH ? '青色、橄榄绿自然休闲风' : 'Green, Teal natural tones') :
+                                     missingElement === 'Water' ? (isZH ? '黑色、藏蓝优雅风度搭' : 'Black, Navy blue wear') :
+                                     missingElement === 'Fire' ? (isZH ? '红色、紫色亮丽热情风' : 'Red, Purple bright wear') :
+                                     (isZH ? '黄色、驼色温润大地风' : 'Yellow, Khaki earth wear')}
+                                </div>
+                            </div>
+
+                            <div style={{ background: 'rgba(155, 89, 182, 0.06)', border: '1px solid rgba(155,89,182,0.2)', borderRadius: '8px', padding: '8px', textAlign: 'left' }}>
+                                <div style={{ color: '#9b59b6', fontSize: '0.72rem', fontWeight: 'bold', marginBottom: '3px' }}>
+                                    🧭 {isZH ? "吉利方向去处" : "Lucky Directions & Places"}
+                                </div>
+                                <div style={{ color: '#ccc', fontSize: '0.68rem', lineHeight: '1.3' }}>
+                                    {missingElement === 'Metal' ? (isZH ? '正西/西北 | 金融街、景致咖啡厅' : 'West/NW | Financial Cafe') :
+                                     missingElement === 'Wood' ? (isZH ? '正东/东南 | 植物园、书房茶室' : 'East/SE | Botanical Park') :
+                                     missingElement === 'Water' ? (isZH ? '正北方 | 水边露台、温泉港口' : 'North | Waterfront, Spa') :
+                                     missingElement === 'Fire' ? (isZH ? '正南方 | 阳光大堂、艺术展馆' : 'South | Sunny Lounge') :
+                                     (isZH ? '中央/东北 | 博物馆、林荫书院' : 'Center/NE | Museum')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'annual':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(5, 12, 22, 0.4)', borderRadius: '12px', padding: '12px', border: '1px solid rgba(212, 175, 55, 0.3)', width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className="fas fa-dragon" style={{ fontSize: '1.3rem', color: '#d4af37' }} />
+                                <span style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.85rem' }}>
+                                    {isZH ? "本年度财运、官运与生意全景" : "Annual Masterplan Overview"}
+                                </span>
+                            </div>
+                            <div style={{ background: 'rgba(212, 175, 55, 0.15)', border: '1px solid #d4af37', borderRadius: '12px', padding: '2px 8px', color: '#d4af37', fontSize: '0.72rem', fontWeight: 'bold' }}>
+                                {isZH ? "大运合汇" : "Ascending Cycle"}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%' }}>
+                            <div style={{ background: 'rgba(212, 175, 55, 0.05)', border: '1px solid rgba(212, 175, 55, 0.2)', borderRadius: '8px', padding: '8px' }}>
+                                <div style={{ color: '#d4af37', fontWeight: 'bold', fontSize: '0.72rem', marginBottom: '3px' }}>
+                                    💰 {isZH ? "本年度财运详批" : "Annual Wealth"}
+                                </div>
+                                <div style={{ color: '#bbb', fontSize: '0.68rem', lineHeight: '1.3' }}>
+                                    {isZH ? "财帛宫星轨正位，正财稳固增长，下半年合汇偏财格局！" : "Steady primary income, windfall in H2."}
+                                </div>
+                            </div>
+
+                            <div style={{ background: 'rgba(102, 192, 244, 0.05)', border: '1px solid rgba(102, 192, 244, 0.2)', borderRadius: '8px', padding: '8px' }}>
+                                <div style={{ color: '#66c0f4', fontWeight: 'bold', fontSize: '0.72rem', marginBottom: '3px' }}>
+                                    👑 {isZH ? "本年度官运/职场" : "Career & Promotion"}
+                                </div>
+                                <div style={{ color: '#bbb', fontSize: '0.68rem', lineHeight: '1.3' }}>
+                                    {isZH ? "官禄宫紫微高照，易获高层重用，需谨言慎行防嫉妒。" : "High visibility with executive backing."}
+                                </div>
+                            </div>
+
+                            <div style={{ background: 'rgba(46, 204, 113, 0.05)', border: '1px solid rgba(46, 204, 113, 0.2)', borderRadius: '8px', padding: '8px' }}>
+                                <div style={{ color: '#2ecc71', fontWeight: 'bold', fontSize: '0.72rem', marginBottom: '3px' }}>
+                                    🏢 {isZH ? "本年度生意商机" : "Business Enterprise"}
+                                </div>
+                                <div style={{ color: '#bbb', fontSize: '0.68rem', lineHeight: '1.3' }}>
+                                    {isZH ? "驿马星动，利于跨界拓展与线上转型，掌控好现金流。" : "Favorable for digital expansion."}
+                                </div>
+                            </div>
+
+                            <div style={{ background: 'rgba(155, 89, 182, 0.05)', border: '1px solid rgba(155, 89, 182, 0.2)', borderRadius: '8px', padding: '8px' }}>
+                                <div style={{ color: '#9b59b6', fontWeight: 'bold', fontSize: '0.72rem', marginBottom: '3px' }}>
+                                    💎 {isZH ? "推荐佩戴开运物件" : "Recommended Talisman"}
+                                </div>
+                                <div style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.68rem', lineHeight: '1.3' }}>
+                                    {missingElement === 'Metal' ? (isZH ? '白水晶/黄铜文昌塔/金饰' : 'Clear Quartz / Gold Pendant') :
+                                     missingElement === 'Wood' ? (isZH ? '绿幽灵/小叶紫檀/孔雀石' : 'Green Phantom / Sandalwood') :
+                                     missingElement === 'Water' ? (isZH ? '黑曜石貔貅/海蓝宝吊坠' : 'Obsidian Pixiu / Aquamarine') :
+                                     missingElement === 'Fire' ? (isZH ? '朱砂葫芦/红玛瑙离火佩' : 'Cinnabar Gourd / Red Agate') :
+                                     (isZH ? '黄水晶财神佩/虎眼石串' : 'Yellow Citrine / Tiger Eye')}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 );
@@ -1720,8 +2466,143 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
     return (
         <div style={{ width: '95%', maxWidth: '820px', margin: '0 auto', paddingBottom: '3rem', position: 'relative' }}>
             
-            {/* Subject info box */}
-            <div style={{ background: 'linear-gradient(135deg, rgba(23, 38, 54, 0.9) 0%, rgba(17, 26, 38, 0.95) 100%)', padding: '15px 20px', borderRadius: '12px', border: `2px solid rgba(102, 192, 244, 0.3)`, marginBottom: '25px', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '15px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.7)', position: 'relative' }}>
+            {/* TOP UNPAID / VIP ANNOUNCEMENT BANNER FOR NON-LOGGED-IN OR NON-SUBSCRIBED USERS */}
+            {isUnpaid && (
+                <div style={{
+                    background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(102, 192, 244, 0.15) 100%)',
+                    border: '1.5px solid #FFD700',
+                    borderRadius: '12px',
+                    padding: '14px 20px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px',
+                    boxShadow: '0 6px 25px rgba(255, 215, 0, 0.2)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <i className="fas fa-crown" style={{ color: '#FFD700', fontSize: '1.5rem' }} />
+                        <div>
+                            <div style={{ color: '#FFD700', fontWeight: 'bold', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span>{isZh ? "未登录 / 未订阅 VIP 体验模式" : isZht ? "未登錄 / 未訂閱 VIP 體驗模式" : "Guest / Free Experience Mode"}</span>
+                                <span style={{ background: 'rgba(255,215,0,0.2)', border: '1px solid #FFD700', color: '#FFD700', fontSize: '0.72rem', padding: '2px 8px', borderRadius: '10px' }}>
+                                    {isZh ? "限时体验 30%" : "30% Preview"}
+                                </span>
+                            </div>
+                            <div style={{ color: '#DDD', fontSize: '0.82rem', marginTop: '3px' }}>
+                                {isZh ? `当前仅展示 30% 核心命理分析，解锁 100% 完整报告需 ${requiredPrice}，或成为 VIP 会员享受无限测算：`
+                                      : isZht ? `當前僅展示 30% 核心命理分析，解鎖 100% 完整報告需 ${requiredPrice}，或成為 VIP 會員享受無限測算：`
+                                      : `30% preview shown. Single report unlock is ${requiredPrice}, or upgrade to VIP for unlimited access:`}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={onUnlockFullReport}
+                            style={{
+                                background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                                color: '#0d121a',
+                                fontWeight: 800,
+                                fontSize: '0.85rem',
+                                padding: '8px 18px',
+                                borderRadius: '20px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 12px rgba(255, 215, 0, 0.35)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                            }}
+                        >
+                            <i className="fas fa-key" />
+                            <span>{isZht ? `🔑 ${requiredPrice} 單次解鎖` : isZh ? `🔑 ${requiredPrice} 单次解锁` : `🔑 Pay ${requiredPrice}`}</span>
+                        </button>
+
+                        {onOpenPricing && (
+                            <button
+                                onClick={onOpenPricing}
+                                style={{
+                                    background: 'rgba(102, 192, 244, 0.2)',
+                                    color: theme.accent,
+                                    fontWeight: 'bold',
+                                    fontSize: '0.85rem',
+                                    padding: '8px 18px',
+                                    borderRadius: '20px',
+                                    border: `1px solid ${theme.accent}`,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px'
+                                }}
+                            >
+                                <i className="fas fa-crown" />
+                                <span>{isZh ? "👑 成为 VIP 用户" : isZht ? "👑 成為 VIP 用戶" : "👑 Become VIP"}</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* PRINTABLE CONTAINER FOR PDF EXPORT & WEBPAGE REPORT */}
+            <div id="pdf-report-content" style={{ background: '#0b1524', borderRadius: '16px', padding: '15px', color: '#fff' }}>
+                
+                {/* Captured Input Photos (Face + Palm Specimen) */}
+                {(faceImage || palmImage || image) && (
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(23, 38, 54, 0.9) 0%, rgba(17, 26, 38, 0.95) 100%)',
+                        border: '1.5px solid rgba(102, 192, 244, 0.35)',
+                        borderRadius: '12px',
+                        padding: '15px',
+                        marginBottom: '20px',
+                        textAlign: 'center',
+                        boxShadow: '0 8px 25px rgba(0,0,0,0.6)'
+                    }}>
+                        <div style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '12px', letterSpacing: '1px', textTransform: 'uppercase', fontFamily: '"Space Grotesk", sans-serif' }}>
+                            <i className="fas fa-camera" style={{ marginRight: '8px', color: theme.accent }} />
+                            {isZht ? "測算影像標本" : isZh ? "测算影像标本" : "Biometric Scan Specimen"}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '25px', flexWrap: 'wrap' }}>
+                            {(readingType === 'face' || readingType === 'both') && (faceImage || (!palmImage && image && readingType === 'face')) && (
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden', border: `2.5px solid ${theme.accent}`, boxShadow: '0 0 15px rgba(102,192,244,0.5)', margin: '0 auto 6px auto' }}>
+                                        <img src={faceImage || image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Face Specimen" />
+                                    </div>
+                                    <div style={{ fontSize: '0.78rem', color: theme.accent, fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif' }}>
+                                        <i className="fas fa-check-circle" style={{ marginRight: '4px' }} />
+                                        {isZht ? "面相標本" : isZh ? "面相标本" : "Face Scan"}
+                                    </div>
+                                </div>
+                            )}
+                            {(readingType === 'palm' || readingType === 'both') && (palmImage || (!faceImage && image && readingType === 'palm')) && (
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ width: '90px', height: '90px', borderRadius: '12px', overflow: 'hidden', border: `2.5px solid ${theme.gold}`, boxShadow: '0 0 15px rgba(212,175,55,0.5)', margin: '0 auto 6px auto' }}>
+                                        <img src={palmImage || image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Palm Specimen" />
+                                    </div>
+                                    <div style={{ fontSize: '0.78rem', color: theme.gold, fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif' }}>
+                                        <i className="fas fa-check-circle" style={{ marginRight: '4px' }} />
+                                        {isZht ? "手相標本" : isZh ? "手相标本" : "Palm Scan"}
+                                    </div>
+                                </div>
+                            )}
+                            {!faceImage && !palmImage && image && readingType !== 'face' && readingType !== 'palm' && (
+                                <div style={{ textAlign: 'center' }}>
+                                    <div style={{ width: '90px', height: '90px', borderRadius: '12px', overflow: 'hidden', border: `2.5px solid ${theme.accent}`, boxShadow: '0 0 15px rgba(102,192,244,0.5)', margin: '0 auto 6px auto' }}>
+                                        <img src={image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Specimen" />
+                                    </div>
+                                    <div style={{ fontSize: '0.78rem', color: theme.accent, fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif' }}>
+                                        <i className="fas fa-check-circle" style={{ marginRight: '4px' }} />
+                                        {isZht ? "生物特徵標本" : isZh ? "生物特征标本" : "Biometric Scan"}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Subject info box */}
+                <div style={{ background: 'linear-gradient(135deg, rgba(23, 38, 54, 0.9) 0%, rgba(17, 26, 38, 0.95) 100%)', padding: '15px 20px', borderRadius: '12px', border: `2px solid rgba(102, 192, 244, 0.3)`, marginBottom: '25px', display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '15px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.7)', position: 'relative' }}>
                 <div style={{ textAlign: 'center', minWidth: '80px' }}>
                     <div style={{ color: '#999', fontSize: '0.75rem', letterSpacing: '1px', textTransform: 'uppercase', fontFamily: '"Space Grotesk", sans-serif' }}>{t.ageLabel}</div>
                     <div style={{ fontSize: '1.3rem', color: theme.accent, fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif' }}>{age}</div>
@@ -1757,14 +2638,10 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                     <select style={{ background: 'rgba(0,0,0,0.5)', color: theme.accent, border: `1px solid rgba(102,192,244,0.3)`, borderRadius: '4px', padding: '6px 10px', fontSize: '0.8rem', fontFamily: '"Space Grotesk", sans-serif', cursor: 'pointer' }} value={language} onChange={onLanguageChange}>
                         {LANGUAGES.map((l: any) => <option key={l.code} value={l.code}>{l.label}</option>)}
                     </select>
-                    
-                    <button onClick={onToggleSpeech} style={{ background: 'rgba(102, 192, 244, 0.1)', border: `1px solid ${theme.accent}`, borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.accent, cursor: 'pointer', transition: 'all 0.2s' }}>
-                        {isSpeaking ? <i className="fas fa-stop-circle"></i> : <i className="fas fa-volume-up"></i>}
-                    </button>
 
                     <button onClick={generatePDF} disabled={pdfDownloading} style={{ background: 'linear-gradient(135deg, #FFB300 0%, #D4AF37 100%)', color: '#111', border: 'none', borderRadius: '6px', padding: '8px 14px', fontSize: '0.8rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', cursor: pdfDownloading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 10px rgba(212,175,55,0.3)' }} className="hover:scale-105 active:scale-95 transition-transform">
                         {pdfDownloading ? <i className="fas fa-spinner fa-spin" /> : <i className="fas fa-file-pdf" />}
-                        {pdfDownloading ? (language.startsWith('zh') ? '导出中...' : 'Exporting...') : (language.startsWith('zh') ? '下载PDF' : 'Download PDF')}
+                        {pdfDownloading ? (isZht ? '導出中...' : isZh ? '导出中...' : 'Exporting...') : (isZht ? '下載 PDF 報告' : isZh ? '下载 PDF 报告' : 'Download PDF')}
                     </button>
                 </div>
             </div>
@@ -1784,52 +2661,144 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                             <div>
                                 {/* Stepper Progress Indicators */}
                                 <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '15px', borderBottom: '1px solid rgba(102,192,244,0.15)' }} className="hide-scrollbar">
-                                    {reportData.map((sec, idx) => (
-                                        <button key={sec.id} onClick={() => setSliderIndex(idx)} style={{ background: sliderIndex === idx ? 'rgba(102, 192, 244, 0.25)' : 'rgba(0,0,0,0.3)', border: sliderIndex === idx ? `1px solid ${theme.accent}` : '1px solid rgba(102,192,244,0.1)', color: sliderIndex === idx ? theme.accent : '#aaa', padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', fontFamily: '"Space Grotesk", sans-serif' }}>
-                                            {sec.title.split(' ')[0]} {sec.title.split(' ').slice(1).join(' ').substring(0, 4)}...
-                                        </button>
-                                    ))}
+                                    {reportData.map((sec, idx) => {
+                                        const maxShowCount = 2;
+                                        const isLocked = !isPaidUser && idx >= maxShowCount;
+                                        return (
+                                            <button key={sec.id} onClick={() => setSliderIndex(idx)} style={{ background: sliderIndex === idx ? 'rgba(102, 192, 244, 0.25)' : 'rgba(0,0,0,0.3)', border: sliderIndex === idx ? `1px solid ${theme.accent}` : (isLocked ? '1px dashed #FFD700' : '1px solid rgba(102,192,244,0.1)'), color: sliderIndex === idx ? theme.accent : (isLocked ? '#FFD700' : '#aaa'), padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', fontFamily: '"Space Grotesk", sans-serif', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                {isLocked && <i className="fas fa-lock" style={{ fontSize: '0.7rem', color: '#FFD700' }} />}
+                                                {sec.title.split(' ')[0]} {sec.title.split(' ').slice(1).join(' ').substring(0, 4)}...
+                                            </button>
+                                        );
+                                    })}
                                 </div>
 
                                 {/* Active Slide Content Box */}
                                 <div style={{ minHeight: '340px' }} className="fade-in">
-                                    <h3 style={{ color: theme.accent, borderBottom: '1px solid rgba(102,192,244,0.25)', paddingBottom: '8px', marginBottom: '15px', fontFamily: '"Space Grotesk", sans-serif', textShadow: '0 0 8px rgba(102,192,244,0.4)' }}>
-                                        {activeSlide.title}
-                                    </h3>
+                                    {!isPaidUser && sliderIndex >= 2 ? (
+                                        <div style={{
+                                            background: 'linear-gradient(135deg, rgba(30, 48, 70, 0.98) 0%, rgba(18, 28, 42, 0.98) 100%)',
+                                            border: '2px solid #FFD700',
+                                            borderRadius: '16px',
+                                            padding: '2.5rem 1.5rem',
+                                            textAlign: 'center',
+                                            boxShadow: '0 0 35px rgba(255, 215, 0, 0.25)',
+                                            minHeight: '320px',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'center',
+                                            justifyContent: 'center'
+                                        }}>
+                                            <div style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                background: 'rgba(255, 215, 0, 0.15)',
+                                                border: '1px solid rgba(255, 215, 0, 0.4)',
+                                                color: '#FFD700',
+                                                padding: '4px 16px',
+                                                borderRadius: '20px',
+                                                fontSize: '0.82rem',
+                                                fontWeight: 'bold',
+                                                marginBottom: '1rem'
+                                            }}>
+                                                <i className="fas fa-lock" />
+                                                <span>{isZh ? "未注册/未订阅用户模式 · 仅展示前两项解构内容" : isZht ? "未註冊/未訂閱用戶模式 · 僅展示前兩項解構內容" : "Free Mode · First 2 Prediction Items Shown"}</span>
+                                            </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', md: '1.2fr 1fr', gap: '20px', alignItems: 'start' }} className="grid md:grid-cols-2">
-                                        {/* Left Side: Graphic / Illustration */}
-                                        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignSelf: 'center' }}>
-                                            {renderActiveIllustration(activeSlide.illustrationType)}
+                                            <h3 style={{ color: '#ffffff', fontSize: '1.4rem', margin: '0 0 0.5rem 0', fontFamily: '"Space Grotesk", sans-serif' }}>
+                                                {isZh ? `🔒 解锁《${activeSlide.title}》与 100% 完整深度分析` : isZht ? `🔒 解鎖《${activeSlide.title}》與 100% 完整深度分析` : `🔒 Unlock "${activeSlide.title}" & Full 100% Report`}
+                                            </h3>
+
+                                            <p style={{ color: '#A0B0C0', maxWidth: '600px', margin: '0 auto 1.5rem auto', fontSize: '0.92rem', lineHeight: '1.6' }}>
+                                                {isZh ? `未注册或未订阅用户查看全部报告需支付 ${requiredPrice} 美金。点击下方按钮支付，即可一键解锁 100% 完整深度分析报告并支持 PDF 下载！`
+                                                      : isZht ? `未註冊或未訂閱用戶查看全部報告需支付 ${requiredPrice} 美金。點擊下方按鈕支付，即可一鍵解鎖 100% 完整深度分析報告並支援 PDF 下載！`
+                                                      : `Viewing the complete report for unsubscribed users requires ${requiredPrice} USD. Click below to pay and instantly unlock 100% full report & PDF download!`
+                                                }
+                                            </p>
+
+                                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                                <button
+                                                    onClick={onUnlockFullReport}
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                                                        color: '#0d121a',
+                                                        fontWeight: 800,
+                                                        fontSize: '1.05rem',
+                                                        padding: '12px 30px',
+                                                        borderRadius: '30px',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        boxShadow: '0 8px 25px rgba(255, 215, 0, 0.35)',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '8px'
+                                                    }}
+                                                >
+                                                    <i className="fas fa-key" />
+                                                    <span>{isZht ? `🔑 ${requiredPrice} 立即解鎖 100% 完整報告` : isZh ? `🔑 ${requiredPrice} 立即解锁 100% 完整报告` : `🔑 Pay ${requiredPrice} to Unlock Full 100% Report`}</span>
+                                                </button>
+
+                                                {onOpenPricing && (
+                                                    <button
+                                                        onClick={onOpenPricing}
+                                                        style={{
+                                                            background: 'rgba(102, 192, 244, 0.12)',
+                                                            color: theme.accent,
+                                                            fontWeight: 'bold',
+                                                            fontSize: '0.95rem',
+                                                            padding: '12px 24px',
+                                                            borderRadius: '30px',
+                                                            border: `1px solid ${theme.accent}`,
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        <span>{isZh ? "👑 升级 VIP 会员 (无限测算)" : "👑 Upgrade VIP (Unlimited)"}</span>
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
+                                    ) : (
+                                        <>
+                                            <h3 style={{ color: theme.accent, borderBottom: '1px solid rgba(102,192,244,0.25)', paddingBottom: '8px', marginBottom: '15px', fontFamily: '"Space Grotesk", sans-serif', textShadow: '0 0 8px rgba(102,192,244,0.4)' }}>
+                                                {activeSlide.title}
+                                            </h3>
 
-                                        {/* Right Side: Analytical Texts */}
-                                        <div>
-                                            <p style={{ fontSize: '0.95rem', color: '#F4EAD4', lineHeight: '1.6', margin: '0 0 15px 0' }} dangerouslySetInnerHTML={{ __html: formatMarkdown(activeSlide.content) }} />
-
-                                            {/* Dynamic Sub-boxes inside carousel card */}
-                                            {activeSlide.fableTitle && activeSlide.fableText && (
-                                                <div style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '8px', padding: '12px', marginTop: '12px' }}>
-                                                    <div style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '4px' }}>📜 {activeSlide.fableTitle}</div>
-                                                    <div style={{ fontSize: '0.8rem', color: '#ddd', fontStyle: 'italic', lineHeight: '1.5' }}>{activeSlide.fableText}</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', md: '1.2fr 1fr', gap: '20px', alignItems: 'start' }} className="grid md:grid-cols-2">
+                                                {/* Left Side: Graphic / Illustration */}
+                                                <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignSelf: 'center' }}>
+                                                    {renderActiveIllustration(activeSlide.illustrationType)}
                                                 </div>
-                                            )}
 
-                                            {activeSlide.warningText && (
-                                                <div style={{ background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.25)', borderRadius: '8px', padding: '10px 12px', marginTop: '12px', display: 'flex', gap: '10px', alignItems: 'start' }}>
-                                                    <i className="fas fa-exclamation-triangle" style={{ color: '#e74c3c', marginTop: '3px' }} />
-                                                    <div style={{ fontSize: '0.8rem', color: '#ffb3b3', lineHeight: '1.4' }}>{activeSlide.warningText}</div>
-                                                </div>
-                                            )}
+                                                {/* Right Side: Analytical Texts */}
+                                                <div>
+                                                    <p style={{ fontSize: '0.95rem', color: '#F4EAD4', lineHeight: '1.6', margin: '0 0 15px 0' }} dangerouslySetInnerHTML={{ __html: formatMarkdown(activeSlide.content) }} />
 
-                                            {activeSlide.remedyText && (
-                                                <div style={{ background: 'rgba(46,204,113,0.08)', border: '1px solid rgba(46,204,113,0.25)', borderRadius: '8px', padding: '10px 12px', marginTop: '12px', display: 'flex', gap: '10px', alignItems: 'start' }}>
-                                                    <i className="fas fa-shield-alt" style={{ color: '#2ecc71', marginTop: '3px' }} />
-                                                    <div style={{ fontSize: '0.8rem', color: '#b3ffcc', lineHeight: '1.4' }}>{activeSlide.remedyText}</div>
+                                                    {/* Dynamic Sub-boxes inside carousel card */}
+                                                    {activeSlide.fableTitle && activeSlide.fableText && (
+                                                        <div style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.25)', borderRadius: '8px', padding: '12px', marginTop: '12px' }}>
+                                                            <div style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '4px' }}>📜 {activeSlide.fableTitle}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#ddd', fontStyle: 'italic', lineHeight: '1.5' }}>{activeSlide.fableText}</div>
+                                                        </div>
+                                                    )}
+
+                                                    {activeSlide.warningText && (
+                                                        <div style={{ background: 'rgba(231,76,60,0.08)', border: '1px solid rgba(231,76,60,0.25)', borderRadius: '8px', padding: '10px 12px', marginTop: '12px', display: 'flex', gap: '10px', alignItems: 'start' }}>
+                                                            <i className="fas fa-exclamation-triangle" style={{ color: '#e74c3c', marginTop: '3px' }} />
+                                                            <div style={{ fontSize: '0.8rem', color: '#ffb3b3', lineHeight: '1.4' }}>{activeSlide.warningText}</div>
+                                                        </div>
+                                                    )}
+
+                                                    {activeSlide.remedyText && (
+                                                        <div style={{ background: 'rgba(46,204,113,0.08)', border: '1px solid rgba(46,204,113,0.25)', borderRadius: '8px', padding: '10px 12px', marginTop: '12px', display: 'flex', gap: '10px', alignItems: 'start' }}>
+                                                            <i className="fas fa-shield-alt" style={{ color: '#2ecc71', marginTop: '3px' }} />
+                                                            <div style={{ fontSize: '0.8rem', color: '#b3ffcc', lineHeight: '1.4' }}>{activeSlide.remedyText}</div>
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
 
                                 {/* Carousel Navigation Arrows */}
@@ -1848,42 +2817,128 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                         ) : (
                             /* CLASSIC FULL REPORT SCROLL VIEW */
                             <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-                                {reportData.map((sec, idx) => (
-                                    <div key={sec.id} style={{ borderBottom: idx < reportData.length - 1 ? '1px solid rgba(102,192,244,0.15)' : 'none', paddingBottom: '25px' }}>
-                                        <h3 style={{ color: theme.accent, borderBottom: '1px solid rgba(102,192,244,0.2)', paddingBottom: '6px', marginBottom: '15px', fontFamily: '"Space Grotesk", sans-serif' }}>
-                                            {sec.title}
-                                        </h3>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', md: '1.2fr 1fr', gap: '20px', alignItems: 'center' }} className="grid md:grid-cols-2">
-                                            <div>
-                                                <p style={{ fontSize: '0.95rem', color: '#F4EAD4', lineHeight: '1.6', margin: 0 }} dangerouslySetInnerHTML={{ __html: formatMarkdown(sec.content) }} />
-                                                
-                                                {sec.fableTitle && sec.fableText && (
-                                                    <div style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '8px', padding: '12px', marginTop: '12px' }}>
-                                                        <div style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '4px' }}>📜 {sec.fableTitle}</div>
-                                                        <div style={{ fontSize: '0.8rem', color: '#ddd', fontStyle: 'italic', lineHeight: '1.5' }}>{sec.fableText}</div>
-                                                    </div>
-                                                )}
+                                {(isPaidUser ? reportData : reportData.slice(0, 2)).map((sec, idx) => {
+                                    const isLastShown = isPaidUser ? idx === reportData.length - 1 : idx === 1;
+                                    return (
+                                        <div key={sec.id} style={{ borderBottom: !isLastShown ? '1px solid rgba(102,192,244,0.15)' : 'none', paddingBottom: '25px' }}>
+                                            <h3 style={{ color: theme.accent, borderBottom: '1px solid rgba(102,192,244,0.2)', paddingBottom: '6px', marginBottom: '15px', fontFamily: '"Space Grotesk", sans-serif' }}>
+                                                {sec.title}
+                                            </h3>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', md: '1.2fr 1fr', gap: '20px', alignItems: 'center' }} className="grid md:grid-cols-2">
+                                                <div>
+                                                    <p style={{ fontSize: '0.95rem', color: '#F4EAD4', lineHeight: '1.6', margin: 0 }} dangerouslySetInnerHTML={{ __html: formatMarkdown(sec.content) }} />
+                                                    
+                                                    {sec.fableTitle && sec.fableText && (
+                                                        <div style={{ background: 'rgba(212,175,55,0.05)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '8px', padding: '12px', marginTop: '12px' }}>
+                                                            <div style={{ color: theme.gold, fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '4px' }}>📜 {sec.fableTitle}</div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#ddd', fontStyle: 'italic', lineHeight: '1.5' }}>{sec.fableText}</div>
+                                                        </div>
+                                                    )}
 
-                                                {sec.warningText && (
-                                                    <div style={{ background: 'rgba(231,76,60,0.06)', border: '1px solid rgba(231,76,60,0.2)', borderRadius: '8px', padding: '10px 12px', marginTop: '12px', display: 'flex', gap: '10px' }}>
-                                                        <i className="fas fa-exclamation-triangle" style={{ color: '#e74c3c', marginTop: '3px' }} />
-                                                        <div style={{ fontSize: '0.8rem', color: '#ffb3b3' }}>{sec.warningText}</div>
-                                                    </div>
-                                                )}
+                                                    {sec.warningText && (
+                                                        <div style={{ background: 'rgba(231,76,60,0.06)', border: '1px solid rgba(231,76,60,0.2)', borderRadius: '8px', padding: '10px 12px', marginTop: '12px', display: 'flex', gap: '10px' }}>
+                                                            <i className="fas fa-exclamation-triangle" style={{ color: '#e74c3c', marginTop: '3px' }} />
+                                                            <div style={{ fontSize: '0.8rem', color: '#ffb3b3' }}>{sec.warningText}</div>
+                                                        </div>
+                                                    )}
 
-                                                {sec.remedyText && (
-                                                    <div style={{ background: 'rgba(46,204,113,0.06)', border: '1px solid rgba(46,204,113,0.2)', borderRadius: '8px', padding: '10px 12px', marginTop: '12px', display: 'flex', gap: '10px' }}>
-                                                        <i className="fas fa-shield-alt" style={{ color: '#2ecc71', marginTop: '3px' }} />
-                                                        <div style={{ fontSize: '0.8rem', color: '#b3ffcc' }}>{sec.remedyText}</div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
-                                                {renderActiveIllustration(sec.illustrationType)}
+                                                    {sec.remedyText && (
+                                                        <div style={{ background: 'rgba(46,204,113,0.06)', border: '1px solid rgba(46,204,113,0.2)', borderRadius: '8px', padding: '10px 12px', marginTop: '12px', display: 'flex', gap: '10px' }}>
+                                                            <i className="fas fa-shield-alt" style={{ color: '#2ecc71', marginTop: '3px' }} />
+                                                            <div style={{ fontSize: '0.8rem', color: '#b3ffcc' }}>{sec.remedyText}</div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                                                    {renderActiveIllustration(sec.illustrationType)}
+                                                </div>
                                             </div>
                                         </div>
+                                    );
+                                })}
+
+                                {!isPaidUser && (
+                                    <div style={{
+                                        marginTop: '10px',
+                                        background: 'linear-gradient(135deg, rgba(30, 48, 70, 0.98) 0%, rgba(18, 28, 42, 0.98) 100%)',
+                                        border: '2px solid #FFD700',
+                                        borderRadius: '16px',
+                                        padding: '2.2rem 1.5rem',
+                                        textAlign: 'center',
+                                        boxShadow: '0 0 35px rgba(255, 215, 0, 0.25)',
+                                        position: 'relative',
+                                        zIndex: 5
+                                    }}>
+                                        <div style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            background: 'rgba(255, 215, 0, 0.15)',
+                                            border: '1px solid rgba(255, 215, 0, 0.4)',
+                                            color: '#FFD700',
+                                            padding: '4px 16px',
+                                            borderRadius: '20px',
+                                            fontSize: '0.82rem',
+                                            fontWeight: 'bold',
+                                            marginBottom: '1rem'
+                                        }}>
+                                            <i className="fas fa-lock" />
+                                            <span>{isZh ? "免费试用模式 · 已展示 30% 核心解构内容" : "Free Trial Mode · 30% Preview Content Shown"}</span>
+                                        </div>
+
+                                        <h3 style={{ color: '#ffffff', fontSize: '1.4rem', margin: '0 0 0.5rem 0', fontFamily: '"Space Grotesk", sans-serif' }}>
+                                            {isZh ? "🔒 提示付费：解锁 100% 完整命理精批与 PDF 报告下载" : isZht ? "🔒 提示付費：解鎖 100% 完整命理精批與 PDF 報告下載" : "🔒 Unlock Full 100% Report & PDF Download"}
+                                        </h3>
+
+                                        <p style={{ color: '#A0B0C0', maxWidth: '620px', margin: '0 auto 1.5rem auto', fontSize: '0.92rem', lineHeight: '1.6' }}>
+                                            {isZh ? `未注册或未订阅用户查看全部报告需支付 ${requiredPrice} 美金。付费解锁单次精批或订阅 VIP 会员，即可一键解锁 100% 完整深度报告及 PDF 报告下载！`
+                                                  : isZht ? `未註冊或未訂閱用戶查看全部報告需支付 ${requiredPrice} 美金。付費解鎖單次精批或訂閱 VIP 會員，即可一鍵解鎖 100% 完整深度報告及 PDF 報告下載！`
+                                                  : `Viewing the complete report for unsubscribed users requires ${requiredPrice} USD. Pay or subscribe to VIP to unlock the complete 100% report and download PDF!`
+                                            }
+                                        </p>
+
+                                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                            <button
+                                                onClick={onUnlockFullReport}
+                                                style={{
+                                                    background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                                                    color: '#0d121a',
+                                                    fontWeight: 800,
+                                                    fontSize: '1.05rem',
+                                                    padding: '12px 30px',
+                                                    borderRadius: '30px',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    boxShadow: '0 8px 25px rgba(255, 215, 0, 0.35)',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px'
+                                                }}
+                                            >
+                                                <i className="fas fa-key" />
+                                                <span>{isZht ? `🔑 ${requiredPrice} 立即解鎖 100% 完整報告` : isZh ? `🔑 ${requiredPrice} 立即解锁 100% 完整报告` : `🔑 Pay ${requiredPrice} to Unlock Full 100% Report`}</span>
+                                            </button>
+
+                                            {onOpenPricing && (
+                                                <button
+                                                    onClick={onOpenPricing}
+                                                    style={{
+                                                        background: 'rgba(102, 192, 244, 0.12)',
+                                                        color: theme.accent,
+                                                        fontWeight: 'bold',
+                                                        fontSize: '0.95rem',
+                                                        padding: '12px 24px',
+                                                        borderRadius: '30px',
+                                                        border: `1px solid ${theme.accent}`,
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <span>{isZh ? "👑 升级 VIP 会员 (无限测算)" : "👑 Upgrade VIP (Unlimited)"}</span>
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                ))}
+                                )}
                             </div>
                         )}
                     </>
@@ -1903,7 +2958,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                         return (
                             <div key={prod.id} style={{ minWidth: '170px', background: 'rgba(17, 26, 38, 0.8)', border: `1px solid rgba(102, 192, 244, 0.3)`, borderRadius: '8px', padding: '12px', textAlign: 'center', transition: 'all 0.3s', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }} className="hover:border-cyan-400 group">
                                 <div style={{ cursor: 'pointer' }} onClick={() => onViewProduct(prod)}>
-                                    <img src={imgUrl} style={{ width: '100%', borderRadius: '4px', border: '1px solid rgba(102, 192, 244, 0.15)', transition: 'transform 0.3s' }} className="group-hover:scale-105" loading="lazy" referrerPolicy="no-referrer" onError={(e) => handleImageError(e, prod.id)} />
+                                    <img src={imgUrl} crossOrigin="anonymous" style={{ width: '100%', borderRadius: '4px', border: '1px solid rgba(102, 192, 244, 0.15)', transition: 'transform 0.3s' }} className="group-hover:scale-105" loading="lazy" referrerPolicy="no-referrer" onError={(e) => handleImageError(e, prod.id)} />
                                     <div style={{ fontSize: '0.85rem', color: theme.accent, fontWeight: 'bold', margin: '8px 0 4px 0', height: '36px', overflow: 'hidden', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', fontFamily: '"Space Grotesk", sans-serif' }}>{prodName}</div>
                                     <div style={{ fontWeight: 'bold', color: '#fff', marginBottom: '8px', fontSize: '0.95rem', fontFamily: '"Space Grotesk", sans-serif' }}>{prod.price}</div>
                                 </div>
@@ -1915,6 +2970,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                         );
                     })}
                 </div>
+            </div>
             </div>
 
             <div style={{ textAlign: 'center', marginTop: '2rem' }}>

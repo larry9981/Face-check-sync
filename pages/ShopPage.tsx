@@ -5,6 +5,7 @@ import { Product } from '../types';
 import { SHOP_PRODUCTS } from '../products';
 import { ImagePersistence } from '../utils';
 import { CachedImage } from '../components/Modals';
+import { TopHeaderNav } from '../components/HeaderControls';
 
 // Sub-component for individual product cards to handle async image loading
 const ProductCard: React.FC<{ product: Product, t: any, onViewProduct: (p: Product) => void }> = ({ product, t, onViewProduct }) => {
@@ -30,7 +31,7 @@ const ProductCard: React.FC<{ product: Product, t: any, onViewProduct: (p: Produ
     );
 };
 
-export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Product) => void }) => {
+export const ShopPage = ({ t, onViewProduct, onBack, onClose }: { t: any, onViewProduct: (p: Product) => void, onBack?: () => void, onClose?: () => void }) => {
     const [activeCategory, setActiveCategory] = useState<'chinese' | 'western' | 'all'>('all');
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -91,6 +92,7 @@ export const ShopPage = ({ t, onViewProduct }: { t: any, onViewProduct: (p: Prod
 
     return (
         <div style={{maxWidth: '1200px', width: '95%', paddingBottom: '3rem'}}>
+            <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.shopTitle || "灵宝阁"} />
             <div style={{textAlign: 'center', marginBottom: '3rem'}}>
                 <h2 style={{color: theme.gold, fontFamily: '"Space Grotesk", sans-serif', fontSize: '2.5rem', marginBottom: '1rem'}}>{t.shopTitle}</h2>
                 <p style={{color: '#ccc', fontStyle: 'italic'}}>{t.shopDesc}</p>

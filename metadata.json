@@ -2,8 +2,8 @@
   "requestFramePermissions": [
     "camera"
   ],
-  "name": "Face check",
-  "description": "这个一个检测人的面相分析人的运势的网站",
+  "name": "TianJiEyes",
+  "description": "AI Face & Palm Reading App - TianJiEyes",
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

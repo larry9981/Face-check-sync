@@ -15,13 +15,16 @@ import {
   ShieldCheck,
   Star,
   Users,
-  Calendar
+  Calendar,
+  CheckCircle2,
+  Gift,
+  Crown
 } from 'lucide-react';
 import { HomepageConfig } from '../types';
 
 interface LandingPageProps {
   t: any;
-  onExplore: (type?: 'face' | 'palm' | 'shop') => void;
+  onExplore: (type?: 'face' | 'palm' | 'both' | 'shop') => void;
   homepageConfigs?: HomepageConfig[];
 }
 
@@ -130,14 +133,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
     <div style={{ width: '100%', overflowX: 'hidden', background: '#171A21', color: theme.text }}>
       
       {/* 1. ACADEMIC OBSERVATORY & HERO SECTION */}
-      <section style={{ 
+      <section className="site-section" style={{ 
         minHeight: '85vh', 
         position: 'relative',
         overflow: 'hidden',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '80px 20px',
+        padding: 'clamp(2.5rem, 6vw, 5rem) 1.25rem',
         background: 'radial-gradient(circle at 50% 40%, #1B2838 0%, #171A21 100%)',
         borderBottom: `1px solid rgba(102, 192, 244, 0.2)`
       }}>
@@ -184,7 +187,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             }}>
               <Sparkles size={14} color={theme.gold} />
               <span style={{ 
-                fontFamily: '"Space Grotesk", sans-serif', 
+                fontFamily: '"Space Grotesk", "Inter", sans-serif', 
                 fontSize: '0.8rem', 
                 letterSpacing: '2px', 
                 color: theme.gold,
@@ -196,13 +199,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             </div>
 
             <h1 style={{ 
-              fontSize: 'clamp(2.2rem, 4.5vw, 3.6rem)', 
-              fontFamily: '"Space Grotesk", sans-serif', 
+              fontSize: 'clamp(2rem, 4.2vw, 3.5rem)', 
+              fontFamily: '"Space Grotesk", "Cinzel", sans-serif', 
               color: theme.gold, 
               lineHeight: '1.25',
               fontWeight: 700,
               marginBottom: '20px',
-              letterSpacing: '1px'
+              letterSpacing: '0.5px'
             }}>
               {isZh ? "华夏古法天命传承" : "Imperial Astrological"}
               <br />
@@ -212,13 +215,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             </h1>
 
             <p style={{ 
-              fontSize: 'clamp(0.95rem, 1.4vw, 1.1rem)', 
+              fontSize: 'clamp(0.92rem, 1.2vw, 1.05rem)', 
               color: '#DFDFD5', 
-              lineHeight: '1.75', 
-              marginBottom: '35px',
+              lineHeight: '1.7', 
+              marginBottom: '30px',
               maxWidth: '620px',
-              textAlign: 'justify',
-              fontFamily: '"Space Grotesk", sans-serif'
+              textAlign: 'left',
+              fontFamily: '"Space Grotesk", "Inter", sans-serif'
             }}>
               {isZh ? (
                 "我们摒弃世俗繁杂浮夸的图文混排，还原命理学术研究的纯粹与严肃。深度解构《周易》、《滴天髓》、《神相全编》等绝世典籍，结合现代高精密信息建模，从生物相理（面相与掌纹）、时空坐标（四柱八字）、星宿运转（紫微斗数）等唯物维度，为您还原最真实、客观、严谨的人生运势研判与五行调理指南。"
@@ -331,8 +334,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
       </section>
 
       {/* 2. MYSTICAL METAPHYSICAL BANNERS (玄道开运锦囊 - Replaces Enter Natal Attributes) */}
-      <section id="mystical-banners" style={{ 
-        padding: '80px 20px', 
+      <section id="mystical-banners" className="site-section" style={{ 
+        padding: 'clamp(2.5rem, 6vw, 5rem) 1.25rem', 
         background: '#12161A',
         borderBottom: `1px solid rgba(102, 192, 244, 0.15)`,
         position: 'relative',
@@ -344,24 +347,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
 
         <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
           
-          <div style={{ textAlign: 'center', marginBottom: '45px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '40px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: theme.gold, marginBottom: '10px' }}>
               <Sparkles size={16} />
-              <span style={{ fontSize: '0.85rem', fontFamily: '"Space Grotesk", sans-serif', letterSpacing: '2px', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.85rem', fontFamily: '"Space Grotesk", "Inter", sans-serif', letterSpacing: '2px', textTransform: 'uppercase' }}>
                 {isZh ? "五行气场 · 天机秘传" : "The Celestial Aura & Astrological Houses"}
               </span>
             </div>
             <h2 style={{ 
-              fontFamily: '"Space Grotesk", sans-serif', 
-              fontSize: '2.4rem', 
+              fontFamily: '"Space Grotesk", "Cinzel", sans-serif', 
+              fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', 
               color: theme.gold, 
               marginBottom: '15px',
-              letterSpacing: '1px',
+              letterSpacing: '0.5px',
               textShadow: '0 0 10px rgba(102, 192, 244, 0.4)'
             }}>
               {isZh ? "神妙开运气场 · 命理御守" : "Spiritual Guardians & Celestial Banners"}
             </h2>
-            <p style={{ color: '#aaa', fontSize: '0.95rem', maxWidth: '650px', margin: '0 auto', lineHeight: '1.6', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
+            <p style={{ color: '#aaa', fontSize: 'clamp(0.9rem, 1vw, 1rem)', maxWidth: '650px', margin: '0 auto', lineHeight: '1.6', fontFamily: '"Space Grotesk", "Inter", sans-serif', textAlign: 'center' }}>
               {isZh ? (
                 "调和阴阳乾坤，纳吉避凶。点击下方各大秘宝，即刻启动高精密 AI 面相/手相批命或寻访五行开运灵宝。"
               ) : (
@@ -370,24 +373,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             </p>
           </div>
 
-          {/* Three Gorgeous Metaphysical Banners */}
+          {/* Four Metaphysical Feature Banners including Dual Face + Palm */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-            gap: '30px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '20px',
             marginTop: '20px'
           }}>
             {[
               {
+                id: 'both',
+                titleZh: "双相合璧 · 面掌同测 (推荐)",
+                titleEn: "Dual Biometric: Face + Palm Synergy",
+                descZh: "面相与掌纹同步录入互证！AI 多模态大模型双重比对十二宫位与掌纹磁场，生成 100% 深度分析大盘。",
+                descEn: "Capture both face & palm simultaneously! Dual-modal AI cross-validates facial 12 palaces with chiromancy for ultimate accuracy.",
+                btnZh: "🚀 面部+手掌同时预测",
+                btnEn: "🚀 Face + Palm Dual Prediction",
+                imgPrompt: "futuristic glowing human face and starry palmistry hand together, sacred geometry cosmic gold cyan, 16:9, cinematic lighting",
+                action: () => onExplore('both'),
+                highlight: true
+              },
+              {
                 id: 'face',
                 titleZh: "乾坤面相 · 气数流转",
-                titleEn: "Biometric Facemap: Celestial Aura Flow",
+                titleEn: "Biometric Facemap: Celestial Aura",
                 descZh: "面刻三世因果，眼藏神气盛衰。高精密 AI 扫描面部骨相与五岳比例，窥见天命。",
                 descEn: "Your facial proportions map a singular birthright. Scan facial structures to interpret your deep temperament and current transits.",
-                btnZh: "立即面相测算",
-                btnEn: "Scan Face Astro-Reading",
+                btnZh: "单测面相",
+                btnEn: "Scan Face Reading",
                 imgPrompt: "luxurious high-fashion portrait of face outline with neon astrological glowing nodes and gold lines, cosmic lavender space, stardust background, 16:9, cinematic lighting",
-                action: () => onExplore('face')
+                action: () => onExplore('face'),
+                highlight: false
               },
               {
                 id: 'palm',
@@ -395,10 +411,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                 titleEn: "Chiromancy: Sacred Neural Palmistry",
                 descZh: "手揽日月星辰，纹显命格起伏。AI 捕捉生命线、智慧线、感情线之微妙交错。",
                 descEn: "Grasp the solar and lunar starlight. AI processes intersections of the life, head, heart, and fate lines with pixel-level precision.",
-                btnZh: "立即手相测算",
-                btnEn: "Scan Palm Astro-Reading",
+                btnZh: "单测手相",
+                btnEn: "Scan Palm Reading",
                 imgPrompt: "gorgeous glowing hand with starry palmistry lines, chiromancy mapping, sacred geometry celestial lines, cosmic purple and gold nebula, 16:9, digital painting",
-                action: () => onExplore('palm')
+                action: () => onExplore('palm'),
+                highlight: false
               },
               {
                 id: 'shop',
@@ -409,7 +426,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                 btnZh: "寻访开运灵宝",
                 btnEn: "Visit Treasury Shop",
                 imgPrompt: "exquisite luxury gold and sapphire zodiac amulet, sparkling with starlight, floating in deep velvet indigo space, 16:9, cinematic lighting",
-                action: () => onExplore('shop')
+                action: () => onExplore('shop'),
+                highlight: false
               }
             ].map((banner, index) => {
               const bgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(banner.imgPrompt)}?width=400&height=250&nologo=true&seed=${index + 88}`;
@@ -420,13 +438,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                     position: 'relative',
                     background: '#1B2838',
                     border: '1px solid rgba(102, 192, 244, 0.25)',
-                    borderRadius: '8px',
+                    borderRadius: '12px',
                     overflow: 'hidden',
-                    height: '380px',
+                    minHeight: '340px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'flex-end',
-                    padding: '25px',
+                    padding: '20px',
                     boxShadow: '0 15px 35px rgba(0,0,0,0.85), inset 0 0 20px rgba(102,192,244,0.05)',
                     transition: 'all 0.3s ease',
                   }}
@@ -466,8 +484,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                   <div style={{ position: 'relative', zIndex: 2 }}>
                     <h3 style={{
                       color: theme.gold,
-                      fontSize: '1.35rem',
-                      fontFamily: 'Cinzel, serif, SimSun',
+                      fontSize: 'clamp(1.15rem, 1.5vw, 1.35rem)',
+                      fontFamily: '"Space Grotesk", "Cinzel", sans-serif',
                       fontWeight: 'bold',
                       margin: '0 0 10px 0',
                       textShadow: '0 2px 4px rgba(0,0,0,0.8), 0 0 8px rgba(212,175,55,0.3)'
@@ -478,8 +496,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                       color: '#ddd',
                       fontSize: '0.88rem',
                       lineHeight: '1.5',
-                      margin: '0 0 20px 0',
-                      fontFamily: isZh ? 'SimSun, serif' : 'inherit',
+                      margin: '0 0 16px 0',
+                      fontFamily: '"Space Grotesk", "Inter", sans-serif',
                       textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
                     }}>
                       {isZh ? banner.descZh : banner.descEn}
@@ -519,25 +537,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
       </section>
 
       {/* 3. FOUR CANONICAL ACADEMIC FOUNDATIONS (四大学术正统传承) */}
-      <section style={{ 
-        padding: '100px 20px', 
+      <section className="site-section" style={{ 
+        padding: 'clamp(2.5rem, 6vw, 5rem) 1.25rem', 
         maxWidth: '1200px', 
         margin: '0 auto',
         position: 'relative'
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '50px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: theme.gold, marginBottom: '10px' }}>
             <BookOpen size={16} />
-            <span style={{ fontSize: '0.85rem', fontFamily: '"Space Grotesk", sans-serif', letterSpacing: '2px', textTransform: 'uppercase' }}>
+            <span style={{ fontSize: '0.85rem', fontFamily: '"Space Grotesk", "Inter", sans-serif', letterSpacing: '2px', textTransform: 'uppercase' }}>
               {isZh ? "学术正统 · 绝无玄虚" : "THE CANONICAL SCHOLARSHIP"}
             </span>
           </div>
           <h2 style={{ 
-            fontSize: 'clamp(1.8rem, 4vw, 2.4rem)', 
-            fontFamily: '"Space Grotesk", sans-serif', 
+            fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', 
+            fontFamily: '"Space Grotesk", "Cinzel", sans-serif', 
             color: '#fff',
             fontWeight: 600,
-            letterSpacing: '1px',
+            letterSpacing: '0.5px',
             margin: 0
           }}>
             {isZh ? "四大古典命运测算学术主脉" : "The Four Pillars of Metaphysical Research"}
@@ -548,7 +566,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr', 
-          gap: '30px',
+          gap: '24px',
           width: '100%'
         }} className="responsive-pillars-grid">
           
@@ -557,7 +575,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             background: 'rgba(23, 38, 54, 0.55)',
             border: `1px solid rgba(102, 192, 244, 0.22)`,
             borderRadius: '12px',
-            padding: '35px',
+            padding: 'clamp(1.25rem, 3vw, 2.25rem)',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px'
@@ -566,11 +584,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               <div style={{ background: 'rgba(102, 192, 244, 0.08)', borderRadius: '8px', padding: '10px', color: theme.gold }}>
                 <Eye size={24} />
               </div>
-              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
+              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", "Cinzel", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
                 {isZh ? "古典相理学 (面相与手相)" : "Biometric Physiognomy & Chiromancy"}
               </h3>
             </div>
-            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
+            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'left', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "以相学术典籍《神相全编》、《麻衣相法》为骨架。我们的算法高精度追踪面部的一百零八个关键生物特征点，提取十二宫（命宫、财帛、官禄等）的轮廓。手相部分则对感情、智慧、生命、命运三大主线进行断点与走势识别，客观解析 querent 的性格、骨骼精力及生财容纳。相由心生，指纹命定，数据为证。"
               ) : (
@@ -584,7 +602,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             background: 'rgba(23, 38, 54, 0.55)',
             border: `1px solid rgba(102, 192, 244, 0.22)`,
             borderRadius: '12px',
-            padding: '35px',
+            padding: 'clamp(1.25rem, 3vw, 2.25rem)',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px'
@@ -593,11 +611,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               <div style={{ background: 'rgba(102, 192, 244, 0.08)', borderRadius: '8px', padding: '10px', color: theme.gold }}>
                 <Calendar size={24} />
               </div>
-              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
+              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", "Cinzel", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
                 {isZh ? "四柱八字先天运盘" : "Birth Chart Coordinates"}
               </h3>
             </div>
-            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
+            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'left', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "时间即是重力，宇宙重力决定五行流动。四柱八字利用Querent诞生之年、月、日、时对应的天干地支，计算出其先天气场状态。通过精细演算大运流年与日干的关系，找出最核心的‘喜用神’，在人生的周期波动中，提供趋吉避凶、进退自如的绝佳战略节点建议。"
               ) : (
@@ -611,7 +629,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             background: 'rgba(23, 38, 54, 0.55)',
             border: `1px solid rgba(102, 192, 244, 0.22)`,
             borderRadius: '12px',
-            padding: '35px',
+            padding: 'clamp(1.25rem, 3vw, 2.25rem)',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px'
@@ -620,11 +638,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               <div style={{ background: 'rgba(102, 192, 244, 0.08)', borderRadius: '8px', padding: '10px', color: theme.gold }}>
                 <Star size={24} />
               </div>
-              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
+              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", "Cinzel", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
                 {isZh ? "紫微斗数帝王星盘" : "Royal Astrolabe System"}
               </h3>
             </div>
-            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
+            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'left', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "紫微斗数为华夏古代极具精密度的‘帝王学’。通过排布北斗、南斗百余颗主客星曜至您的十二命宫（如兄弟、夫妻、子女、福德等），以紫微星为中枢，精确展现命盘一生的社会层级、六亲因缘、大限变数。其繁复精密，乃数字推推天命之最佳底层工具。"
               ) : (
@@ -638,7 +656,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             background: 'rgba(23, 38, 54, 0.55)',
             border: `1px solid rgba(102, 192, 244, 0.22)`,
             borderRadius: '12px',
-            padding: '35px',
+            padding: 'clamp(1.25rem, 3vw, 2.25rem)',
             display: 'flex',
             flexDirection: 'column',
             gap: '15px'
@@ -647,11 +665,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               <div style={{ background: 'rgba(102, 192, 244, 0.08)', borderRadius: '8px', padding: '10px', color: theme.gold }}>
                 <Compass size={24} />
               </div>
-              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
+              <h3 style={{ margin: 0, fontFamily: '"Space Grotesk", "Cinzel", sans-serif', fontSize: '1.3rem', color: theme.gold }}>
                 {isZh ? "易理乾坤与五行平衡" : "Universal Elemental Harmony"}
               </h3>
             </div>
-            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'justify', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
+            <p style={{ color: '#bbb', fontSize: '0.9rem', lineHeight: '1.65', textAlign: 'left', margin: 0, fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "我们不仅算命，更看重五行能量场的健康平衡。通过计算，量化解析您命格中金、木、水、火、土之多寡盈缺。根据《易经》六十四卦的生克变化之道，提供从饮食、居住方向选择、随身配伍法宝到心理调理等一站式开运指南，化煞生旺，调顺全身元气磁场。"
               ) : (
@@ -664,25 +682,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
       </section>
 
       {/* 4. ANCIENT COMPASS BRONZE SANDBOX replaced with Celestial Astrolabe */}
-      <section style={{ 
-        padding: '100px 20px', 
+      <section className="site-section" style={{ 
+        padding: 'clamp(2.5rem, 6vw, 5rem) 1.25rem', 
         background: '#171A21',
         borderTop: `1px solid rgba(102, 192, 244, 0.15)`,
         borderBottom: `1px solid rgba(102, 192, 244, 0.15)`
       }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
           
-          <div style={{ marginBottom: '45px' }}>
+          <div style={{ marginBottom: '35px' }}>
             <h2 style={{ 
-              fontFamily: '"Space Grotesk", sans-serif', 
-              fontSize: '2rem', 
+              fontFamily: '"Space Grotesk", "Cinzel", sans-serif', 
+              fontSize: 'clamp(1.5rem, 3vw, 2rem)', 
               color: theme.gold, 
               marginBottom: '15px',
-              letterSpacing: '1px'
+              letterSpacing: '0.5px'
             }}>
               {isZh ? "乾坤开运青铜司南星盘" : "The Astrolabe of Cosmic Alignment"}
             </h2>
-            <p style={{ color: '#aaa', fontSize: '0.95rem', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
+            <p style={{ color: '#aaa', fontSize: 'clamp(0.88rem, 1vw, 0.95rem)', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? (
                 "点击启动古法青铜司南，排除杂念，调理气场。罗盘停止转动之时，便是乾坤定位、吉兆宣示之刻，获取属于您的当下箴言。"
               ) : (
@@ -694,7 +712,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
           <div style={{
             background: 'linear-gradient(180deg, rgba(23, 38, 54, 0.95) 0%, rgba(17, 26, 38, 0.98) 100%)',
             border: `1.5px solid rgba(102, 192, 244, 0.3)`,
-            padding: '50px 30px',
+            padding: 'clamp(1.5rem, 4vw, 3rem) clamp(1rem, 3vw, 2rem)',
             borderRadius: '16px',
             boxShadow: '0 20px 50px rgba(0,0,0,0.85), inset 0 0 30px rgba(102, 192, 244, 0.05)',
             display: 'flex',
@@ -703,7 +721,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
           }}>
             
             {/* Compass Wheel */}
-            <div style={{ position: 'relative', width: '280px', height: '280px', marginBottom: '40px' }}>
+            <div style={{ position: 'relative', width: '280px', height: '280px', marginBottom: '35px' }}>
               
               {/* Pointer Needle */}
               <div style={{
@@ -826,16 +844,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                   exit={{ opacity: 0, y: -15 }}
                   transition={{ duration: 0.5 }}
                   style={{
-                    marginTop: '35px',
+                    marginTop: '30px',
                     borderTop: '1px solid rgba(192,132,252,0.15)',
-                    paddingTop: '25px',
+                    paddingTop: '20px',
                     width: '100%',
                     maxWidth: '650px',
-                    fontFamily: 'SimSun, serif'
+                    fontFamily: '"Space Grotesk", "Inter", sans-serif'
                   }}
                 >
                   <p style={{
-                    fontSize: '1.2rem',
+                    fontSize: 'clamp(1rem, 1.2vw, 1.15rem)',
                     color: theme.gold,
                     fontStyle: 'italic',
                     marginBottom: '10px',
@@ -872,6 +890,99 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
                       {oracles[oracleIndex].result}
                     </p>
                   </div>
+
+                  {/* Three Fortune Test Recommendations after Astrolabe Spin Analysis */}
+                  <div style={{
+                    marginTop: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    textAlign: 'left'
+                  }}>
+                    <button
+                      onClick={() => onExplore('palm')}
+                      style={{
+                        background: 'rgba(23, 38, 54, 0.85)',
+                        border: '1px solid rgba(102, 192, 244, 0.35)',
+                        borderRadius: '10px',
+                        padding: '12px 18px',
+                        color: '#66c0f4',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '10px',
+                        fontSize: '0.92rem',
+                        fontWeight: '500',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.4)'
+                      }}
+                      className="hover:border-cyan-400 hover:bg-slate-800"
+                    >
+                      <span>
+                        {isZh ? "1、想知道你今天的运气吗？来测测吧" : "1. Want to know your luck today? Try a Palm Reading!"}
+                      </span>
+                      <span style={{ fontSize: '0.8rem', color: theme.gold, background: 'rgba(102,192,244,0.15)', padding: '4px 10px', borderRadius: '20px', flexShrink: 0, fontWeight: 'bold' }}>
+                        {isZh ? "手相测算 ➔" : "Palm Test ➔"}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => onExplore('face')}
+                      style={{
+                        background: 'rgba(23, 38, 54, 0.85)',
+                        border: '1px solid rgba(102, 192, 244, 0.35)',
+                        borderRadius: '10px',
+                        padding: '12px 18px',
+                        color: '#66c0f4',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justify: 'space-between',
+                        gap: '10px',
+                        fontSize: '0.92rem',
+                        fontWeight: '500',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.4)'
+                      }}
+                      className="hover:border-cyan-400 hover:bg-slate-800"
+                    >
+                      <span>
+                        {isZh ? "2、想知道你未来的事业如何吗？什么时候有贵人相助，来测测吧。" : "2. Want to know your future career & guardian stars? Try a Face Reading!"}
+                      </span>
+                      <span style={{ fontSize: '0.8rem', color: theme.gold, background: 'rgba(102,192,244,0.15)', padding: '4px 10px', borderRadius: '20px', flexShrink: 0, fontWeight: 'bold' }}>
+                        {isZh ? "面相测算 ➔" : "Face Test ➔"}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => onExplore('both')}
+                      style={{
+                        background: 'linear-gradient(90deg, rgba(212,175,55,0.2) 0%, rgba(102,192,244,0.2) 100%)',
+                        border: '1.5px solid rgba(212, 175, 55, 0.6)',
+                        borderRadius: '10px',
+                        padding: '12px 18px',
+                        color: '#ffd700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justify: 'space-between',
+                        gap: '10px',
+                        fontSize: '0.92rem',
+                        fontWeight: 'bold',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 20px rgba(212,175,55,0.2)'
+                      }}
+                      className="hover:scale-[1.01]"
+                    >
+                      <span>
+                        {isZh ? "3、想知道你今年全年的运势？接受面部和手掌分析获取你的运势吧？" : "3. Want to know your annual fortune? Get a Face + Palm Dual Reading!"}
+                      </span>
+                      <span style={{ fontSize: '0.8rem', color: '#fff', background: 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)', padding: '4px 12px', borderRadius: '20px', flexShrink: 0, fontWeight: 'bold' }}>
+                        {isZh ? "🚀 双相合璧 ➔" : "Dual Test ➔"}
+                      </span>
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -882,8 +993,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
       </section>
 
       {/* 5. ETHICAL STANDARDS & RIGOR CREDENTIALS (学术严谨性背书) */}
-      <section style={{ 
-        padding: '80px 20px', 
+      <section className="site-section" style={{ 
+        padding: 'clamp(2.5rem, 5vw, 4.5rem) 1.25rem', 
         background: '#05040a',
         maxWidth: '1000px',
         margin: '0 auto'
@@ -891,39 +1002,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: '1fr 1fr 1fr', 
-          gap: '30px',
+          gap: '24px',
           textAlign: 'center'
         }} className="responsive-badges-grid">
-          <div style={{ padding: '20px' }}>
+          <div style={{ padding: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px', color: theme.gold }}>
               <ShieldCheck size={32} />
             </div>
-            <h5 style={{ color: '#fff', fontSize: '1.05rem', fontFamily: 'Cinzel, serif', marginBottom: '8px' }}>
+            <h5 style={{ color: '#fff', fontSize: '1.05rem', fontFamily: '"Space Grotesk", "Cinzel", sans-serif', marginBottom: '8px' }}>
               {isZh ? "最高规格隐私保护" : "Secure Biometric Protection"}
             </h5>
-            <p style={{ color: '#888', fontSize: '0.82rem', margin: 0, lineHeight: '1.5', fontFamily: 'SimSun, serif' }}>
+            <p style={{ color: '#888', fontSize: '0.82rem', margin: 0, lineHeight: '1.5', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? "所有上传的照片和生物特征参数只做瞬时内存计算，绝不在任何服务器留存，确保您的相理隐私安全无虞。" : "All bio-imaging is calculated within sandboxed buffers. Zero facial media remains stored in our data centers."}
             </p>
           </div>
-          <div style={{ padding: '20px' }}>
+          <div style={{ padding: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px', color: theme.gold }}>
               <BookOpen size={32} />
             </div>
-            <h5 style={{ color: '#fff', fontSize: '1.05rem', fontFamily: 'Cinzel, serif', marginBottom: '8px' }}>
+            <h5 style={{ color: '#fff', fontSize: '1.05rem', fontFamily: '"Space Grotesk", "Cinzel", sans-serif', marginBottom: '8px' }}>
               {isZh ? "经史典籍考证" : "Canonical Authenticity"}
             </h5>
-            <p style={{ color: '#888', fontSize: '0.82rem', margin: 0, lineHeight: '1.5', fontFamily: 'SimSun, serif' }}>
+            <p style={{ color: '#888', fontSize: '0.82rem', margin: 0, lineHeight: '1.5', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? "测算库由资深华夏古典哲学研究团队编写，解说依据均可严密上溯经典命学专著，严防江湖杜撰。" : "Forecast scripts represent centuries of traditional eastern scholarship, derived without speculative or randomized fillers."}
             </p>
           </div>
-          <div style={{ padding: '20px' }}>
+          <div style={{ padding: '15px' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '15px', color: theme.gold }}>
               <Sparkles size={32} />
             </div>
-            <h5 style={{ color: '#fff', fontSize: '1.05rem', fontFamily: 'Cinzel, serif', marginBottom: '8px' }}>
+            <h5 style={{ color: '#fff', fontSize: '1.05rem', fontFamily: '"Space Grotesk", "Cinzel", sans-serif', marginBottom: '8px' }}>
               {isZh ? "五行能量平衡" : "Holistic Harmony Guidance"}
             </h5>
-            <p style={{ color: '#888', fontSize: '0.82rem', margin: 0, lineHeight: '1.5', fontFamily: 'SimSun, serif' }}>
+            <p style={{ color: '#888', fontSize: '0.82rem', margin: 0, lineHeight: '1.5', fontFamily: '"Space Grotesk", "Inter", sans-serif' }}>
               {isZh ? "不仅研命，更注重能量之圆满。提供精确的五行缺失补配，指导 Querent 气场之和谐。" : "Focuses heavily on balance. We deliver tailored calibration guidelines including elements adjustments to align your fields."}
             </p>
           </div>
@@ -931,31 +1042,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
       </section>
 
       {/* 6. CALL TO ACTION - BOTTOM PROMPT SECTION */}
-      <section style={{ 
-        padding: '100px 20px', 
+      <section className="site-section" style={{ 
+        padding: 'clamp(2.5rem, 6vw, 5rem) 1.25rem', 
         textAlign: 'center',
         background: 'linear-gradient(to bottom, #05040a, #0D0924)',
         borderTop: `1px solid rgba(192, 132, 252, 0.15)`
       }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <h2 style={{ 
-            fontFamily: 'Cinzel, serif', 
-            fontSize: 'clamp(2rem, 4vw, 3rem)', 
+            fontFamily: '"Space Grotesk", "Cinzel", sans-serif', 
+            fontSize: 'clamp(1.6rem, 3.5vw, 2.6rem)', 
             color: theme.gold, 
-            marginBottom: '1.5rem',
-            letterSpacing: '2px',
+            marginBottom: '1rem',
+            letterSpacing: '1px',
             textShadow: '0 2px 10px rgba(0,0,0,0.8)'
           }}>
             {isZh ? "参悟玄机 · 自得泰然" : "Map Your Cosmic Horizon"}
           </h2>
           <p style={{ 
-            fontSize: '1.1rem', 
+            fontSize: 'clamp(0.95rem, 1.2vw, 1.1rem)', 
             color: '#ccc', 
-            marginBottom: '40px', 
+            marginBottom: '30px', 
             maxWidth: '650px', 
-            margin: '0 auto 40px auto',
+            margin: '0 auto 30px auto',
             lineHeight: '1.6',
-            fontFamily: 'SimSun, serif'
+            fontFamily: '"Space Grotesk", "Inter", sans-serif'
           }}>
             {isZh ? (
               "天行有常，顺势而为。点击下方按钮，进入我们为您准备的高精密古典命理测算殿堂，参透属于您的未来大运走向。"
@@ -970,12 +1081,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
             onClick={onExplore}
             style={{
               ...styles.button,
-              padding: '1.6rem 5rem',
-              fontSize: '1.25rem',
+              padding: '1.2rem 3rem',
+              fontSize: '1.1rem',
               borderRadius: '12px',
               border: `1px solid rgba(192, 132, 252, 0.4)`,
               fontWeight: 'bold',
-              letterSpacing: '3px'
+              letterSpacing: '2px'
             }}
           >
             {isZh ? "开启天命大运推演" : "START FULL FORECAST"}

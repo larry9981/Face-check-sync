@@ -242,7 +242,7 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
                         
                         {/* BUTTONS INTEGRATED HERE */}
                         <div className="product-detail-buttons">
-                            <button style={{...styles.button, marginTop: 0, minWidth: 'unset', width: '220px', maxWidth: '100%', padding: '12px 20px', fontSize: '0.9rem'}} onClick={onBuyNow}>
+                            <button style={{...styles.button, marginTop: 0, minWidth: 'unset', width: '253px', maxWidth: '100%', padding: '12px 20px', fontSize: '0.9rem'}} onClick={onBuyNow}>
                                 {t.buyNow}
                             </button>
                             <button 
@@ -250,7 +250,7 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
                                     ...styles.secondaryButton, 
                                     marginTop: 0, 
                                     minWidth: 'unset', 
-                                    width: '220px', 
+                                    width: '253px', 
                                     maxWidth: '100%',
                                     padding: '12px 20px',
                                     fontSize: '0.9rem',
@@ -527,7 +527,9 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
           <div style={{...styles.glassPanel, maxWidth: '580px', width: '95%', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${theme.gold}`}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
                 <h2 style={{color: theme.gold, margin: 0, fontFamily: 'Cinzel, serif'}}>{t.paymentTitle}</h2>
-                <button onClick={onClose} style={{background: 'transparent', border: 'none', color: '#888', fontSize: '1.5rem', cursor: 'pointer', transition: 'color 0.2s'}} onMouseEnter={(e) => e.currentTarget.style.color = theme.gold} onMouseLeave={(e) => e.currentTarget.style.color = '#888'}>&times;</button>
+                <button onClick={onClose} aria-label="Close" style={{background: 'rgba(231, 76, 60, 0.15)', border: '1px solid rgba(231, 76, 60, 0.4)', color: '#ff6b6b', padding: '6px 12px', borderRadius: '20px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'}} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(231, 76, 60, 0.3)'; e.currentTarget.style.transform = 'scale(1.08)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(231, 76, 60, 0.15)'; e.currentTarget.style.transform = 'none'; }}>
+                    <span style={{fontSize: '1.1rem', lineHeight: '1'}}>✕</span>
+                </button>
             </div>
             
             <div style={{marginBottom: '20px', padding: '15px', border: `1px solid ${theme.darkGold}`, borderRadius: '4px', background: 'rgba(212, 175, 55, 0.08)'}}>

@@ -60,6 +60,22 @@ export interface Plan {
   priceId?: string; // Stripe Price ID
 }
 
+export interface ServiceTierOption {
+  id: string;
+  level: 'LV1' | 'LV2' | 'LV3';
+  title: string;
+  subtitle: string;
+  price: string;
+  numericPrice: number;
+  description: string;
+  type: 'face' | 'palm' | 'combined';
+  features: string[];
+  ctaText: string;
+  badge?: string;
+  borderColor: string;
+  isPopular?: boolean;
+}
+
 export interface Product {
   id: string;
   nameKey: string;

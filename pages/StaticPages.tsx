@@ -4,9 +4,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { theme, styles } from '../theme';
 import { handleImageError } from '../utils';
+import { TopHeaderNav } from '../components/HeaderControls';
 
-export const PrivacyPolicy = ({ t }: { t: any }) => (
+export const PrivacyPolicy = ({ t, onBack, onClose }: { t: any, onBack?: () => void, onClose?: () => void }) => (
   <div style={{...styles.glassPanel, maxWidth: '900px'}} className="glass-panel-mobile">
+    <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.privacyTitle || "隐私政策"} />
     <h2 style={{color: theme.gold, textAlign: 'center', marginBottom: '30px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.privacyTitle}</h2>
     <div style={{lineHeight: '1.8', color: '#ccc', textAlign: 'left', fontSize: '0.95rem', fontFamily: '"Space Grotesk", sans-serif'}}>
       <p style={{marginBottom: '20px'}}>{t.privacyIntro}</p>
@@ -35,8 +37,9 @@ export const PrivacyPolicy = ({ t }: { t: any }) => (
   </div>
 );
 
-export const TermsOfService = ({ t }: { t: any }) => (
+export const TermsOfService = ({ t, onBack, onClose }: { t: any, onBack?: () => void, onClose?: () => void }) => (
   <div style={{...styles.glassPanel, maxWidth: '900px'}} className="glass-panel-mobile">
+    <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.termsTitle || "服务条款"} />
     <h2 style={{color: theme.gold, textAlign: 'center', marginBottom: '30px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.termsTitle}</h2>
     <div style={{lineHeight: '1.8', color: '#ccc', textAlign: 'left', fontSize: '0.95rem', fontFamily: '"Space Grotesk", sans-serif'}}>
       <p style={{marginBottom: '20px'}}>{t.termsIntro}</p>
@@ -60,8 +63,9 @@ export const TermsOfService = ({ t }: { t: any }) => (
   </div>
 );
 
-export const RefundPolicy = ({ t }: { t: any }) => (
+export const RefundPolicy = ({ t, onBack, onClose }: { t: any, onBack?: () => void, onClose?: () => void }) => (
   <div style={{...styles.glassPanel, maxWidth: '900px'}} className="glass-panel-mobile">
+    <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.refundTitle || "退款政策"} />
     <h2 style={{color: theme.gold, textAlign: 'center', marginBottom: '30px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.refundTitle}</h2>
     <div style={{lineHeight: '1.8', color: '#ccc', textAlign: 'left', fontSize: '0.95rem', fontFamily: '"Space Grotesk", sans-serif'}}>
       <p style={{marginBottom: '20px'}}>{t.refundIntro}</p>
@@ -81,8 +85,9 @@ export const RefundPolicy = ({ t }: { t: any }) => (
   </div>
 );
 
-export const AboutPage = ({ t }: { t: any }) => (
-  <div style={{...styles.glassPanel, maxWidth: '900px', padding: '60px 40px'}} className="glass-panel-mobile">
+export const AboutPage = ({ t, onBack, onClose }: { t: any, onBack?: () => void, onClose?: () => void }) => (
+  <div style={{...styles.glassPanel, maxWidth: '900px', padding: '40px 40px 60px 40px'}} className="glass-panel-mobile">
+    <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.aboutTitle || "关于我们"} />
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -97,23 +102,23 @@ export const AboutPage = ({ t }: { t: any }) => (
         letterSpacing: '0.1em'
       }}>{t.aboutTitle}</h2>
       
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', alignItems: 'center' }} className="responsive-grid">
-        <div style={{ position: 'relative' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '35px', alignItems: 'center' }} className="responsive-grid">
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img 
-            src={`https://image.pollinations.ai/prompt/${encodeURIComponent('mystical face reading, ancient Chinese wisdom meets modern AI technology, glowing facial features, ethereal digital energy, 8k, cinematic, spiritual guidance')}?width=600&height=800&nologo=true&seed=about_us_mystic`} 
+            src={`https://image.pollinations.ai/prompt/${encodeURIComponent('mystical face reading, ancient Chinese wisdom meets modern AI technology, glowing facial features, ethereal digital energy, 8k, cinematic, spiritual guidance')}?width=600&height=700&nologo=true&seed=about_us_mystic`} 
             alt="Ancient Wisdom meets AI" 
             referrerPolicy="no-referrer"
             onError={(e) => handleImageError(e, 'about_us_mystic')}
-            style={{ width: '100%', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: `1px solid rgba(102, 192, 244, 0.22)` }}
+            style={{ width: '100%', maxHeight: '360px', objectFit: 'cover', borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: `1px solid rgba(102, 192, 244, 0.22)` }}
           />
-          <div style={{ position: 'absolute', top: '-10px', left: '-10px', width: '100%', height: '100%', border: `1px solid rgba(102, 192, 244, 0.6)`, borderRadius: '15px', zIndex: -1 }} />
+          <div style={{ position: 'absolute', top: '-8px', left: '-8px', width: '100%', height: '100%', border: `1px solid rgba(102, 192, 244, 0.6)`, borderRadius: '15px', zIndex: -1, maxHeight: '360px' }} />
         </div>
         
-        <div style={{ lineHeight: '1.8', color: '#ccc', textAlign: 'left', fontSize: '1.05rem', fontFamily: '"Space Grotesk", sans-serif' }}>
-          <p style={{ marginBottom: '20px' }}>{t.aboutDesc1}</p>
-          <p>{t.aboutDesc2}</p>
+        <div style={{ lineHeight: '1.7', color: '#ccc', textAlign: 'left', fontSize: '1rem', fontFamily: '"Space Grotesk", sans-serif', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <p style={{ marginBottom: '16px' }}>{t.aboutDesc1}</p>
+          <p style={{ margin: 0 }}>{t.aboutDesc2}</p>
           
-          <div style={{ marginTop: '30px', display: 'flex', gap: '20px', justifyContent: 'flex-start' }}>
+          <div style={{ marginTop: '25px', display: 'flex', gap: '20px', justifyContent: 'flex-start' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ color: theme.gold, fontSize: '1.5rem', fontWeight: 'bold' }}>10k+</div>
               <div style={{ fontSize: '0.8rem', color: '#888' }}>Soul Readings</div>

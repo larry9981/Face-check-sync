@@ -12,7 +12,7 @@ export const AdminPage = ({ t }: { t: any }) => {
     const [homepageConfigs, setHomepageConfigs] = useState<any[]>([]);
     const [usersList, setUsersList] = useState<any[]>([]);
     
-    const [activeTab, setActiveTab] = useState<'orders' | 'analytics' | 'products' | 'homepage' | 'settings' | 'payments'>('orders');
+    const [activeTab, setActiveTab] = useState<'orders' | 'analytics' | 'products' | 'homepage' | 'settings' | 'payments' | 'ai'>('orders');
     
     // Config and pixels states
     const [settings, setSettings] = useState<any>({
@@ -29,10 +29,94 @@ export const AdminPage = ({ t }: { t: any }) => {
         airwallexClientKey: '',
         airwallexEnabled: false,
         airwallexMode: 'sandbox',
-        creditCardProcessor: 'stripe'
+        creditCardProcessor: 'stripe',
+        textProvider: 'Google',
+        googleKey: '',
+        openaiKey: '',
+        deepseekKey: '',
+        imageProvider: 'Pollinations'
     });
     const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [settingsStatus, setSettingsStatus] = useState('');
+
+    // Secondary Verification states
+    const [isSecondarilyVerified, setIsSecondarilyVerified] = useState(false);
+    const [secUsername, setSecUsername] = useState('');
+    const [secPassword, setSecPassword] = useState('');
+    const [secError, setSecError] = useState('');
+
+    const handleSecondaryVerify = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (secUsername === 'jqqbest@gmail.com' && secPassword === 'larry520520') {
+            setIsSecondarilyVerified(true);
+            setSecUsername('');
+            setSecPassword('');
+            setSecError('');
+        } else {
+            setSecError('验证失败：账户名或密码错误 (Invalid credentials)');
+        }
+    };
+
+    const renderSecondaryVerification = (sectionName: string) => {
+        return (
+            <div style={{...styles.glassPanel, maxWidth: '450px', margin: '40px auto', padding: '35px', borderColor: 'rgba(212, 175, 55, 0.4)', boxShadow: '0 0 25px rgba(212, 175, 55, 0.15)'}}>
+                <div style={{textAlign: 'center', marginBottom: '25px'}}>
+                    <div style={{fontSize: '2.5rem', color: '#d4af37', marginBottom: '10px'}}>
+                        <i className="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 style={{color: '#d4af37', fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.4rem', margin: '0 0 8px 0', textShadow: '0 0 8px rgba(212, 175, 55, 0.3)'}}>
+                        二次安全验证 (Security Verification)
+                    </h3>
+                    <p style={{color: '#aaa', fontSize: '0.8rem', margin: 0, fontFamily: '"Space Grotesk", sans-serif', lineHeight: '1.4'}}>
+                        进入敏感设置 ({sectionName}) 需要验证管理员权限。<br />
+                        Please enter admin credentials to access this section.
+                    </p>
+                </div>
+                <form onSubmit={handleSecondaryVerify} style={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
+                    <div>
+                        <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '6px', fontFamily: '"Space Grotesk", sans-serif'}}>
+                            管理员邮箱 (Admin Email)
+                        </label>
+                        <input 
+                            type="text" 
+                            style={{...styles.formInput, borderColor: 'rgba(102, 192, 244, 0.2)', fontFamily: '"Space Grotesk", sans-serif'}} 
+                            placeholder="admin@example.com" 
+                            value={secUsername} 
+                            onChange={e => {
+                                setSecUsername(e.target.value);
+                                setSecError('');
+                            }} 
+                        />
+                    </div>
+                    <div>
+                        <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '6px', fontFamily: '"Space Grotesk", sans-serif'}}>
+                            验证密码 (Security Password)
+                        </label>
+                        <input 
+                            type="password" 
+                            style={{...styles.formInput, borderColor: 'rgba(102, 192, 244, 0.2)', fontFamily: '"Space Grotesk", sans-serif'}} 
+                            placeholder="••••••••" 
+                            value={secPassword} 
+                            onChange={e => {
+                                setSecPassword(e.target.value);
+                                setSecError('');
+                            }} 
+                        />
+                    </div>
+
+                    {secError && (
+                        <div style={{color: '#ff4d4d', fontSize: '0.8rem', textAlign: 'center', background: 'rgba(255, 77, 77, 0.1)', padding: '8px', borderRadius: '4px', border: '1px solid rgba(255, 77, 77, 0.2)'}}>
+                            <i className="fas fa-exclamation-circle" style={{marginRight: '6px'}}></i> {secError}
+                        </div>
+                    )}
+
+                    <button type="submit" style={{...styles.button, background: 'linear-gradient(90deg, #d4af37 0%, #aa8412 100%)', borderColor: '#d4af37', textShadow: '0 1px 2px rgba(0,0,0,0.5)', width: '100%', cursor: 'pointer', fontFamily: '"Space Grotesk", sans-serif'}}>
+                        确认验证 (Verify Credentials)
+                    </button>
+                </form>
+            </div>
+        );
+    };
 
     // Product & Homepage form states
     const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
@@ -50,7 +134,7 @@ export const AdminPage = ({ t }: { t: any }) => {
         if (isAuthenticated) {
             // Load orders
             fetch(`${API_BASE_URL}/admin/orders`)
-                .then(res => res.json())
+                .then(res => res.ok ? res.json() : [])
                 .then(data => { if (Array.isArray(data)) setOrders(data); })
                 .catch(err => {
                     console.error("Failed to fetch orders:", err);
@@ -60,25 +144,25 @@ export const AdminPage = ({ t }: { t: any }) => {
 
             // Load products
             fetch(`${API_BASE_URL}/products`)
-                .then(res => res.json())
+                .then(res => res.ok ? res.json() : [])
                 .then(data => { if (Array.isArray(data)) setProducts(data); })
                 .catch(err => console.error("Failed to fetch products:", err));
 
             // Load homepage
             fetch(`${API_BASE_URL}/homepage`)
-                .then(res => res.json())
+                .then(res => res.ok ? res.json() : [])
                 .then(data => { if (Array.isArray(data)) setHomepageConfigs(data); })
                 .catch(err => console.error("Failed to fetch homepage configs:", err));
 
             // Load global settings
             fetch(`${API_BASE_URL}/admin/settings`)
-                .then(res => res.json())
+                .then(res => res.ok ? res.json() : null)
                 .then(data => { if (data) setSettings(data); })
                 .catch(err => console.error("Failed to fetch settings:", err));
 
             // Load registered users
             fetch(`${API_BASE_URL}/admin/users`)
-                .then(res => res.json())
+                .then(res => res.ok ? res.json() : [])
                 .then(data => { if (Array.isArray(data)) setUsersList(data); })
                 .catch(err => console.error("Failed to fetch registered users list:", err));
         }
@@ -151,7 +235,7 @@ export const AdminPage = ({ t }: { t: any }) => {
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        if (username === 'admin' && password === 'larry.yan1981') {
+        if (username === 'admin' && password === 'larry520520') {
             setIsAuthenticated(true);
         } else {
             alert('Invalid credentials');
@@ -160,6 +244,10 @@ export const AdminPage = ({ t }: { t: any }) => {
 
     const handleLogout = () => {
         setIsAuthenticated(false);
+        setIsSecondarilyVerified(false);
+        setSecUsername('');
+        setSecPassword('');
+        setSecError('');
         window.location.href = '/'; 
     };
 
@@ -368,7 +456,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                         <input 
                             type="text" 
                             style={{...styles.formInput, borderColor: 'rgba(102, 192, 244, 0.2)', fontFamily: '"Space Grotesk", sans-serif'}} 
-                            placeholder="admin" 
+                            placeholder="" 
                             value={username} 
                             onChange={e => setUsername(e.target.value)} 
                         />
@@ -378,17 +466,12 @@ export const AdminPage = ({ t }: { t: any }) => {
                         <input 
                             type="password" 
                             style={{...styles.formInput, borderColor: 'rgba(102, 192, 244, 0.2)', fontFamily: '"Space Grotesk", sans-serif'}} 
-                            placeholder="••••••••" 
+                            placeholder="" 
                             value={password} 
                             onChange={e => setPassword(e.target.value)} 
                         />
                     </div>
                     <button type="submit" style={styles.button}>{t.login}</button>
-                    <div style={{ marginTop: '10px', fontSize: '0.85rem', color: theme.accent, opacity: 0.8, textAlign: 'center', background: 'rgba(102, 192, 244, 0.05)', padding: '8px', border: `1px dashed rgba(102, 192, 244, 0.3)`, borderRadius: '4px', fontFamily: '"Space Grotesk", sans-serif' }}>
-                        <strong>[管理登录凭证]</strong><br />
-                        账号 (Username): <code style={{ color: '#fff' }}>admin</code><br />
-                        密码 (Password): <code style={{ color: '#fff' }}>larry.yan1981</code>
-                    </div>
                 </form>
             </div>
         );
@@ -438,6 +521,12 @@ export const AdminPage = ({ t }: { t: any }) => {
                         style={{...styles.secondaryButton, background: activeTab === 'payments' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'payments' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         💳 收款设置
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('ai')} 
+                        style={{...styles.secondaryButton, background: activeTab === 'ai' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'ai' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                    >
+                        🤖 AI 配置 (Configure AI)
                     </button>
                     <button onClick={handleLogout} style={{...styles.secondaryButton, borderColor: '#ff4d4d', color: '#ff4d4d', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}>Logout</button>
                 </div>
@@ -531,7 +620,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                         {/* Daily analytics box */}
                         <div style={{...styles.glassPanel, borderColor: 'rgba(102, 192, 244, 0.2)'}}>
                             <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.2rem', marginBottom: '15px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>按日订单分析 (Daily Orders Breakdown)</h3>
-                            <div style={{overflowY: 'auto', maxHeight: '350px'}}>
+                            <div style={{overflowY: 'auto', maxHeight: '350px'}} className="table-responsive">
                                 <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', fontSize: '0.85rem'}}>
                                     <thead>
                                         <tr style={{background: 'rgba(102, 192, 244, 0.1)', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`}}>
@@ -562,7 +651,7 @@ export const AdminPage = ({ t }: { t: any }) => {
                         {/* Monthly analytics box */}
                         <div style={{...styles.glassPanel, borderColor: 'rgba(102, 192, 244, 0.2)'}}>
                             <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.2rem', marginBottom: '15px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>按月订单汇总 (Monthly Orders Summary)</h3>
-                            <div style={{overflowY: 'auto', maxHeight: '350px'}}>
+                            <div style={{overflowY: 'auto', maxHeight: '350px'}} className="table-responsive">
                                 <table style={{width: '100%', borderCollapse: 'collapse', color: '#e0e0e0', fontSize: '0.85rem'}}>
                                     <thead>
                                         <tr style={{background: 'rgba(102, 192, 244, 0.1)', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`}}>
@@ -1212,6 +1301,9 @@ export const AdminPage = ({ t }: { t: any }) => {
 
             {/* TAB CONTENT: 6. PAYMENTS CONFIG (Requirement 4 - Separate Payments Setup for PayPal & Stripe Credit Card integrations) */}
             {activeTab === 'payments' && (
+                !isSecondarilyVerified ? (
+                    renderSecondaryVerification('收款设置 (Payments Setup)')
+                ) : (
                 <div style={{...styles.glassPanel, maxWidth: '850px', margin: '0 auto', padding: '2.5rem', borderColor: 'rgba(102, 192, 244, 0.2)'}}>
                     <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.4rem', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, paddingBottom: '10px', marginBottom: '20px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>
                         <i className="fas fa-wallet" style={{marginRight: '10px'}}></i>
@@ -1380,6 +1472,136 @@ export const AdminPage = ({ t }: { t: any }) => {
                         </button>
                     </form>
                 </div>
+                )
+            )}
+
+            {/* TAB CONTENT: 7. AI CONFIG */}
+            {activeTab === 'ai' && (
+                !isSecondarilyVerified ? (
+                    renderSecondaryVerification('AI配置 (AI Config)')
+                ) : (
+                <div style={{...styles.glassPanel, maxWidth: '850px', margin: '0 auto', padding: '2.5rem', borderColor: 'rgba(102, 192, 244, 0.2)'}}>
+                    <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.4rem', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, paddingBottom: '10px', marginBottom: '20px', textShadow: '0 0 8px rgba(102, 192, 244, 0.2)'}}>
+                        <i className="fas fa-robot" style={{marginRight: '10px'}}></i>
+                        AI 模型配置 (AI Engine Configuration)
+                    </h3>
+                    <p style={{color: '#aaa', fontSize: '0.9rem', marginBottom: '2rem', fontFamily: '"Space Grotesk", sans-serif'}}>
+                        配置并装配您的语言推理大模型 (Text Model) 与 绘图大模型 (Image Model) 的秘钥与服务商。如果没有设置特定的 API 密钥，系统将自动读取服务器后台的环境变量 (Environment Variables)。
+                    </p>
+
+                    <form onSubmit={handleSaveSettings} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                        
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, fontWeight: 'bold', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                语言推理模型服务商 (Text Reasoning Model Provider)
+                            </label>
+                            <div style={{display: 'flex', gap: '10px', marginBottom: '10px'}}>
+                                {['Google', 'OpenAI', 'DeepSeek'].map(p => (
+                                    <button 
+                                        type="button"
+                                        key={p} 
+                                        onClick={() => setSettings({...settings, textProvider: p})}
+                                        style={{
+                                            flex: 1, padding: '10px', 
+                                            background: (settings.textProvider || 'Google') === p ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent',
+                                            color: '#fff',
+                                            border: `1px solid rgba(102, 192, 244, 0.4)`, cursor: 'pointer', borderRadius: '4px',
+                                            fontWeight: 'bold',
+                                            transition: 'all 0.3s'
+                                        }}>
+                                        {p}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, fontWeight: 'bold', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                GOOGLE GEMINI API KEY (Google 秘钥)
+                            </label>
+                            <input 
+                                type="password" 
+                                placeholder="留空则读取环境变量 GEMINI_API_KEY (如 AIzaSy...)" 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
+                                value={settings.googleKey || ''} 
+                                onChange={e => setSettings({...settings, googleKey: e.target.value})} 
+                            />
+                            <span style={{fontSize: '0.75rem', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                用于运行高精度面相/手相命运解析、五行命理排盘分析的主力大模型。
+                            </span>
+                        </div>
+
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, fontWeight: 'bold', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                OPENAI API KEY (OpenAI 秘钥)
+                            </label>
+                            <input 
+                                type="password" 
+                                placeholder="留空则读取环境变量 OPENAI_API_KEY (如 sk-...)" 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
+                                value={settings.openaiKey || ''} 
+                                onChange={e => setSettings({...settings, openaiKey: e.target.value})} 
+                            />
+                            <span style={{fontSize: '0.75rem', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                用于 OpenAI 语言模型。
+                            </span>
+                        </div>
+
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, fontWeight: 'bold', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                DEEPSEEK API KEY (DeepSeek 秘钥)
+                            </label>
+                            <input 
+                                type="password" 
+                                placeholder="留空则读取环境变量 DEEPSEEK_API_KEY (如 sk-...)" 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
+                                value={settings.deepseekKey || ''} 
+                                onChange={e => setSettings({...settings, deepseekKey: e.target.value})} 
+                            />
+                            <span style={{fontSize: '0.75rem', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                用于 DeepSeek 语言模型。
+                            </span>
+                        </div>
+
+                        <div>
+                            <label style={{display: 'block', fontSize: '0.85rem', color: theme.accent, fontWeight: 'bold', marginBottom: '8px', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                绘图引擎服务商 (Image Generation Model)
+                            </label>
+                            <select 
+                                style={{...styles.formInput, fontFamily: '"Space Grotesk", sans-serif'}} 
+                                value={settings.imageProvider || 'Pollinations'} 
+                                onChange={e => setSettings({...settings, imageProvider: e.target.value})}
+                            >
+                                <option value="Pollinations">Pollinations AI (默认 - 免费高速且支持鲁棒失败重试)</option>
+                                <option value="DALL-E">DALL-E 3 (OpenAI)</option>
+                                <option value="Sora2">Sora 2 (Video/Image Model)</option>
+                            </select>
+                            <span style={{fontSize: '0.75rem', color: '#888', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                确定用于前台福星福缘或专属祥瑞绘图生成的 AI 引擎。
+                            </span>
+                        </div>
+
+                        {settingsStatus === 'success' && (
+                            <div style={{padding: '12px', background: 'rgba(46,204,113,0.15)', color: '#2ecc71', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                <i className="fas fa-check-circle" style={{marginRight: '8px'}}></i> AI 模型与密钥配置保存成功！
+                            </div>
+                        )}
+                        {settingsStatus === 'error' && (
+                            <div style={{padding: '12px', background: 'rgba(231,76,60,0.15)', color: '#ff4d4d', fontSize: '0.9rem', borderRadius: '4px', textAlign: 'center', fontFamily: '"Space Grotesk", sans-serif'}}>
+                                <i className="fas fa-times-circle" style={{marginRight: '8px'}}></i> 保存失败，请检查网络后台连接。
+                            </div>
+                        )}
+
+                        <button 
+                            type="submit" 
+                            disabled={isSavingSettings}
+                            style={{...styles.button, width: '100%', marginTop: '10px', fontFamily: '"Space Grotesk", sans-serif'}}
+                        >
+                            {isSavingSettings ? "Saving AI Config..." : "保存 AI 配置 (Save AI Config)"}
+                        </button>
+                    </form>
+                </div>
+                )
             )}
 
             {/* Custom Styles for Responsive Tabs & Flex Grids */}
