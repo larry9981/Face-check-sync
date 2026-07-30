@@ -210,7 +210,7 @@ export const ProductDetailModal: React.FC<{ t: any, product: Product, onClose: (
                     <i className="fas fa-arrow-left"></i> {t.backBtn}
                 </button>
             ) : (
-                <button onClick={onClose} style={{position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', border: '1px solid #d4af37', borderRadius: '50%', width: '40px', height: '40px', color: '#d4af37', fontSize: '1.5rem', cursor: 'pointer', zIndex: 20}}>&times;</button>
+                <button onClick={onClose} style={{position: 'absolute', top: '15px', right: '15px', background: 'transparent', border: 'none', color: '#d4af37', fontSize: '1.6rem', cursor: 'pointer', zIndex: 20, padding: '5px', lineHeight: 1}}>✕</button>
             )}
 
             <div style={{...styles.glassPanel, maxWidth: '1000px', width: '95%', maxHeight: isPageMode ? 'none' : '90vh', overflowY: isPageMode ? 'visible' : 'auto', position: 'relative', display: 'flex', flexDirection: 'column', padding: '0', border: 'none', background: 'transparent', boxShadow: 'none'}}>
@@ -527,15 +527,15 @@ export const PaymentModal = ({ t, plan, onClose, onSuccess, userId }: { t: any, 
           <div style={{...styles.glassPanel, maxWidth: '580px', width: '95%', maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${theme.gold}`}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
                 <h2 style={{color: theme.gold, margin: 0, fontFamily: 'Cinzel, serif'}}>{t.paymentTitle}</h2>
-                <button onClick={onClose} aria-label="Close" style={{background: 'rgba(231, 76, 60, 0.15)', border: '1px solid rgba(231, 76, 60, 0.4)', color: '#ff6b6b', padding: '6px 12px', borderRadius: '20px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s'}} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(231, 76, 60, 0.3)'; e.currentTarget.style.transform = 'scale(1.08)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(231, 76, 60, 0.15)'; e.currentTarget.style.transform = 'none'; }}>
-                    <span style={{fontSize: '1.1rem', lineHeight: '1'}}>✕</span>
+                <button onClick={onClose} aria-label="Close" style={{background: 'transparent', border: 'none', color: '#aaa', fontSize: '1.5rem', cursor: 'pointer', padding: '4px 8px', lineHeight: 1, transition: 'color 0.2s'}} onMouseEnter={(e) => { e.currentTarget.style.color = '#fff'; }} onMouseLeave={(e) => { e.currentTarget.style.color = '#aaa'; }}>
+                    ✕
                 </button>
             </div>
             
             <div style={{marginBottom: '20px', padding: '15px', border: `1px solid ${theme.darkGold}`, borderRadius: '4px', background: 'rgba(212, 175, 55, 0.08)'}}>
-                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                     <span style={{fontWeight: 'bold', fontSize: '1.1rem'}}>{title}</span>
-                     <span style={{fontSize: '1.2rem', fontWeight: 'bold', color: theme.gold}}>${priceVal.toFixed(2)}</span>
+                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'nowrap'}}>
+                     <span style={{fontWeight: 'bold', fontSize: '1.05rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1}}>{title}</span>
+                     <span style={{fontSize: '1.2rem', fontWeight: 'bold', color: theme.gold, whiteSpace: 'nowrap', flexShrink: 0}}>${priceVal.toFixed(2)}</span>
                  </div>
             </div>
 

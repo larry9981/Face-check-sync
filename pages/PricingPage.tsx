@@ -39,7 +39,7 @@ export const PricingPage = ({ t, onSelectPlan, onBack, onClose }: { t: any, onSe
       <div style={{ maxWidth: '1100px', width: '95%', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem 0 3.5rem 0' }}>
         
         {/* Top View Header Controls for Back & Close */}
-        <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.tierTitle || "VIP 订阅中心"} />
+        <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.tierTitle || "VIP 订阅中心"} className="pricing-top-nav" />
 
         {/* Header Title */}
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
@@ -107,44 +107,45 @@ export const PricingPage = ({ t, onSelectPlan, onBack, onClose }: { t: any, onSe
                   {isFeatured ? <Crown size={22} color="#FFD700" /> : <Zap size={22} color="#66C0F4" />}
                 </div>
 
-                {/* Max Uses Badge */}
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: 'rgba(255, 215, 0, 0.12)',
-                  border: '1px solid rgba(255, 215, 0, 0.4)',
-                  color: '#FFD700',
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  fontSize: '0.82rem',
-                  fontWeight: 'bold',
-                  marginBottom: '1rem',
-                  width: 'fit-content'
-                }}>
-                  <span>⚡ {plan.maxUses}</span>
+                {/* Max Uses Badge - Centered */}
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '1rem' }}>
+                  <div style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'rgba(255, 215, 0, 0.12)',
+                    border: '1px solid rgba(255, 215, 0, 0.4)',
+                    color: '#FFD700',
+                    padding: '4px 14px',
+                    borderRadius: '20px',
+                    fontSize: '0.82rem',
+                    fontWeight: 'bold',
+                    textAlign: 'center'
+                  }}>
+                    <span>⚡ {plan.maxUses}</span>
+                  </div>
                 </div>
 
-                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff', margin: '0 0 1rem 0', fontFamily: '"Space Grotesk", sans-serif' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: '#ffffff', margin: '0 0 1rem 0', fontFamily: '"Space Grotesk", sans-serif', textAlign: 'center' }}>
                   {plan.price}
                 </div>
 
-                <p style={{ color: '#CBD5E1', fontSize: '0.88rem', lineHeight: '1.6', marginBottom: '1.5rem', flex: 1 }}>
+                <p style={{ color: '#CBD5E1', fontSize: '0.88rem', lineHeight: '1.6', marginBottom: '1.5rem', flex: 1, textAlign: 'left' }}>
                   {plan.desc}
                 </p>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#D6E2EB' }}>
-                    <CheckCircle2 size={16} color="#66C0F4" />
-                    <span>{t.featureAiBiometrics || 'AI 生物特征毫秒级识别与建模'}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.75rem', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#D6E2EB', textAlign: 'left' }}>
+                    <CheckCircle2 size={16} color="#66C0F4" style={{ flexShrink: 0 }} />
+                    <span style={{ textAlign: 'left' }}>{t.featureAiBiometrics || 'AI 生物特征毫秒级识别与建模'}</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#D6E2EB' }}>
-                    <CheckCircle2 size={16} color="#66C0F4" />
-                    <span>{t.featureBaziAnalysis || '八字五行生克与命理大运解析'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#D6E2EB', textAlign: 'left' }}>
+                    <CheckCircle2 size={16} color="#66C0F4" style={{ flexShrink: 0 }} />
+                    <span style={{ textAlign: 'left' }}>{t.featureBaziAnalysis || '八字五行生克与命理大运解析'}</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#00FFD0' }}>
-                    <CheckCircle2 size={16} color="#00FFD0" />
-                    <span>{plan.maxUses} {t.featureVipPrivileges || 'VIP 算命特权'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', color: '#00FFD0', textAlign: 'left' }}>
+                    <CheckCircle2 size={16} color="#00FFD0" style={{ flexShrink: 0 }} />
+                    <span style={{ textAlign: 'left' }}>{plan.maxUses} {t.featureVipPrivileges || 'VIP 算命特权'}</span>
                   </div>
                 </div>
 

@@ -25,7 +25,7 @@ const ProductCard: React.FC<{ product: Product, t: any, onViewProduct: (p: Produ
             </div>
             <div style={{padding: '1.5rem', textAlign: 'center'}}>
                 <h3 style={{fontSize: '1.1rem', color: theme.gold, marginBottom: '0.5rem', fontFamily: '"Space Grotesk", sans-serif', height: '1.5em', overflow: 'hidden'}}>{name}</h3>
-                <p style={{color: '#fff', fontWeight: 'bold'}}>{product.price}</p>
+                <p className="product-card-price" style={{color: '#fff', fontWeight: 'bold', textAlign: 'center', margin: '0 auto', display: 'block'}}>{product.price}</p>
             </div>
         </div>
     );

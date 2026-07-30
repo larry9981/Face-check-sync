@@ -20,8 +20,8 @@ export const CartPage = ({ t, cart, onRemove, onCheckout, onBack, onClose }: Car
     return (
         <div style={{maxWidth: '1200px', width: '95%', paddingBottom: '3rem'}}>
             <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.cartTitle || "购物车"} />
-            <div style={{textAlign: 'center', marginBottom: '3rem'}}>
-                <h2 style={{color: theme.gold, fontFamily: '"Space Grotesk", sans-serif', fontSize: '2.5rem', marginBottom: '1rem'}}>{t.cartTitle}</h2>
+            <div style={{textAlign: 'center', marginBottom: '2rem'}}>
+                <h2 className="cart-title" style={{color: theme.gold, fontFamily: '"Space Grotesk", sans-serif', fontSize: 'clamp(1.1rem, 5vw, 2.5rem)', marginBottom: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%'}}>{t.cartTitle}</h2>
             </div>
 
             {cart.length === 0 ? (

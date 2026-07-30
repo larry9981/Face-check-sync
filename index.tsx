@@ -282,7 +282,27 @@ const AuthModal = ({ t, onClose, onLoginSuccess }: { t: any, onClose: () => void
     return (
         <div style={{position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.85)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)'}}>
             <div style={{...styles.glassPanel, maxWidth: '400px', width: '90%', padding: '30px', position: 'relative'}}>
-                <button onClick={onClose} aria-label="Close" style={{position: 'absolute', top: '15px', right: '15px', background: 'rgba(231, 76, 60, 0.15)', border: '1px solid rgba(231, 76, 60, 0.4)', color: '#ff6b6b', width: '32px', height: '32px', borderRadius: '50%', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>&times;</button>
+                <button 
+                    onClick={onClose} 
+                    aria-label="Close" 
+                    style={{
+                        position: 'absolute', 
+                        top: '15px', 
+                        right: '15px', 
+                        background: 'transparent', 
+                        border: 'none', 
+                        color: '#aaa', 
+                        fontSize: '1.4rem', 
+                        cursor: 'pointer', 
+                        padding: '4px 8px', 
+                        lineHeight: 1, 
+                        transition: 'color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.color = theme.gold}
+                    onMouseLeave={(e) => e.currentTarget.style.color = '#aaa'}
+                >
+                    ✕
+                </button>
                 
                 <div style={{textAlign: 'center', marginBottom: '20px'}}>
                     <h2 style={{color: theme.gold, fontFamily: 'Cinzel, serif', fontSize: '1.8rem', margin: 0}}>
@@ -1967,7 +1987,7 @@ This is a demonstration of the result layout.
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('privacy'); setView('start');}}>{t.privacy}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('terms'); setView('start');}}>{t.terms}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('refund'); setView('start');}}>{t.refundTitle}</span>
-            <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => { window.location.hash = '#admin'; setIsAdminMode(true); }}>
+            <span className="admin-portal-link hide-mobile-tablet" style={{cursor: 'pointer', color: theme.gold}} onClick={() => { window.location.hash = '#admin'; setIsAdminMode(true); }}>
                 <i className="fas fa-user-shield" style={{marginRight: '5px'}}></i>Admin Portal
             </span>
         </div>

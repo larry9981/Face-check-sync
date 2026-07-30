@@ -439,3 +439,46 @@ button, a, input[type="button"], input[type="submit"] {
     height: 150px !important;
   }
 }
+
+/* =========================================================
+   🛠️ CUSTOM RESPONSIVE UTILITIES FOR USER REQUIREMENTS
+   ========================================================= */
+
+/* Requirement 1: Hide Top Header Nav Back & Close buttons in Subscription view on Mobile */
+@media screen and (max-width: 768px) {
+  .pricing-top-nav .nav-back-btn,
+  .pricing-top-nav .nav-close-btn {
+    display: none !important;
+  }
+}
+
+/* Requirement 3: Center Product Price on Shop/Product List page on Mobile */
+@media screen and (max-width: 768px) {
+  .product-card-price {
+    text-align: center !important;
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: block !important;
+  }
+}
+
+/* Requirement 4: Ensure Cart Title stays on a single line on Mobile */
+.cart-title {
+  white-space: nowrap !important;
+}
+@media screen and (max-width: 768px) {
+  .cart-title {
+    font-size: clamp(1.1rem, 5.2vw, 1.8rem) !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* Requirement 6: Hide Admin Portal link on Mobile and Tablet devices (width <= 1024px) */
+@media screen and (max-width: 1024px) {
+  .hide-mobile-tablet,
+  .admin-portal-link {
+    display: none !important;
+  }
+}
+

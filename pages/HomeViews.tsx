@@ -398,49 +398,31 @@ export const RenderSelectionView = ({
 
     return (
       <div style={{...styles.glassPanel, border: `1px solid rgba(102, 192, 244, 0.22)`, position: 'relative'}} className="glass-panel-mobile">
-          <TopHeaderNav t={t} onBack={onBack} onClose={onClose || onBack} title={headerTitle} />
-          {/* Top Right Close Button */}
-          <button 
-              onClick={onBack} 
-              style={{
-                  position: 'absolute', 
-                  top: '15px', 
-                  right: '15px', 
-                  background: 'transparent', 
-                  border: 'none', 
-                  color: '#888', 
-                  fontSize: '1.8rem', 
-                  cursor: 'pointer',
-                  zIndex: 10,
-                  padding: 0,
-                  lineHeight: 1
-              }}
-              onMouseOver={(e) => e.currentTarget.style.color = theme.accent}
-              onMouseOut={(e) => e.currentTarget.style.color = '#888'}
-          >
-              &times;
-          </button>
+          <TopHeaderNav t={t} onBack={onBack} title={headerTitle} />
 
           <h2 style={{color: theme.gold, marginBottom: '20px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.chooseMethod}</h2>
           <div style={{textAlign: 'left', marginBottom: '20px'}}>
               <h3 style={{color: theme.accent, fontSize: '1.05rem', borderBottom: '1px solid rgba(102, 192, 244, 0.15)', paddingBottom: '5px', marginBottom: '15px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.profileTitle}</h3>
               
                {/* Advanced Analysis Checkbox */}
-               <div style={{marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '4px', cursor: 'default'}}>
-                  <div style={{
-                      width: '20px', height: '20px', 
-                      border: `1px solid ${theme.accent}`, 
-                      background: theme.accent,
-                      borderRadius: '3px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center'
-                  }}>
-                      <i className="fas fa-check" style={{color: '#05040a', fontSize: '0.85rem', fontWeight: 'bold'}}></i>
-                  </div>
-                  <span style={{color: theme.text, fontSize: '0.9rem', fontFamily: '"Space Grotesk", sans-serif', display: 'flex', alignItems: 'center', gap: '6px'}}>
-                      {t.combineAnalysis}
-                      <span style={{fontSize: '0.75rem', color: theme.gold, background: 'rgba(212,175,55,0.15)', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(212,175,55,0.3)'}}>
-                          {isZht ? "必選" : isZh ? "必选" : "Required"}
+               <div style={{marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: '6px', cursor: 'default', flexWrap: 'nowrap'}}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0}}>
+                      <div style={{
+                          width: '20px', height: '20px', 
+                          border: `1px solid ${theme.accent}`, 
+                          background: theme.accent,
+                          borderRadius: '3px',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0
+                      }}>
+                          <i className="fas fa-check" style={{color: '#05040a', fontSize: '0.85rem', fontWeight: 'bold'}}></i>
+                      </div>
+                      <span style={{color: theme.text, fontSize: '0.9rem', fontFamily: '"Space Grotesk", sans-serif', whiteSpace: 'nowrap'}}>
+                          {t.combineAnalysis}
                       </span>
+                  </div>
+                  <span style={{fontSize: '0.75rem', color: theme.gold, background: 'rgba(212,175,55,0.15)', padding: '3px 10px', borderRadius: '10px', border: '1px solid rgba(212,175,55,0.3)', whiteSpace: 'nowrap', flexShrink: 0, display: 'inline-block'}}>
+                      {isZht ? "必選" : isZh ? "必选" : "Required"}
                   </span>
                </div>
 
@@ -457,25 +439,25 @@ export const RenderSelectionView = ({
                           />
                       </div>
 
-                      <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
-                           <div style={{flex: 2}}>
-                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.dateYear}</label>
-                               <select style={styles.formInput} value={dobYear} onChange={(e) => onSetDobYear(e.target.value)}>
-                                   <option value="">{t.dateYear}</option>
+                      <div style={{display: 'flex', gap: '8px', marginBottom: '15px'}}>
+                           <div style={{flex: '1.2', minWidth: 0}}>
+                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px', whiteSpace: 'nowrap'}}>{t.dateYear}</label>
+                               <select style={{...styles.formInput, padding: '8px 4px', fontSize: '0.85rem'}} value={dobYear} onChange={(e) => onSetDobYear(e.target.value)}>
+                                   <option value="">Y</option>
                                    {years.map(y => <option key={y} value={y}>{y}</option>)}
                                </select>
                            </div>
-                           <div style={{flex: 1}}>
-                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.dateMonth}</label>
-                               <select style={styles.formInput} value={dobMonth} onChange={(e) => onSetDobMonth(e.target.value)}>
-                                   <option value="">{t.dateMonth}</option>
+                           <div style={{flex: '1', minWidth: 0}}>
+                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px', whiteSpace: 'nowrap'}}>{t.dateMonth}</label>
+                               <select style={{...styles.formInput, padding: '8px 4px', fontSize: '0.85rem'}} value={dobMonth} onChange={(e) => onSetDobMonth(e.target.value)}>
+                                   <option value="">M</option>
                                    {months.map(m => <option key={m} value={m}>{m}</option>)}
                                </select>
                            </div>
-                           <div style={{flex: 1}}>
-                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px'}}>{t.dateDay}</label>
-                               <select style={styles.formInput} value={dobDay} onChange={(e) => onSetDobDay(e.target.value)}>
-                                   <option value="">{t.dateDay}</option>
+                           <div style={{flex: '1', minWidth: 0}}>
+                               <label style={{display: 'block', color: '#aaa', fontSize: '0.8rem', marginBottom: '5px', whiteSpace: 'nowrap'}}>{t.dateDay}</label>
+                               <select style={{...styles.formInput, padding: '8px 4px', fontSize: '0.85rem'}} value={dobDay} onChange={(e) => onSetDobDay(e.target.value)}>
+                                   <option value="">D</option>
                                    {days.map(d => <option key={d} value={d}>{d}</option>)}
                                </select>
                            </div>
@@ -1725,7 +1707,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
             },
             Fire: {
                 title: isZH ? "燧人氏取火与丹凤朝阳" : "The Flame of Spiritual Awakening",
-                text: isZH ? "远古黑夜漫长，燧人氏感悟星象，钻木取火，为世间带来光明与温暖，百邪不敢近。丹凤飞临火海，浴火重生。此故事寓意您命盘需要‘火’之能量，点燃热情、勇气与社交磁场，以温暖耀眼的光芒吸引贵人。" : "To banish eternal night, an ancient philosopher aligned with cosmic friction, sparkled the primordial flame, and brought warmth and light. A phoenix rose from the fire, ascending to the sun. This symbolizes that your path requires Fire energy to burn away self-doubt and ignite your charismatic resonance."
+                text: isZH ? "远古黑夜漫长，燧人氏感悟星象，钻木取火，为世间带来光明与温暖，百邪不敢近。丹凤飞临火海，浴火重生。此故事寓意您的命盘需要‘火’之能量，点燃热情、勇气与社交磁场，以温暖耀眼的光芒吸引贵人。" : "To banish eternal night, an ancient philosopher aligned with cosmic friction, sparkled the primordial flame, and brought warmth and light. A phoenix rose from the fire, ascending to the sun. This symbolizes that your path requires Fire energy to burn away self-doubt and ignite your charismatic resonance."
             },
             Earth: {
                 title: isZH ? "女娲造人与泰山安石" : "The Sovereign Jade Earth",
@@ -1736,34 +1718,112 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
             text: isZH ? "万物负阴而抱阳，冲气以为和。天地万物皆在五行流动之中，盈缺本是常态，调和即是天命。" : "Everything carries yin and embraces yang. Energy flows constantly through elemental transitions. Achieving equilibrium within your temporal coordinate is the highest purpose of destiny."
         };
 
-        const list = [
-            {
-                id: 'facemap',
-                title: isZH ? "👤 AI 二维面相矢量线条图 & 三庭十二宫全息解构" : "👤 AI 2D Face Vector Sketch & Physiognomy Map",
-                illustrationType: 'facemap' as const,
-                content: isZH
-                  ? `系统已成功将您上传的面部影像，实时高维解构并动态生成为**二维线条面相矢量图**。
-                  
-                  **三庭精细量化分析**：
-                  1. **上庭（天庭：发际线至眉心）**：上庭开阔饱满，骨相平整无凹陷，代表您早年根基扎实，领悟力极高，易受长辈与长官提携庇佑。
-                  2. **中庭（人中：眉心至鼻准）**：中庭梁柱挺拔，双眼明亮神藏，象征中年运势稳固，财帛宫（鼻准）与疾厄宫（山根）气色红润，主掌财权与事业中流砥柱。
-                  3. **下庭（地阁：鼻准至下巴）**：下庭方圆有重厚感，晚年福德宫与田宅宫汇聚，家宅基业安稳，晚运昌隆绵长。
-                  
-                  **十二宫位气场聚焦**：
-                  点击上方矢量图中的高亮宫位节点（命宫、官禄宫、财帛宫、夫妻宫、地阁），可进一步调取该微观部位的具体气场解读。`
-                  : `The system has converted your biometric face image into a dynamic **2D Face Vector Line Sketch**.
-                  
-                  **Three Divisions (San Ting) Analysis**:
-                  1. **Upper Division (Forehead)**: Broad and smooth, indicating strong early intellectual clarity and support from mentors.
-                  2. **Middle Division (Brows, Eyes & Nose)**: Straight nose bridge and clear eye spirit indicate robust middle-age career authority and wealth control.
-                  3. **Lower Division (Chin & Jaw)**: Full chin structure points to deep family stability, land assets, and peaceful later years.
-                  
-                  **Twelve Palaces Matrix**:
-                  Click the interactive nodes on the 2D vector sketch above to inspect specific palaces.`
-            },
-            {
-                id: 'daily_fortune',
-                title: isZH ? "📅 当日财运结果分析与日课开运" : "📅 Today's Wealth Fortune & Lucky Alignment",
+        const facemapSection = {
+            id: 'facemap',
+            title: isZH ? "👤 AI 二维面相矢量线条图 & 三庭十二宫全息解构" : "👤 AI 2D Face Vector Sketch & Physiognomy Map",
+            illustrationType: 'facemap' as const,
+            content: isZH
+              ? `系统已成功将您上传的面部影像，实时高维解构并动态生成为**二维线条面相矢量图**。
+              
+              **三庭精细量化分析**：
+              1. **上庭（天庭：发际线至眉心）**：上庭开阔饱满，骨相平整无凹陷，代表您早年根基扎实，领悟力极高，易受长辈与长官提携庇佑。
+              2. **中庭（人中：眉心至鼻准）**：中庭梁柱挺拔，双眼明亮神藏，象征中年运势稳固，财帛宫（鼻准）与疾厄宫（山根）气色红润，主掌财权与事业中流砥柱。
+              3. **下庭（地阁：鼻准至下巴）**：下庭方圆有重厚感，晚年福德宫与田宅宫汇聚，家宅基业安稳，晚运昌隆绵长。
+              
+              **十二宫位气场聚焦**：
+              点击上方矢量图中的高亮宫位节点（命宫、官禄宫、财帛宫、夫妻宫、地阁），可进一步调取该微观部位的具体气场解读。`
+              : `The system has converted your biometric face image into a dynamic **2D Face Vector Line Sketch**.
+              
+              **Three Divisions (San Ting) Analysis**:
+              1. **Upper Division (Forehead)**: Broad and smooth, indicating strong early intellectual clarity and support from mentors.
+              2. **Middle Division (Brows, Eyes & Nose)**: Straight nose bridge and clear eye spirit indicate robust middle-age career authority and wealth control.
+              3. **Lower Division (Chin & Jaw)**: Full chin structure points to deep family stability, land assets, and peaceful later years.
+              
+              **Twelve Palaces Matrix**:
+              Click the interactive nodes on the 2D vector sketch above to inspect specific palaces.`
+        };
+
+        const palmmapSection = {
+            id: 'palmmap',
+            title: isZht ? "✋ 手掌分析 · 2D手掌矢量圖 & 掌紋數據解析" 
+                 : isZh ? "✋ 手掌分析 · 2D手掌矢量图 & 掌纹数据解析" 
+                 : "✋ Palm Analysis & 2D Palm Vector Sketch",
+            illustrationType: 'palmmap' as const,
+            content: isZht ? `系統已成功將您上傳的手掌影像，實時解構並動態生成為 **2D 手掌矢量線條圖與掌紋全息數據**。
+
+**【手掌四大主線深度分析數據結果】**：
+
+1. 💼 **事業線（命運線 · 掌心向上直貫中指）**
+   - **氣場與走勢分析**：事業線由掌底坎宮穩步向上延伸，穿過掌心明堂直指中指根部，紋理清晰深長，無明顯雜紋割斷。
+   - **數據與運勢預測**：代表您擁有極強的主觀能動性與事業開拓力。在 28-32 歲與 42-45 歲節點將帶來兩次重大事業躍遷與貴人引路，能憑藉自身實力獨當一面，掌握決策實權。
+
+2. ❤️ **愛情線（感情線 · 掌丘上方延伸至食指/中指）**
+   - **氣場與走勢分析**：愛情線弧度優雅，延伸至食指與中指縫隙下方，末端微微向上上揚，色澤潤紅。
+   - **數據與運勢預測**：代表您情感純粹深厚，極具共情力與家庭責任感。重視靈魂契合與精神共鳴，能吸引三觀一致、溫和體貼的理想伴侶，後半生家庭磁場和諧穩定，福澤綿長。
+
+3. 🌿 **生命線（地紋 · 環繞拇指丘弧形延伸）**
+   - **氣場與走勢分析**：生命線弧度開闊圓潤，包繞大魚際肌豐滿，線紋連續無斷裂，基底根骨扎實。
+   - **數據與運勢預測**：代表您的先天生物元氣極其旺盛，免疫屏障健全，恢復力與環境適應力卓越。即使遇到短暫疲憊或壓力，也能快速自我修補，逢凶化吉，主長壽與安康。
+
+4. 🧠 **智慧線（人紋 · 掌心橫向穿行）**
+   - **氣場與走勢分析**：智慧線深邃流利，延伸至月丘上方，略帶優雅向下弧度，幹脆利落。
+   - **數據與運勢預測**：代表您邏輯思維嚴密，直覺洞察力極強，具備「高維思考 + 敏捷落地」的才幹。在面對複雜商業決斷或人生轉折時，能保持理智客觀，化繁為簡。
+
+💡 **交互提示**：點擊上方 2D 手掌矢量圖中的對應線條節點（生命線、智慧線、感情線、事業線），可實時調取該掌紋部位的微觀氣場解讀！`
+            : isZh ? `系统已成功将您上传的手掌影像，实时解构并动态生成为 **2D 手掌矢量线条图与掌纹全息数据**。
+
+**【手掌四大主线深度分析数据结果】**：
+
+1. 💼 **事业线（命运线 · 掌心向上直贯中指）**
+   - **气场与走势分析**：事业线由掌底坎宫稳步向上延伸，穿过掌心明堂直指中指根部，纹理清晰深长，无明显杂纹割断。
+   - **数据与运势预测**：代表您拥有极强的主观能动性与事业开拓力。在 28-32 岁与 42-45 岁节点将带来两次重大事业跃迁与贵人引路，能凭借自身实力独当一面，掌握决策实权。
+
+2. ❤️ **爱情线（感情线 · 掌丘上方延伸至食指/中指）**
+   - **气场与走势分析**：爱情线优雅弧度，延伸至食指与中指缝隙下方，末端微微向上上扬，色泽润红。
+   - **数据与运势预测**：代表您情感纯粹深厚，极具共情力与家庭责任感。重视灵魂契合与精神共鸣，能吸引三观一致、温和体贴的理想伴侣，后半生家庭磁场和谐稳定，福泽绵长。
+
+3. 🌿 **生命线（地纹 · 环绕拇指丘弧形延伸）**
+   - **气场与走势分析**：生命线弧度开阔圆润，包绕大鱼际肌丰满，线纹连续无断裂，基底根骨扎实。
+   - **数据与运势预测**：代表您的先天生物元气极其旺盛，免疫屏障健全，恢复力与环境适应力卓越。即使遇到短暂疲惫或压力，也能快速自我修补，逢凶化吉，主长寿与安康。
+
+4. 🧠 **智慧线（人纹 · 掌心横向穿行）**
+   - **气场与走势分析**：智慧线深邃流利，延伸至月丘上方，略带优雅向下弧度，干脆利落。
+   - **数据与运势预测**：代表您逻辑思维严密，直觉洞察力极强，具备“高维思考 + 敏捷落地”的才干。在面对复杂商业决断或人生转折时，能保持理智客观，化繁为简。
+
+💡 **交互提示**：点击上方 2D 手掌矢量图中的对应线条节点（生命线、智慧线、感情线、事业线），可实时调取该掌纹部位的微观气场解读！`
+            : `The system has processed your biometric palm scan into a **2D Palm Line Vector Sketch & Holographic Palmistry Analysis**.
+
+**【Core Four Palm Line Analytical Results】**:
+
+1. 💼 **Career Line (Fate Line · Vertical ascending line towards middle finger)**
+   - **Topography Analysis**: Clear, continuous trajectory extending from the palm base directly towards the Saturn Mount.
+   - **Prediction Data**: Indicates strong self-reliance and strategic vision. Breakthrough portals occur at ages 28-32 and 42-45, leading to executive leadership and financial autonomy.
+
+2. ❤️ **Love Line (Heart Line · Upper palm curve towards index/middle finger)**
+   - **Topography Analysis**: Elegant upward curvature ending gently beneath the index finger with healthy reddish vitality.
+   - **Prediction Data**: Highlights deep emotional intelligence, loyalty, and empathy. Prioritizes soul affinity and attracts harmonious, nurturing partnerships.
+
+3. 🌿 **Life Line (Vitality Line · Curving around thumb mount)**
+   - **Topography Analysis**: Broad, unbroken arc encapsulating a full Venus Mount with strong structural foundation.
+   - **Prediction Data**: Represents powerful innate physical vitality, high resilience, and quick stress recovery. Ensures lasting longevity and well-being.
+
+4. 🧠 **Wisdom Line (Head Line · Transverse palm pathway)**
+   - **Topography Analysis**: Deep, defined path slanting subtly toward the Mount of the Moon.
+   - **Prediction Data**: Reflects sharp logic, strong intuition, and practical execution skills. Maintains clarity during complex decisions.
+
+💡 **Interactive Guide**: Click on any node on the 2D palm diagram above (Life, Head, Heart, or Fate line) to view micro-level bio-energetic insights!`
+        };
+
+        const list = [];
+        if (readingType === 'both' || readingType === 'face' || !readingType) {
+            list.push(facemapSection);
+        }
+        if (readingType === 'both' || readingType === 'palm') {
+            list.push(palmmapSection);
+        }
+
+        list.push({
+            id: 'daily_fortune',
                 illustrationType: 'daily' as const,
                 content: isZH
                   ? `**当日财运结果分析（流日财星 88分 · 吉星高照）**：
@@ -2053,7 +2113,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                     'yellow citrine, tiger\'s eye, or amber'
                   }) to stabilize your bio-electric field and buffer against negative environmental static.`
             }
-        ];
+        );
         return list;
     }, [language, elementScores, missingElement, zodiacName, starSignName, t]);
 
@@ -2461,7 +2521,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                    .replace(/\n/g, '<br/>');
     };
 
-    const activeSlide = reportData[sliderIndex];
+    const activeSlide = reportData[sliderIndex] || reportData[0] || { id: '', title: '', content: '' };
 
     return (
         <div style={{ width: '95%', maxWidth: '820px', margin: '0 auto', paddingBottom: '3rem', position: 'relative' }}>
@@ -2664,10 +2724,14 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                                     {reportData.map((sec, idx) => {
                                         const maxShowCount = 2;
                                         const isLocked = !isPaidUser && idx >= maxShowCount;
+                                        const secTitle = sec?.title || '';
+                                        const titleParts = secTitle.split(' ');
+                                        const firstPart = titleParts[0] || '';
+                                        const restPart = titleParts.slice(1).join(' ');
                                         return (
-                                            <button key={sec.id} onClick={() => setSliderIndex(idx)} style={{ background: sliderIndex === idx ? 'rgba(102, 192, 244, 0.25)' : 'rgba(0,0,0,0.3)', border: sliderIndex === idx ? `1px solid ${theme.accent}` : (isLocked ? '1px dashed #FFD700' : '1px solid rgba(102,192,244,0.1)'), color: sliderIndex === idx ? theme.accent : (isLocked ? '#FFD700' : '#aaa'), padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', fontFamily: '"Space Grotesk", sans-serif', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <button key={sec?.id || idx} onClick={() => setSliderIndex(idx)} style={{ background: sliderIndex === idx ? 'rgba(102, 192, 244, 0.25)' : 'rgba(0,0,0,0.3)', border: sliderIndex === idx ? `1px solid ${theme.accent}` : (isLocked ? '1px dashed #FFD700' : '1px solid rgba(102,192,244,0.1)'), color: sliderIndex === idx ? theme.accent : (isLocked ? '#FFD700' : '#aaa'), padding: '6px 12px', borderRadius: '20px', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', fontFamily: '"Space Grotesk", sans-serif', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 {isLocked && <i className="fas fa-lock" style={{ fontSize: '0.7rem', color: '#FFD700' }} />}
-                                                {sec.title.split(' ')[0]} {sec.title.split(' ').slice(1).join(' ').substring(0, 4)}...
+                                                {firstPart} {restPart ? restPart.substring(0, 4) + '...' : ''}
                                             </button>
                                         );
                                     })}
@@ -2707,7 +2771,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                                             </div>
 
                                             <h3 style={{ color: '#ffffff', fontSize: '1.4rem', margin: '0 0 0.5rem 0', fontFamily: '"Space Grotesk", sans-serif' }}>
-                                                {isZh ? `🔒 解锁《${activeSlide.title}》与 100% 完整深度分析` : isZht ? `🔒 解鎖《${activeSlide.title}》與 100% 完整深度分析` : `🔒 Unlock "${activeSlide.title}" & Full 100% Report`}
+                                                {isZh ? `🔒 解锁《${activeSlide?.title || ''}》与 100% 完整深度分析` : isZht ? `🔒 解鎖《${activeSlide?.title || ''}》與 100% 完整深度分析` : `🔒 Unlock "${activeSlide?.title || ''}" & Full 100% Report`}
                                             </h3>
 
                                             <p style={{ color: '#A0B0C0', maxWidth: '600px', margin: '0 auto 1.5rem auto', fontSize: '0.92rem', lineHeight: '1.6' }}>
@@ -2761,7 +2825,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                                     ) : (
                                         <>
                                             <h3 style={{ color: theme.accent, borderBottom: '1px solid rgba(102,192,244,0.25)', paddingBottom: '8px', marginBottom: '15px', fontFamily: '"Space Grotesk", sans-serif', textShadow: '0 0 8px rgba(102,192,244,0.4)' }}>
-                                                {activeSlide.title}
+                                                {activeSlide?.title || ''}
                                             </h3>
 
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr', md: '1.2fr 1fr', gap: '20px', alignItems: 'start' }} className="grid md:grid-cols-2">

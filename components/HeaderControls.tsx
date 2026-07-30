@@ -4,49 +4,57 @@ export const TopHeaderNav = ({
   t,
   onBack,
   onClose,
-  title
+  title,
+  className
 }: {
   t?: any;
   onBack?: () => void;
   onClose?: () => void;
   title?: string;
+  className?: string;
 }) => {
   const isZh = !t || (t.home === '首页' || t.title === '玄机面相' || (t.backBtn && t.backBtn.includes('返回')));
 
   return (
-    <div style={{
-      width: '100%',
-      maxWidth: '1100px',
-      margin: '0 auto 1.5rem auto',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '10px 18px',
-      background: 'rgba(15, 23, 36, 0.85)',
-      backdropFilter: 'blur(12px)',
-      border: '1px solid rgba(102, 192, 244, 0.25)',
-      borderRadius: '12px',
-      boxShadow: '0 8px 25px rgba(0,0,0,0.6)',
-      boxSizing: 'border-box'
-    }}>
+    <div
+      className={`top-header-nav ${className || ''}`}
+      style={{
+        width: '100%',
+        maxWidth: '1100px',
+        margin: '0 auto 1.5rem auto',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 18px',
+        background: 'rgba(15, 23, 36, 0.85)',
+        backdropFilter: 'blur(12px)',
+        border: '1px solid rgba(102, 192, 244, 0.25)',
+        borderRadius: '12px',
+        boxShadow: '0 8px 25px rgba(0,0,0,0.6)',
+        boxSizing: 'border-box'
+      }}
+    >
       {/* Back Button */}
       {onBack ? (
         <button
+          className="nav-back-btn"
           onClick={onBack}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: '6px',
             background: 'rgba(102, 192, 244, 0.12)',
             border: '1px solid rgba(102, 192, 244, 0.35)',
             color: '#66c0f4',
-            padding: '7px 16px',
+            padding: '6px 14px',
             borderRadius: '20px',
             fontSize: '0.88rem',
             fontWeight: '600',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-            outline: 'none'
+            outline: 'none',
+            whiteSpace: 'nowrap',
+            flexShrink: 0
           }}
           onMouseOver={(e) => {
             e.currentTarget.style.background = 'rgba(102, 192, 244, 0.25)';
@@ -57,23 +65,29 @@ export const TopHeaderNav = ({
             e.currentTarget.style.transform = 'none';
           }}
         >
-          <span style={{ fontSize: '1.1rem', lineHeight: '1' }}>←</span>
-          <span>{isZh ? '返回上一页' : 'Back'}</span>
+          <span style={{ fontSize: '1rem', lineHeight: '1', whiteSpace: 'nowrap' }}>←</span>
+          <span style={{ whiteSpace: 'nowrap' }}>{(t && t.backBtn) ? t.backBtn : (isZh ? '返回' : 'Back')}</span>
         </button>
       ) : (
-        <div style={{ minWidth: '90px' }} />
+        <div style={{ minWidth: '70px', flexShrink: 0 }} />
       )}
 
       {/* Title / Indicator */}
       {title ? (
-        <div style={{
-          color: '#d4af37',
-          fontSize: '0.95rem',
-          fontWeight: 'bold',
-          letterSpacing: '0.5px',
-          textAlign: 'center',
-          fontFamily: '"Space Grotesk", sans-serif'
-        }}>
+        <div
+          className="nav-title"
+          style={{
+            color: '#d4af37',
+            fontSize: 'clamp(0.85rem, 3.5vw, 0.95rem)',
+            fontWeight: 'bold',
+            letterSpacing: '0.5px',
+            textAlign: 'center',
+            fontFamily: '"Space Grotesk", sans-serif',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}
+        >
           {title}
         </div>
       ) : <div />}
@@ -81,6 +95,7 @@ export const TopHeaderNav = ({
       {/* Close Button */}
       {onClose ? (
         <button
+          className="nav-close-btn"
           onClick={onClose}
           aria-label="Close"
           style={{
