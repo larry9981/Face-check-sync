@@ -47,7 +47,15 @@ export const CachedImage = ({ productId, prompt, size = 512, style, className, i
         );
     }
 
-    return <img src={url || ''} style={style} className={className} alt="Product content" referrerPolicy="no-referrer" onError={(e) => handleImageError(e, productId)} />;
+    if (!url || url.trim() === '') {
+        return (
+            <div style={{...style, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a'}}>
+                <i className="fas fa-image" style={{color: theme.darkGold, fontSize: '1.5rem'}}></i>
+            </div>
+        );
+    }
+
+    return <img src={url} style={style} className={className} alt="Product content" referrerPolicy="no-referrer" onError={(e) => handleImageError(e, productId)} />;
 };
 
 // Helper component for small product items (list view)

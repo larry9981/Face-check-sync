@@ -285,7 +285,7 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                   {/* CARD COVER IMAGE */}
                   <div style={{ height: '180px', width: '100%', position: 'relative', overflow: 'hidden' }}>
                     <img
-                      src={article.coverImage}
+                      src={article.coverImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop'}
                       alt={title}
                       style={{
                         width: '100%',
@@ -479,7 +479,7 @@ export const CulturePage: React.FC<CulturePageProps> = ({
               {/* ARTICLE BANNER IMAGE */}
               <div style={{ height: '320px', width: '100%', position: 'relative', overflow: 'hidden' }}>
                 <img
-                  src={activeArticle.coverImage}
+                  src={activeArticle.coverImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop'}
                   alt={isZh ? activeArticle.title : activeArticle.titleEn}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />

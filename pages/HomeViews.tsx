@@ -546,7 +546,7 @@ export const RenderSelectionView = ({
                           {faceImage ? (
                               <div>
                                   <div style={{ width: '80px', height: '80px', margin: '0 auto 8px auto', borderRadius: '50%', overflow: 'hidden', border: '2px solid #2ecc71', boxShadow: '0 0 10px rgba(46,204,113,0.3)' }}>
-                                      <img src={faceImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Face" />
+                                      <img src={faceImage || undefined} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Face" />
                                   </div>
                                   <div style={{ fontSize: '0.75rem', color: '#2ecc71', marginBottom: '8px', fontWeight: 'bold' }}>
                                       <i className="fas fa-check-circle" /> {isZht ? "已捕獲面部" : isZh ? "已捕获面部" : "Face Captured"}
@@ -598,7 +598,7 @@ export const RenderSelectionView = ({
                           {palmImage ? (
                               <div>
                                   <div style={{ width: '80px', height: '80px', margin: '0 auto 8px auto', borderRadius: '12px', overflow: 'hidden', border: '2px solid #2ecc71', boxShadow: '0 0 10px rgba(46,204,113,0.3)' }}>
-                                      <img src={palmImage} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Palm" />
+                                      <img src={palmImage || undefined} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Palm" />
                                   </div>
                                   <div style={{ fontSize: '0.75rem', color: '#2ecc71', marginBottom: '8px', fontWeight: 'bold' }}>
                                       <i className="fas fa-check-circle" /> {isZht ? "已捕獲手掌" : isZh ? "已捕获手掌" : "Palm Captured"}
@@ -712,7 +712,7 @@ export const RenderSelectionView = ({
                                   border: '3px solid #2ecc71',
                                   boxShadow: '0 0 15px rgba(46,204,113,0.3)'
                               }}>
-                                  <img src={currentImg} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Captured Preview" />
+                                  <img src={currentImg || undefined} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Captured Preview" />
                               </div>
 
                               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '15px' }}>
@@ -2404,14 +2404,14 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
             case 'zodiac':
                 return (
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', padding: '4px', flexWrap: 'wrap' }}>
-                        {zodiacImg && (
+                        {zodiacImg && zodiacImg.trim() !== "" && (
                             <div style={{ textAlign: 'center', background: 'rgba(212,175,55,0.03)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '8px', padding: '6px 10px', minWidth: '80px' }}>
                                 <img src={zodiacImg} style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1.5px solid #d4af37', boxShadow: '0 0 10px rgba(212,175,55,0.3)', margin: '0 auto' }} alt="Zodiac Sign" referrerPolicy="no-referrer" onError={(e) => handleImageError(e, zodiacName || 'zodiac')} />
                                 <div style={{ color: theme.gold, fontWeight: 'bold', marginTop: '4px', fontSize: '0.75rem' }}>{zodiacName}</div>
                                 <div style={{ fontSize: '0.65rem', color: '#bbb' }}>{t.chineseZodiac}</div>
                             </div>
                         )}
-                        {starSignImg && (
+                        {starSignImg && starSignImg.trim() !== "" && (
                             <div style={{ textAlign: 'center', background: 'rgba(102,192,244,0.03)', border: '1px solid rgba(102,192,244,0.2)', borderRadius: '8px', padding: '6px 10px', minWidth: '80px' }}>
                                 <img src={starSignImg} style={{ width: '48px', height: '48px', borderRadius: '50%', border: '1.5px solid #66c0f4', boxShadow: '0 0 10px rgba(102,192,244,0.3)', margin: '0 auto' }} alt="Star Sign" referrerPolicy="no-referrer" onError={(e) => handleImageError(e, starSignName || 'constellation')} />
                                 <div style={{ color: '#66c0f4', fontWeight: 'bold', marginTop: '4px', fontSize: '0.75rem' }}>{starSignName}</div>
@@ -2627,7 +2627,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                             {(readingType === 'face' || readingType === 'both') && (faceImage || (!palmImage && image && readingType === 'face')) && (
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ width: '90px', height: '90px', borderRadius: '50%', overflow: 'hidden', border: `2.5px solid ${theme.accent}`, boxShadow: '0 0 15px rgba(102,192,244,0.5)', margin: '0 auto 6px auto' }}>
-                                        <img src={faceImage || image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Face Specimen" />
+                                        <img src={(faceImage || image) || undefined} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Face Specimen" />
                                     </div>
                                     <div style={{ fontSize: '0.78rem', color: theme.accent, fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif' }}>
                                         <i className="fas fa-check-circle" style={{ marginRight: '4px' }} />
@@ -2638,7 +2638,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                             {(readingType === 'palm' || readingType === 'both') && (palmImage || (!faceImage && image && readingType === 'palm')) && (
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ width: '90px', height: '90px', borderRadius: '12px', overflow: 'hidden', border: `2.5px solid ${theme.gold}`, boxShadow: '0 0 15px rgba(212,175,55,0.5)', margin: '0 auto 6px auto' }}>
-                                        <img src={palmImage || image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Palm Specimen" />
+                                        <img src={(palmImage || image) || undefined} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Palm Specimen" />
                                     </div>
                                     <div style={{ fontSize: '0.78rem', color: theme.gold, fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif' }}>
                                         <i className="fas fa-check-circle" style={{ marginRight: '4px' }} />
@@ -2649,7 +2649,7 @@ export const RenderResultView = ({ t, readingType, birthDate, gender, calculated
                             {!faceImage && !palmImage && image && readingType !== 'face' && readingType !== 'palm' && (
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ width: '90px', height: '90px', borderRadius: '12px', overflow: 'hidden', border: `2.5px solid ${theme.accent}`, boxShadow: '0 0 15px rgba(102,192,244,0.5)', margin: '0 auto 6px auto' }}>
-                                        <img src={image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Specimen" />
+                                        <img src={image || undefined} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Specimen" />
                                     </div>
                                     <div style={{ fontSize: '0.78rem', color: theme.accent, fontWeight: 'bold', fontFamily: '"Space Grotesk", sans-serif' }}>
                                         <i className="fas fa-check-circle" style={{ marginRight: '4px' }} />

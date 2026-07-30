@@ -63,9 +63,9 @@ export const ShopPage = ({ t, onViewProduct, onBack, onClose }: { t: any, onView
                 setLoading(false);
             })
             .catch(err => {
-                if (!isMounted) return;
                 clearTimeout(timeoutId);
-                if (err.name === 'AbortError' || controller.signal.aborted) return; 
+                if (err?.name === 'AbortError' || controller.signal.aborted || err?.message?.includes('aborted') || err?.message?.includes('signal')) return; 
+                if (!isMounted) return;
                 console.error("Failed to fetch products:", err);
                 setProducts(SHOP_PRODUCTS);
                 setLoading(false);

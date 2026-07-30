@@ -35,7 +35,7 @@ const AIService = {
     // Call AI securely through server-side proxy
     callAI: async (prompt: string, base64Image?: string | string[] | null, config?: AppConfig, userId?: string) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 180000); // 180s timeout
+        const timeoutId = setTimeout(() => controller.abort(new Error("AI request timed out")), 180000); // 180s timeout
 
         try {
             const provider = config?.textProvider || 'Google';
@@ -72,6 +72,10 @@ const AIService = {
                     signal: controller.signal
                 });
             } catch (fetchErr: any) {
+                if (fetchErr?.name === 'AbortError' || controller.signal.aborted) {
+                    console.warn("[AIService] Request aborted or timed out:", fetchErr);
+                    throw new Error("AI analysis request timed out or was cancelled.");
+                }
                 console.warn("[AIService] Network or fetch error:", fetchErr);
                 throw new Error(`Fetch request failed: ${fetchErr.message || 'Server connection error'}`);
             }
