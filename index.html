@@ -1,9 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>TianJiEyes - AI Face & Palm Reading</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+    <title>TianJiEyes 天机之眼 | AI Face & Palm Reading, Bazi & Feng Shui Astrology</title>
+    
+    <!-- SEO Meta Tags for Google SEO Crawler & Indexing -->
+    <meta name="description" content="TianJiEyes (天机之眼) merges ancient oriental face reading (Mianxiang), palmistry, Bazi, and Five Elements astrology with advanced AI biometrics. Get instant destiny insights, wealth analysis reports, and spiritual amulets." />
+    <meta name="keywords" content="AI face reading, palmistry, Bazi astrology, Feng Shui, oriental destiny analysis, 天机之眼, 灵宝阁, 面相算命, 手相分析, 八字命理, 五行平衡" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="author" content="TianJiEyes Institute" />
+    <link rel="canonical" href="https://ais-dev-cfpvu43q55rymsdtm6e64l-34310081861.us-east1.run.app/" />
+
+    <!-- Open Graph / Facebook / Social Sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TianJiEyes" />
+    <meta property="og:url" content="https://ais-dev-cfpvu43q55rymsdtm6e64l-34310081861.us-east1.run.app/" />
+    <meta property="og:title" content="TianJiEyes 天机之眼 - AI Face & Palm Reading" />
+    <meta property="og:description" content="Ancient oriental face reading, palmistry, and Bazi astrology powered by modern AI biometrics." />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://ais-dev-cfpvu43q55rymsdtm6e64l-34310081861.us-east1.run.app/" />
+    <meta name="twitter:title" content="TianJiEyes - AI Face & Palm Reading" />
+    <meta name="twitter:description" content="Ancient oriental face reading, palmistry, and Bazi astrology powered by modern AI biometrics." />
+    <meta name="twitter:image" content="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1200&auto=format&fit=crop" />
+
+    <!-- Google Structured Data (JSON-LD) for SEO Compliance -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://ais-dev-cfpvu43q55rymsdtm6e64l-34310081861.us-east1.run.app/#website",
+          "url": "https://ais-dev-cfpvu43q55rymsdtm6e64l-34310081861.us-east1.run.app/",
+          "name": "TianJiEyes 天机之眼",
+          "description": "AI Biometric Face & Palm Reading, Bazi Astrology and Spiritual Feng Shui Treasury",
+          "inLanguage": ["zh-CN", "en", "zh-TW"]
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://ais-dev-cfpvu43q55rymsdtm6e64l-34310081861.us-east1.run.app/#organization",
+          "name": "TianJiEyes Institute",
+          "url": "https://ais-dev-cfpvu43q55rymsdtm6e64l-34310081861.us-east1.run.app/",
+          "logo": "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=500&auto=format&fit=crop"
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -102,7 +149,7 @@
           z-index: 10;
       }
 
-      /* --- Product Detail Responsive Layout (New) --- */
+      /* --- Product Detail Responsive Layout --- */
       .product-detail-container {
           display: flex;
           flex-direction: row;
@@ -150,18 +197,32 @@
       .desktop-only { display: block; }
       .mobile-only { display: none; }
 
-      /* Responsive Navbar */
+      /* Responsive Navbar Defaults */
       .nav-container {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 1rem 2rem;
+        width: 100%;
+        box-sizing: border-box;
       }
 
-      .nav-links {
+      .desktop-nav-links {
         display: flex;
         gap: 20px;
         align-items: center;
+      }
+
+      .mobile-menu-btn {
+        display: none !important;
+      }
+
+      .mobile-nav-controls {
+        display: none !important;
+      }
+
+      .mobile-dropdown-menu {
+        display: none;
       }
 
       /* Responsive Grid for How It Works */
@@ -172,20 +233,67 @@
         gap: 30px;
       }
 
-      /* Mobile Adjustments */
+      /* Tablet Adjustments (768px - 1024px) */
+      @media (max-width: 1024px) and (min-width: 769px) {
+        .nav-container {
+          padding: 0.85rem 1.25rem !important;
+        }
+        .desktop-nav-links {
+          gap: 12px !important;
+          font-size: 0.9rem !important;
+        }
+        .home-cards-container {
+          gap: 20px !important;
+        }
+      }
+
+      /* Mobile Adjustments (<= 900px) */
       @media (max-width: 900px) {
         .nav-container {
-          flex-direction: column;
-          padding: 1rem;
-          gap: 1rem;
+          display: flex !important;
+          flex-direction: row !important;
+          justify-content: space-between !important;
+          align-items: center !important;
+          padding: 0.65rem 0.85rem !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
         }
         
-        .nav-links {
-          width: 100%;
-          justify-content: center;
-          flex-wrap: wrap;
-          gap: 15px;
-          font-size: 0.85rem;
+        /* MENU Button on Mobile is explicitly positioned on the LEFT */
+        .mobile-menu-btn {
+          display: flex !important;
+          align-items: center !important;
+          gap: 5px !important;
+        }
+
+        .nav-logo {
+          display: flex !important;
+          align-items: center !important;
+          gap: 6px !important;
+          font-size: 0.95rem !important;
+        }
+
+        .desktop-nav-links {
+          display: none !important;
+        }
+
+        .mobile-nav-controls {
+          display: flex !important;
+          align-items: center !important;
+          gap: 6px !important;
+        }
+
+        .mobile-dropdown-menu {
+          display: flex !important;
+          flex-direction: column !important;
+          background: rgba(10, 8, 22, 0.98) !important;
+          border-top: 1px solid rgba(212, 175, 55, 0.3) !important;
+          border-bottom: 1px solid rgba(212, 175, 55, 0.3) !important;
+          padding: 12px 16px !important;
+          gap: 10px !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
+          backdrop-filter: blur(12px) !important;
         }
 
         .feature-grid {
@@ -193,26 +301,28 @@
           align-items: center;
         }
 
-        h1 { font-size: 2rem !important; }
-        p { font-size: 1rem !important; }
+        h1 { font-size: 1.8rem !important; }
+        p { font-size: 0.95rem !important; }
         
         .glass-panel-mobile {
-          width: 90% !important;
-          padding: 1.5rem !important;
+          width: 94% !important;
+          padding: 1.25rem 1rem !important;
           margin: 0 auto;
+          box-sizing: border-box !important;
         }
 
         .result-container-mobile {
-          padding: 1.5rem 1rem !important;
+          padding: 1.25rem 0.85rem !important;
         }
 
         .desktop-only { display: none !important; }
         .mobile-only { display: block !important; }
+        .hide-on-mobile-instant-fate { display: none !important; }
         
         /* Product Modal Mobile Layout Switch */
         .product-detail-container {
             flex-direction: column !important;
-            padding: 20px !important;
+            padding: 16px !important;
             gap: 20px !important;
         }
         .product-detail-image, .product-detail-content {
@@ -224,7 +334,7 @@
         .product-detail-buttons {
             justify-content: center !important;
         }
-    }
+      }
       
       /* Stripe Element Styling */
       .StripeElement {

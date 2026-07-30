@@ -58,9 +58,11 @@ export const PricingPage = ({ t, onSelectPlan, onBack, onClose }: { t: any, onSe
         {/* Plans Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 340px))',
           gap: '24px',
           width: '100%',
+          justifyContent: 'center',
+          justifyItems: 'center',
           alignItems: 'stretch'
         }}>
           {plans.map((plan) => {

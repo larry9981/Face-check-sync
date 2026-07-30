@@ -83,8 +83,28 @@ const HomepageConfigSchema = new mongoose.Schema({
   order: { type: Number, default: 0 }
 });
 
+const ArticleSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  title: { type: String, required: true },
+  titleEn: { type: String },
+  category: { type: String, default: '面相识人' },
+  categoryEn: { type: String, default: 'Physiognomy' },
+  summary: { type: String },
+  summaryEn: { type: String },
+  readTime: { type: String, default: '5 min read' },
+  publishDate: { type: String },
+  author: { type: String, default: '天机之眼命理研究院' },
+  authorEn: { type: String, default: 'TianJiEyes Institute' },
+  coverImage: { type: String },
+  tags: [{ type: String }],
+  content: { type: String, required: true },
+  contentEn: { type: String },
+  createdAt: { type: Date, default: Date.now }
+});
+
 export const User = mongoose.model('User', UserSchema);
 export const Order = mongoose.model('Order', OrderSchema);
 export const History = mongoose.model('History', HistorySchema);
 export const Product = mongoose.model('Product', ProductSchema);
 export const HomepageConfig = mongoose.model('HomepageConfig', HomepageConfigSchema);
+export const ArticleModel = mongoose.model('Article', ArticleSchema);

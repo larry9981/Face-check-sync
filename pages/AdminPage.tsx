@@ -11,8 +11,17 @@ export const AdminPage = ({ t }: { t: any }) => {
     const [products, setProducts] = useState<Product[]>([]);
     const [homepageConfigs, setHomepageConfigs] = useState<any[]>([]);
     const [usersList, setUsersList] = useState<any[]>([]);
+    const [articles, setArticles] = useState<any[]>([]);
     
-    const [activeTab, setActiveTab] = useState<'orders' | 'analytics' | 'products' | 'homepage' | 'settings' | 'payments' | 'ai'>('orders');
+    const [activeTab, setActiveTab] = useState<'orders' | 'analytics' | 'products' | 'homepage' | 'articles' | 'settings' | 'payments' | 'ai'>('orders');
+    
+    // Article management states
+    const [editingArticle, setEditingArticle] = useState<any | null>(null);
+    const [isGeneratingArticleContent, setIsGeneratingArticleContent] = useState(false);
+    const [isGeneratingArticleImage, setIsGeneratingArticleImage] = useState(false);
+    const [aiTopicInput, setAiTopicInput] = useState('');
+    const [articleSearchQuery, setArticleSearchQuery] = useState('');
+    const [articleFilterCat, setArticleFilterCat] = useState('ALL');
     
     // Config and pixels states
     const [settings, setSettings] = useState<any>({
@@ -165,6 +174,12 @@ export const AdminPage = ({ t }: { t: any }) => {
                 .then(res => res.ok ? res.json() : [])
                 .then(data => { if (Array.isArray(data)) setUsersList(data); })
                 .catch(err => console.error("Failed to fetch registered users list:", err));
+
+            // Load articles
+            fetch(`${API_BASE_URL}/admin/articles`)
+                .then(res => res.ok ? res.json() : [])
+                .then(data => { if (Array.isArray(data)) setArticles(data); })
+                .catch(err => console.error("Failed to fetch articles:", err));
         }
     }, [isAuthenticated]);
 
@@ -278,6 +293,133 @@ export const AdminPage = ({ t }: { t: any }) => {
         } catch (err) {
             console.error("Save product failed:", err);
             alert("Error saving product item.");
+        }
+    };
+
+    // Article Handlers
+    const handleSaveArticle = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingArticle || !editingArticle.title || !editingArticle.content) {
+            alert("请填写完整的文章标题和正文内容！");
+            return;
+        }
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/articles`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editingArticle)
+            });
+            if (res.ok) {
+                const saved = await res.json();
+                setArticles(prev => {
+                    const idx = prev.findIndex(a => a.id === saved.id);
+                    if (idx !== -1) {
+                        const copy = [...prev];
+                        copy[idx] = saved;
+                        return copy;
+                    }
+                    return [saved, ...prev];
+                });
+                setEditingArticle(null);
+                setAiTopicInput('');
+                alert("文章保存成功！网页已实时更新。");
+            } else {
+                alert("保存文章失败，请检查填写内容重试。");
+            }
+        } catch (err) {
+            console.error("Save article error:", err);
+            alert("网络保存出错，请稍后重试。");
+        }
+    };
+
+    const handleDeleteArticle = async (id: string) => {
+        if (!window.confirm("确定要删除此文章吗？删除后将无法从网页恢复。")) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/admin/articles/${id}`, { method: 'DELETE' });
+             if (res.ok) {
+                 setArticles(prev => prev.filter(a => a.id !== id));
+                 alert("文章删除成功！");
+             } else {
+                 alert("删除文章失败。");
+             }
+        } catch (err) {
+            console.error("Delete article error:", err);
+            alert("删除请求出错。");
+        }
+    };
+
+    const handleGenerateArticleContent = async () => {
+        setIsGeneratingArticleContent(true);
+        try {
+            const topic = aiTopicInput.trim() || editingArticle?.title || '面相与财富命运解析';
+            const category = editingArticle?.category || '面相识人';
+            const res = await fetch(`${API_BASE_URL}/admin/articles/generate-content`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic, category })
+            });
+            if (res.ok) {
+                const generated = await res.json();
+                setEditingArticle(prev => ({
+                    ...prev,
+                    title: generated.title || prev?.title || topic,
+                    titleEn: generated.titleEn || prev?.titleEn || '',
+                    category: generated.category || prev?.category || category,
+                    categoryEn: generated.categoryEn || prev?.categoryEn || 'Physiognomy',
+                    summary: generated.summary || prev?.summary || '',
+                    summaryEn: generated.summaryEn || prev?.summaryEn || '',
+                    tags: generated.tags || prev?.tags || [category, '命理', '五行'],
+                    readTime: generated.readTime || '6 min read',
+                    author: generated.author || '天机之眼命理研究院',
+                    authorEn: generated.authorEn || 'TianJiEyes Institute',
+                    content: generated.content || prev?.content || '',
+                    contentEn: generated.contentEn || prev?.contentEn || ''
+                }));
+            } else {
+                alert("AI 生成文案失败，请稍后重试。");
+            }
+        } catch (err) {
+            console.error("Generate article content error:", err);
+            alert("AI 文本生成处理出错。");
+        } finally {
+            setIsGeneratingArticleContent(false);
+        }
+    };
+
+    const handleGenerateArticleImage = async () => {
+        setIsGeneratingArticleImage(true);
+        try {
+            const prompt = editingArticle?.title || aiTopicInput || 'mystic celestial face reading, oriental luxury background';
+            const category = editingArticle?.category || '面相识人';
+            const res = await fetch(`${API_BASE_URL}/admin/articles/generate-image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt, title: editingArticle?.title, category })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.imageUrl) {
+                    setEditingArticle(prev => ({ ...prev, coverImage: data.imageUrl }));
+                }
+            } else {
+                alert("AI 封面图生成失败，请重试");
+            }
+        } catch (err) {
+            console.error("Generate article image error:", err);
+            alert("AI 图片生成出错");
+        } finally {
+            setIsGeneratingArticleImage(false);
+        }
+    };
+
+    const handleArticleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setEditingArticle(prev => ({ ...prev, coverImage: reader.result as string }));
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -509,6 +651,12 @@ export const AdminPage = ({ t }: { t: any }) => {
                         style={{...styles.secondaryButton, background: activeTab === 'homepage' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'homepage' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
                     >
                         {t.homepageManagement || "Homepage"}
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('articles')} 
+                        style={{...styles.secondaryButton, background: activeTab === 'articles' ? 'linear-gradient(90deg, #47BFFF 0%, #1A44C2 100%)' : 'transparent', color: '#fff', borderColor: activeTab === 'articles' ? 'transparent' : 'rgba(102, 192, 244, 0.3)', margin: 0, padding: '6px 12px', fontSize: '0.85rem'}}
+                    >
+                        📝 文章管理 (Articles)
                     </button>
                     <button 
                         onClick={() => setActiveTab('settings')} 
@@ -1237,6 +1385,513 @@ export const AdminPage = ({ t }: { t: any }) => {
                         </div>
                     </div>
 
+                </div>
+            )}
+
+            {/* TAB CONTENT: ARTICLES MANAGEMENT */}
+            {activeTab === 'articles' && (
+                <div>
+                    {/* Header Controls */}
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '12px'}}>
+                        <div>
+                            <h3 style={{color: theme.accent, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.4rem', margin: '0 0 4px 0'}}>
+                                📝 文章内容管理 (Articles Management)
+                            </h3>
+                            <p style={{color: '#aaa', fontSize: '0.85rem', margin: 0}}>
+                                管理网站玄学专栏文章，可修改已有文章、删除文章或一键通过 AI 智能创作新标题与完整文章。
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setEditingArticle({
+                                id: `art-${Date.now()}`,
+                                title: '',
+                                titleEn: '',
+                                category: '面相识人',
+                                categoryEn: 'Physiognomy',
+                                summary: '',
+                                summaryEn: '',
+                                author: '天机之眼命理研究院',
+                                authorEn: 'TianJiEyes Institute',
+                                readTime: '6 min read',
+                                publishDate: new Date().toISOString().split('T')[0],
+                                coverImage: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop',
+                                tags: ['面相学', '命理', '五行'],
+                                content: ''
+                            })}
+                            style={{
+                                ...styles.button,
+                                margin: 0,
+                                padding: '10px 20px',
+                                fontSize: '0.9rem',
+                                background: 'linear-gradient(90deg, #d4af37 0%, #aa8412 100%)',
+                                borderColor: '#d4af37',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <i className="fas fa-plus-circle"></i> ➕ 发布新标题文章 (Add Article)
+                        </button>
+                    </div>
+
+                    {/* Filter & Search Bar */}
+                    <div style={{...styles.glassPanel, padding: '15px 20px', marginBottom: '20px', display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between'}}>
+                        <div style={{display: 'flex', gap: '10px', alignItems: 'center', flex: 1, minWidth: '260px'}}>
+                            <i className="fas fa-search" style={{color: theme.gold}}></i>
+                            <input
+                                type="text"
+                                placeholder="搜索文章标题或关键词..."
+                                value={articleSearchQuery}
+                                onChange={e => setArticleSearchQuery(e.target.value)}
+                                style={{
+                                    ...styles.formInput,
+                                    width: '100%',
+                                    padding: '8px 12px',
+                                    fontSize: '0.85rem',
+                                    background: 'rgba(11, 16, 26, 0.6)'
+                                }}
+                            />
+                        </div>
+                        <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+                            {['ALL', '面相识人', '手相掌纹', '五行风水', '生肖八字', '星象星座', '易经奇门'].map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setArticleFilterCat(cat)}
+                                    style={{
+                                        padding: '4px 10px',
+                                        fontSize: '0.78rem',
+                                        borderRadius: '20px',
+                                        border: `1px solid ${articleFilterCat === cat ? theme.gold : 'rgba(102, 192, 244, 0.2)'}`,
+                                        background: articleFilterCat === cat ? 'rgba(212, 175, 55, 0.2)' : 'transparent',
+                                        color: articleFilterCat === cat ? theme.gold : '#aaa',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {cat === 'ALL' ? `全部 (${articles.length})` : cat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Articles List / Grid */}
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px'}}>
+                        {articles
+                            .filter(a => {
+                                const matchCat = articleFilterCat === 'ALL' || a.category === articleFilterCat;
+                                const q = articleSearchQuery.toLowerCase().trim();
+                                if (!q) return matchCat;
+                                return matchCat && ((a.title || '').toLowerCase().includes(q) || (a.summary || '').toLowerCase().includes(q));
+                            })
+                            .map((art) => (
+                                <div
+                                    key={art.id}
+                                    style={{
+                                        ...styles.glassPanel,
+                                        padding: '18px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between',
+                                        position: 'relative',
+                                        overflow: 'hidden',
+                                        borderColor: 'rgba(102, 192, 244, 0.25)',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                >
+                                    <div>
+                                        <div style={{display: 'flex', gap: '15px', marginBottom: '12px'}}>
+                                            <img
+                                                src={art.coverImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop'}
+                                                alt={art.title}
+                                                style={{
+                                                    width: '90px',
+                                                    height: '70px',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '8px',
+                                                    border: `1px solid rgba(102, 192, 244, 0.3)`
+                                                }}
+                                                onError={(e: any) => {
+                                                    e.target.src = 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop';
+                                                }}
+                                            />
+                                            <div style={{flex: 1}}>
+                                                <span style={{
+                                                    display: 'inline-block',
+                                                    padding: '2px 8px',
+                                                    background: 'rgba(102, 192, 244, 0.15)',
+                                                    border: `1px solid rgba(102, 192, 244, 0.4)`,
+                                                    borderRadius: '12px',
+                                                    color: theme.gold,
+                                                    fontSize: '0.72rem',
+                                                    marginBottom: '6px'
+                                                }}>
+                                                    {art.category || '未分类'}
+                                                </span>
+                                                <h4 style={{
+                                                    color: '#fff',
+                                                    fontSize: '0.95rem',
+                                                    margin: '0 0 6px 0',
+                                                    lineHeight: '1.4',
+                                                    display: '-webkit-box',
+                                                    WebkitLineClamp: 2,
+                                                    WebkitBoxOrient: 'vertical',
+                                                    overflow: 'hidden'
+                                                }}>
+                                                    {art.title}
+                                                </h4>
+                                                <div style={{fontSize: '0.75rem', color: '#888'}}>
+                                                    {art.publishDate || '2026-07-30'} · {art.author || '天机之眼'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <p style={{
+                                            color: '#aaa',
+                                            fontSize: '0.8rem',
+                                            lineHeight: '1.5',
+                                            marginBottom: '15px',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden'
+                                        }}>
+                                            {art.summary}
+                                        </p>
+                                    </div>
+
+                                    <div style={{display: 'flex', gap: '10px', borderTop: `1px solid rgba(102, 192, 244, 0.15)`, paddingTop: '12px', marginTop: '10px'}}>
+                                        <button
+                                            onClick={() => setEditingArticle(art)}
+                                            style={{
+                                                flex: 1,
+                                                padding: '6px 12px',
+                                                fontSize: '0.8rem',
+                                                background: 'rgba(102, 192, 244, 0.15)',
+                                                border: `1px solid rgba(102, 192, 244, 0.4)`,
+                                                color: '#fff',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '6px'
+                                            }}
+                                        >
+                                            <i className="fas fa-edit"></i> ✏️ 修改
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteArticle(art.id)}
+                                            style={{
+                                                padding: '6px 12px',
+                                                fontSize: '0.8rem',
+                                                background: 'rgba(255, 77, 77, 0.15)',
+                                                border: `1px solid rgba(255, 77, 77, 0.4)`,
+                                                color: '#ff4d4d',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '6px'
+                                            }}
+                                        >
+                                            <i className="fas fa-trash-alt"></i> 🗑️ 删除
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+
+                    {/* EDIT / CREATE ARTICLE MODAL */}
+                    {editingArticle && (
+                        <div style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: 'rgba(0, 0, 0, 0.85)',
+                            backdropFilter: 'blur(8px)',
+                            zIndex: 1000,
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            padding: '20px'
+                        }}>
+                            <div style={{
+                                ...styles.glassPanel,
+                                width: '100%',
+                                maxWidth: '850px',
+                                maxHeight: '90vh',
+                                overflowY: 'auto',
+                                padding: '30px',
+                                border: `1px solid ${theme.gold}`,
+                                boxShadow: '0 0 30px rgba(212, 175, 55, 0.25)',
+                                position: 'relative'
+                            }}>
+                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: `1px solid rgba(102, 192, 244, 0.2)`, paddingBottom: '12px'}}>
+                                    <h3 style={{color: theme.gold, fontFamily: '"Space Grotesk", sans-serif', fontSize: '1.3rem', margin: 0}}>
+                                        {articles.some(a => a.id === editingArticle.id) ? '✏️ 编辑文章内容' : '➕ 添加新标题文章'}
+                                    </h3>
+                                    <button
+                                        onClick={() => { setEditingArticle(null); setAiTopicInput(''); }}
+                                        style={{background: 'none', border: 'none', color: '#aaa', fontSize: '1.2rem', cursor: 'pointer'}}
+                                    >
+                                        <i className="fas fa-times"></i>
+                                    </button>
+                                </div>
+
+                                {/* AI GENERATION ASSISTANT SECTION */}
+                                <div style={{
+                                    background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(27, 40, 56, 0.9) 100%)',
+                                    border: `1px solid rgba(212, 175, 55, 0.4)`,
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    marginBottom: '25px'
+                                }}>
+                                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', color: theme.gold, fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '8px'}}>
+                                        <i className="fas fa-magic"></i> 🤖 AI 智能一键生成文章 (AI Article Generator)
+                                    </div>
+                                    <p style={{color: '#ccc', fontSize: '0.8rem', margin: '0 0 12px 0'}}>
+                                        输入想写的文章主题或关键词（如: 额头开阔财运、下巴丰满晚运、风水文昌位调理），点击按钮即可自动生成标题、封面建议、摘要及Markdown完整正文！
+                                    </p>
+                                    <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
+                                        <input
+                                            type="text"
+                                            placeholder="输入文章主题或关键词 (如: 眉毛与社交财运)..."
+                                            value={aiTopicInput}
+                                            onChange={e => setAiTopicInput(e.target.value)}
+                                            style={{...styles.formInput, flex: 1, minWidth: '220px', fontSize: '0.85rem'}}
+                                        />
+                                        <button
+                                            type="button"
+                                            disabled={isGeneratingArticleContent}
+                                            onClick={handleGenerateArticleContent}
+                                            style={{
+                                                ...styles.button,
+                                                margin: 0,
+                                                padding: '8px 16px',
+                                                fontSize: '0.85rem',
+                                                background: 'linear-gradient(90deg, #d4af37 0%, #8e7116 100%)',
+                                                borderColor: theme.gold,
+                                                cursor: isGeneratingArticleContent ? 'not-allowed' : 'pointer'
+                                            }}
+                                        >
+                                            {isGeneratingArticleContent ? '⏳ AI 正在深度撰写中...' : '✨ AI 一键生成整篇文章'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* FORM INPUTS */}
+                                <form onSubmit={handleSaveArticle} style={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
+                                    
+                                    {/* TITLE & CATEGORY */}
+                                    <div style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '15px'}}>
+                                        <div>
+                                            <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '6px', fontWeight: 'bold'}}>
+                                                文章标题 (Title) *
+                                            </label>
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="请输入文章标题..."
+                                                style={{...styles.formInput, fontSize: '0.9rem'}}
+                                                value={editingArticle.title || ''}
+                                                onChange={e => setEditingArticle({...editingArticle, title: e.target.value})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '6px', fontWeight: 'bold'}}>
+                                                所属分类 (Category)
+                                            </label>
+                                            <select
+                                                style={{...styles.formInput, fontSize: '0.9rem'}}
+                                                value={editingArticle.category || '面相识人'}
+                                                onChange={e => {
+                                                    const cat = e.target.value;
+                                                    const catEn = cat === '手相掌纹' ? 'Palmistry' : cat === '五行风水' ? 'Feng Shui' : cat === '生肖八字' ? 'Chinese Zodiac' : cat === '星象星座' ? 'Astrology' : cat === '易经奇门' ? 'I Ching & Strategy' : 'Physiognomy';
+                                                    setEditingArticle({...editingArticle, category: cat, categoryEn: catEn});
+                                                }}
+                                            >
+                                                <option value="面相识人">面相识人 (Physiognomy)</option>
+                                                <option value="手相掌纹">手相掌纹 (Palmistry)</option>
+                                                <option value="五行风水">五行风水 (Feng Shui)</option>
+                                                <option value="生肖八字">生肖八字 (Zodiac & Bazi)</option>
+                                                <option value="星象星座">星象星座 (Astrology)</option>
+                                                <option value="易经奇门">易经奇门 (I Ching & Strategy)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {/* COVER IMAGE */}
+                                    <div>
+                                        <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '6px', fontWeight: 'bold'}}>
+                                            封面图片 (Cover Image)
+                                        </label>
+                                        <div style={{display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px'}}>
+                                            <img
+                                                src={editingArticle.coverImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop'}
+                                                alt="Cover preview"
+                                                style={{width: '100px', height: '65px', objectFit: 'cover', borderRadius: '6px', border: `1px solid ${theme.gold}`}}
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="图片 URL 地址..."
+                                                style={{...styles.formInput, flex: 1, minWidth: '200px', fontSize: '0.85rem'}}
+                                                value={editingArticle.coverImage || ''}
+                                                onChange={e => setEditingArticle({...editingArticle, coverImage: e.target.value})}
+                                            />
+                                            <label style={{
+                                                padding: '8px 14px',
+                                                background: 'rgba(102, 192, 244, 0.15)',
+                                                border: `1px solid rgba(102, 192, 244, 0.4)`,
+                                                color: '#fff',
+                                                borderRadius: '6px',
+                                                cursor: 'pointer',
+                                                fontSize: '0.82rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px'
+                                            }}>
+                                                📁 本地上传
+                                                <input type="file" accept="image/*" onChange={handleArticleCoverUpload} style={{display: 'none'}} />
+                                            </label>
+                                            <button
+                                                type="button"
+                                                disabled={isGeneratingArticleImage}
+                                                onClick={handleGenerateArticleImage}
+                                                style={{
+                                                    padding: '8px 14px',
+                                                    background: 'rgba(212, 175, 55, 0.2)',
+                                                    border: `1px solid ${theme.gold}`,
+                                                    color: theme.gold,
+                                                    borderRadius: '6px',
+                                                    cursor: isGeneratingArticleImage ? 'not-allowed' : 'pointer',
+                                                    fontSize: '0.82rem',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px'
+                                                }}
+                                            >
+                                                {isGeneratingArticleImage ? '⏳ 绘图中...' : '🎨 AI 生成封面图'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* SUMMARY */}
+                                    <div>
+                                        <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '6px', fontWeight: 'bold'}}>
+                                            文章摘要 (Summary)
+                                        </label>
+                                        <textarea
+                                            rows={2}
+                                            placeholder="简短的概要内容描述..."
+                                            style={{...styles.formInput, fontSize: '0.85rem'}}
+                                            value={editingArticle.summary || ''}
+                                            onChange={e => setEditingArticle({...editingArticle, summary: e.target.value})}
+                                        />
+                                    </div>
+
+                                    {/* AUTHOR & DATE & TAGS */}
+                                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px'}}>
+                                        <div>
+                                            <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '4px'}}>作者名</label>
+                                            <input
+                                                type="text"
+                                                style={{...styles.formInput, fontSize: '0.85rem'}}
+                                                value={editingArticle.author || '天机之眼命理研究院'}
+                                                onChange={e => setEditingArticle({...editingArticle, author: e.target.value})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '4px'}}>发布日期</label>
+                                            <input
+                                                type="text"
+                                                style={{...styles.formInput, fontSize: '0.85rem'}}
+                                                value={editingArticle.publishDate || new Date().toISOString().split('T')[0]}
+                                                onChange={e => setEditingArticle({...editingArticle, publishDate: e.target.value})}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{display: 'block', color: theme.accent, fontSize: '0.8rem', marginBottom: '4px'}}>标签 (逗号分隔)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="面相, 事业运, 天庭"
+                                                style={{...styles.formInput, fontSize: '0.85rem'}}
+                                                value={Array.isArray(editingArticle.tags) ? editingArticle.tags.join(', ') : (editingArticle.tags || '')}
+                                                onChange={e => setEditingArticle({...editingArticle, tags: e.target.value.split(',').map((t: string) => t.trim())})}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* CONTENT (MARKDOWN) */}
+                                    <div>
+                                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px'}}>
+                                            <label style={{color: theme.accent, fontSize: '0.8rem', fontWeight: 'bold'}}>
+                                                文章正文 (Article Content - 支持 Markdown 格式) *
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={handleGenerateArticleContent}
+                                                disabled={isGeneratingArticleContent}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: theme.gold,
+                                                    fontSize: '0.78rem',
+                                                    cursor: 'pointer',
+                                                    textDecoration: 'underline'
+                                                }}
+                                            >
+                                                🤖 AI 优化重新生成正文
+                                            </button>
+                                        </div>
+                                        <textarea
+                                            rows={12}
+                                            required
+                                            placeholder="请输入或由 AI 生成正文内容（支持 ### 标题、图片、分段格式）..."
+                                            style={{
+                                                ...styles.formInput,
+                                                fontFamily: 'Consolas, Monaco, monospace',
+                                                fontSize: '0.85rem',
+                                                lineHeight: '1.6'
+                                            }}
+                                            value={editingArticle.content || ''}
+                                            onChange={e => setEditingArticle({...editingArticle, content: e.target.value})}
+                                        />
+                                    </div>
+
+                                    {/* BUTTONS */}
+                                    <div style={{display: 'flex', gap: '15px', justifyContent: 'flex-end', marginTop: '10px'}}>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setEditingArticle(null); setAiTopicInput(''); }}
+                                            style={{
+                                                ...styles.secondaryButton,
+                                                padding: '10px 20px',
+                                                margin: 0
+                                            }}
+                                        >
+                                            取消 (Cancel)
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            style={{
+                                                ...styles.button,
+                                                padding: '10px 25px',
+                                                margin: 0,
+                                                background: 'linear-gradient(90deg, #d4af37 0%, #aa8412 100%)',
+                                                borderColor: '#d4af37'
+                                            }}
+                                        >
+                                            💾 保存文章 (Save Article)
+                                        </button>
+                                    </div>
+
+                                </form>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

@@ -250,6 +250,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ t, onExplore, homepage
               </motion.button>
 
               <button
+                className="hide-on-mobile-instant-fate"
                 onClick={() => {
                   const el = document.getElementById('consultation-desk');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });

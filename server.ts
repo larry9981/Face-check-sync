@@ -7,7 +7,8 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import Stripe from 'stripe';
 import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from '@google/genai';
-import { User, Order, History, Product, HomepageConfig } from './models.js';
+import { User, Order, History, Product, HomepageConfig, ArticleModel } from './models.js';
+import { CULTURE_ARTICLES } from './data/cultureArticles.js';
 
 // =========================================================
 // ⚙️ BACKEND CONFIGURATION
@@ -192,8 +193,8 @@ const DbHelper = {
                 id: 'prod-jade',
                 nameKey: 'prod_jade_name',
                 defaultName: 'Premium Lucky Jade Imperial Bracelet',
-                price: '$49.99',
-                numericPrice: 49.99,
+                price: '$1999.00',
+                numericPrice: 1999.00,
                 category: 'Bracelet',
                 zodiac: 'Dragon, Rabbit',
                 imagePrompt: 'ancient imperial jade bracelet on dark black silk cushion, mysterious golden highlights, editorial catalog photo, 8k',
@@ -209,8 +210,8 @@ const DbHelper = {
                 id: 'prod-obsidian',
                 nameKey: 'prod_obsidian_name',
                 defaultName: 'Sacred Feng Shui Obsidian Wealth PIXIE Pendant',
-                price: '$39.99',
-                numericPrice: 39.99,
+                price: '$1699.00',
+                numericPrice: 1699.00,
                 category: 'Pendant',
                 zodiac: 'Rat, Snake, Pig',
                 imagePrompt: 'carved volcanic black obsidian pendant with mythical dragon creature, rich macro detailed shot, moody atmospheric lighting, 8k',
@@ -335,6 +336,58 @@ const DbHelper = {
                 }
             } catch (e) { console.error("Mongo update homepage config error:", e); }
         }
+    },
+
+    // --- ARTICLES ---
+    getAllArticles: async () => {
+        if (isMongoConnected()) {
+            try {
+                const articles = await ArticleModel.find().sort({ createdAt: -1 });
+                if (articles.length > 0) return articles;
+            } catch (e) { console.error("Mongo load articles error:", e); }
+        }
+        return readJSONFile('articles.json', CULTURE_ARTICLES);
+    },
+    saveOrUpdateArticle: async (articleData: any) => {
+        if (!articleData.id) {
+            articleData.id = `art-${Date.now()}`;
+        }
+        if (!articleData.publishDate) {
+            articleData.publishDate = new Date().toISOString().split('T')[0];
+        }
+        if (!articleData.author) {
+            articleData.author = '天机之眼命理研究院';
+        }
+
+        const articles = await DbHelper.getAllArticles();
+        const index = articles.findIndex((a: any) => a.id === articleData.id);
+        if (index !== -1) {
+            articles[index] = { ...articles[index], ...articleData };
+        } else {
+            articles.unshift({ _id: `art_${Date.now()}`, createdAt: new Date().toISOString(), ...articleData });
+        }
+        writeJSONFile('articles.json', articles);
+
+        if (isMongoConnected()) {
+            try {
+                await ArticleModel.findOneAndUpdate(
+                    { id: articleData.id },
+                    articleData,
+                    { upsert: true, new: true }
+                );
+            } catch (e) { console.error("Mongo save article error:", e); }
+        }
+        return articleData;
+    },
+    deleteArticle: async (id: string) => {
+        let articles = await DbHelper.getAllArticles();
+        articles = articles.filter((a: any) => a.id !== id);
+        writeJSONFile('articles.json', articles);
+
+        if (isMongoConnected()) {
+            try { await ArticleModel.findOneAndDelete({ id }); } catch (e) { console.error("Mongo delete article error:", e); }
+        }
+        return { success: true };
     }
 };
 
@@ -360,14 +413,18 @@ async function seedProductsIfEmpty() {
 
     const initialProducts = readJSONFile('products.json', []);
     
-    // Check if we need to seed or if we have old product ID structures
+    // Check if we need to seed or if we have old product ID structures or outdated prices
     const hasOldStructure = initialProducts.some((p: any) => p.id.startsWith('amulet_') || (p.id.startsWith('brace_') && !p.id.startsWith('jade_')));
     const hasBracelets = initialProducts.some((p: any) => p.category === 'bracelet' || p.category === 'Bracelet');
+    const hasOutdatedPrices = initialProducts.some((p: any) => 
+        ((p.category === 'bracelet' || p.category === 'Bracelet') && p.numericPrice !== 1999.00) ||
+        ((p.category === 'pendant' || p.category === 'Pendant') && p.numericPrice !== 1699.00)
+    );
     
-    if (hasOldStructure || !hasBracelets || initialProducts.length < 10) {
-        console.log("[Product Seeder] Seeding new luxury Jade Zodiac and Constellation collection...");
+    if (hasOldStructure || !hasBracelets || initialProducts.length < 10 || hasOutdatedPrices) {
+        console.log("[Product Seeder] Seeding new luxury Jade Zodiac and Constellation collection with updated prices...");
         
-        // If there's old structure, we clear and re-seed clean slate
+        // If there's old structure or outdated prices, we clear and re-seed clean slate
         let productsList: any[] = [];
         
         if (isMongoConnected()) {
@@ -393,8 +450,8 @@ async function seedProductsIfEmpty() {
                 id: `jade_brace_${z.toLowerCase()}`,
                 nameKey: 'productNameJadeBracelet',
                 defaultName: `Jade ${z} Bracelet`,
-                price: "$139.99",
-                numericPrice: 139.99,
+                price: "$1999.00",
+                numericPrice: 1999.00,
                 imagePrompt: `exquisite premium natural white jade beads combined with a beautiful gold ${z} zodiac lucky charm bracelet, spiritual feng shui energy beads, soft peaceful glow, luxury product shot, white velvet background`,
                 descKey: 'productDescJadeBracelet',
                 category: 'bracelet',
@@ -409,8 +466,8 @@ async function seedProductsIfEmpty() {
                 id: `jade_pend_${z.toLowerCase()}`,
                 nameKey: 'productNameJadePendant',
                 defaultName: `Jade ${z} Necklace Pendant`,
-                price: "$189.99",
-                numericPrice: 189.99,
+                price: "$1699.00",
+                numericPrice: 1699.00,
                 imagePrompt: `sacred natural green jadeite jade necklace pendant carving of chinese zodiac ${z} guardian spirit, gold bail, mystical peaceful aura, floating in ethereal mist, spiritual healing jewelry, high resolution product photography`,
                 descKey: 'productDescJadePendant',
                 category: 'pendant',
@@ -430,8 +487,8 @@ async function seedProductsIfEmpty() {
                 id: `jade_brace_${sign.toLowerCase()}`,
                 nameKey: 'productNameStarJadeBracelet',
                 defaultName: `Jade ${sign} Constellation Bracelet`,
-                price: "$149.99",
-                numericPrice: 149.99,
+                price: "$1999.00",
+                numericPrice: 1999.00,
                 imagePrompt: `mystical light blue jadeite beads and lapis lazuli cosmic constellation ${sign} star sign bracelet, detailed sacred geometry golden charm, soft stardust aura, dark velvet background, premium spiritual jewelry`,
                 descKey: 'productDescStarJadeBracelet',
                 category: 'bracelet',
@@ -446,8 +503,8 @@ async function seedProductsIfEmpty() {
                 id: `jade_pend_${sign.toLowerCase()}`,
                 nameKey: 'productNameStarJadePendant',
                 defaultName: `Jade ${sign} Constellation Pendant`,
-                price: "$199.99",
-                numericPrice: 199.99,
+                price: "$1699.00",
+                numericPrice: 1699.00,
                 imagePrompt: `beautifully hand-polished premium raw crystalline jade gemstone necklace pendant, custom engraved with celestial ${sign} constellation emblem, delicate silver chain, glowing with starlight nebula, luxury product shot`,
                 descKey: 'productDescStarJadePendant',
                 category: 'pendant',
@@ -1571,6 +1628,204 @@ CRITICAL MANDATE: You MUST write the entire text in English. Do NOT write in Chi
         try {
             await DbHelper.updateHomepageConfigs(configData);
             res.json({ success: true });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // --- ARTICLE MANAGEMENT ROUTES ---
+
+    // 1. Get Articles
+    app.get('/api/articles', async (req, res) => {
+        try {
+            const articles = await DbHelper.getAllArticles();
+            res.json(articles);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    app.get('/api/admin/articles', async (req, res) => {
+        try {
+            const articles = await DbHelper.getAllArticles();
+            res.json(articles);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 2. Create / Update Article (Admin)
+    app.post('/api/admin/articles', async (req, res) => {
+        try {
+            const article = await DbHelper.saveOrUpdateArticle(req.body);
+            res.json(article);
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 3. Delete Article (Admin)
+    app.delete('/api/admin/articles/:id', async (req, res) => {
+        try {
+            await DbHelper.deleteArticle(req.params.id);
+            res.json({ success: true });
+        } catch (err: any) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 4. AI Generate Article Content (Admin)
+    app.post('/api/admin/articles/generate-content', async (req, res) => {
+        try {
+            const { topic, category } = req.body;
+            const articleCategory = category || '面相识人';
+            const topicText = topic || '面相与财富运势解析';
+
+            let apiKey = process.env.GEMINI_API_KEY;
+            if (apiKey) apiKey = apiKey.trim();
+
+            const isPlaceholder = !apiKey || 
+                                  apiKey === "" || 
+                                  apiKey.includes("YOUR_") || 
+                                  apiKey.includes("placeholder") || 
+                                  apiKey === "undefined" || 
+                                  apiKey.length < 15;
+
+            if (!isPlaceholder) {
+                try {
+                    const ai = new GoogleGenAI({
+                        apiKey,
+                        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
+                    });
+
+                    const systemPrompt = `你是一位精通传统玄学与现代心理学、天象命理的深度专栏作家。
+请根据主题：“${topicText}”，以及分类：“${articleCategory}”，撰写一篇高质量、深度详尽的玄学文化研究专栏文章。
+
+请严格输出 JSON 格式（不要在 JSON 前后加 markdown 代码块标签或其他解释），包含以下字段：
+{
+  "title": "符合主题的吸引人中文标题（20-30字）",
+  "titleEn": "对应的英文标题",
+  "category": "${articleCategory}",
+  "categoryEn": "对应英文分类名（Physiognomy/Palmistry/Feng Shui/Chinese Zodiac/Astrology/I Ching & Strategy）",
+  "summary": "简短精彩的中文摘要（80-120字）",
+  "summaryEn": "对应的英文摘要",
+  "tags": ["标签1", "标签2", "标签3", "标签4"],
+  "readTime": "6 min read",
+  "author": "天机之眼命理研究院",
+  "authorEn": "TianJiEyes Institute",
+  "content": "深度详尽的中文文章正文，包含 Markdown 格式的三级标题（### ）、加粗重点、段落分析与实际指引，字数800-1200字",
+  "contentEn": "Detailed English translation of the article content in Markdown format",
+  "imagePrompt": "用于AI生成精致封面的英文提示词（例如: mystic chinese face reading diagram, golden ratio lines, dark ethereal background, 8k）"
+}`;
+
+                    let response;
+                    try {
+                        response = await ai.models.generateContent({
+                            model: 'gemini-2.5-flash',
+                            contents: systemPrompt,
+                        });
+                    } catch (m1) {
+                        response = await ai.models.generateContent({
+                            model: 'gemini-2.0-flash',
+                            contents: systemPrompt,
+                        });
+                    }
+
+                    if (response && response.text) {
+                        let text = response.text.trim();
+                        if (text.startsWith('```json')) text = text.replace(/```json\n?/, '').replace(/\n?```$/, '');
+                        if (text.startsWith('```')) text = text.replace(/```\n?/, '').replace(/\n?```$/, '');
+                        const parsed = JSON.parse(text);
+                        return res.json(parsed);
+                    }
+                } catch (geminiErr) {
+                    console.warn("Gemini article generation warning, using dynamic fallback:", geminiErr);
+                }
+            }
+
+            // Dynamic Fallback Article Generation
+            const fallbackArticle = {
+                title: `${topicText}：洞察气场格局与命运轨迹解析`,
+                titleEn: `${topicText}: Insights into Destiny, Aura & Fortune Alignment`,
+                category: articleCategory,
+                categoryEn: articleCategory === '手相掌纹' ? 'Palmistry' : articleCategory === '五行风水' ? 'Feng Shui' : articleCategory === '生肖八字' ? 'Chinese Zodiac' : articleCategory === '星象星座' ? 'Astrology' : articleCategory === '易经奇门' ? 'I Ching & Strategy' : 'Physiognomy',
+                summary: `关于【${topicText}】的深度研习文章。结合传统面相与五行气场，系统拆解个人流年运势、贵人机遇与气场调理之法。`,
+                summaryEn: `An in-depth study on ${topicText}, combining traditional esoteric wisdom with personal aura and fortune alignment strategies.`,
+                tags: [articleCategory, '命理学', '运势解析', '天机之眼'],
+                readTime: '6 min read',
+                author: '天机之眼命理研究院',
+                authorEn: 'TianJiEyes Institute',
+                content: `### 一、核心命理玄机与气场格局
+
+在传统玄学体系中，【${topicText}】承载着人体微观磁场与宏观天象的呼应。天人合一的核心思想表明，每个人的气场形态与周易五行运转密不可分。
+
+通过深度分析【${topicText}】特征，我们可以清晰观测到个人在事业发展、情感际遇与财富积累方面的潜在轨迹。气场充盈者往往具备良好的决策力与敏锐的直觉，能够在大环境变迁中精准把握上升契机。
+
+---
+
+### 二、特征解析与吉凶流年
+
+1. **五行气场生克关系：**
+   结合金木水火土的生克原理，当【${topicText}】呈现饱满开阔状态时，象征着相生磁场的持续注入，青年与壮年运势极为顺遂。
+
+2. **贵人运与际遇转换：**
+   若周边部位光泽明亮无瑕，代表在关键人生转折点极易获得尊长与同侪的提携助攻，事半功倍。
+
+3. **风险避坑指引：**
+   若气场稍显晦暗或受冲，宜保持沉稳务实心态，通过心态调整与空间风水微调来化解不利扰动。
+
+---
+
+### 三、气场提升与开运实践指引
+
+* **心性修养：** 保持内心从容安定，减损无谓焦虑，善养浩然正气。
+* **环境调和：** 保持居住与工作环境光线充足、空气流通，摆放五行相宜的天然水晶或生机绿植。
+* **每日修持：** 晨起静心调息，顺应天时作息，促使周身磁场恢复最佳平衡姿态。`,
+                contentEn: `### I. Esoteric Foundations & Aura Alignment
+
+In traditional esoteric wisdom, ${topicText} serves as a portal connecting personal micro-auras with universal cosmic shifts.
+
+By examining the key indicators of ${topicText}, we can perceive clear patterns regarding career trajectory, interpersonal harmony, and wealth retention.
+
+---
+
+### II. Analytical Observations & Opportunities
+
+1. **Elemental Harmony:**
+   Aligning Wood, Fire, Earth, Metal, and Water forces balances the subtle energy flows during personal growth cycles.
+
+2. **Supportive Allies:**
+   Luminous clarity in key visual regions heralds powerful allies and mentors assisting in crucial strategic decisions.
+
+3. **Mindful Adjustments:**
+   Cultivating inner peace and decluttering spatial energy fields neutralizes unaligned environmental friction.
+
+---
+
+### III. Practical Cultivation Guidance
+
+* **Mindful Presence:** Cultivate calmness and clarity through focused meditation.
+* **Spatial Balance:** Ensure crisp natural lighting and harmonious physical arrangement in your daily workspace.`,
+                imagePrompt: `mystic esoteric background with gold and blue light, ${topicText}, traditional oriental astrology art, 8k`
+            };
+
+            return res.json(fallbackArticle);
+        } catch (err: any) {
+            console.error("AI Article Generation Failed:", err);
+            res.status(500).json({ error: err.message });
+        }
+    });
+
+    // 5. AI Generate Article Image URL (Admin)
+    app.post('/api/admin/articles/generate-image', async (req, res) => {
+        try {
+            const { prompt, title, category } = req.body;
+            const searchKeyword = prompt || title || category || 'mystic celestial fengshui';
+            const seed = Math.floor(Math.random() * 100000);
+            const encodedPrompt = encodeURIComponent(`high resolution editorial cover photo of ${searchKeyword}, luxury golden ratio lighting, mystical esoteric aesthetic, 8k, detailed artwork, no text`);
+            const generatedImageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1200&height=675&seed=${seed}&nologo=true`;
+
+            res.json({ imageUrl: generatedImageUrl });
         } catch (err: any) {
             res.status(500).json({ error: err.message });
         }

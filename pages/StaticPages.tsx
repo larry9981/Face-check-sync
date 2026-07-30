@@ -65,7 +65,7 @@ export const TermsOfService = ({ t, onBack, onClose }: { t: any, onBack?: () => 
 
 export const RefundPolicy = ({ t, onBack, onClose }: { t: any, onBack?: () => void, onClose?: () => void }) => (
   <div style={{...styles.glassPanel, maxWidth: '900px'}} className="glass-panel-mobile">
-    <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.refundTitle || "退款政策"} />
+    <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={t.refundTitle || "退款与取消政策"} />
     <h2 style={{color: theme.gold, textAlign: 'center', marginBottom: '30px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.refundTitle}</h2>
     <div style={{lineHeight: '1.8', color: '#ccc', textAlign: 'left', fontSize: '0.95rem', fontFamily: '"Space Grotesk", sans-serif'}}>
       <p style={{marginBottom: '20px'}}>{t.refundIntro}</p>
@@ -75,6 +75,9 @@ export const RefundPolicy = ({ t, onBack, onClose }: { t: any, onBack?: () => vo
       
       <h3 style={{color: theme.gold, marginTop: '25px', borderBottom: `1px solid rgba(102, 192, 244, 0.15)`, paddingBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.refundPhysicalTitle}</h3>
       <p>{t.refundPhysicalDesc}</p>
+
+      <h3 style={{color: theme.gold, marginTop: '25px', borderBottom: `1px solid rgba(102, 192, 244, 0.15)`, paddingBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.refundSubTitle || "订阅服务取消政策"}</h3>
+      <p>{t.refundSubDesc}</p>
       
       <h3 style={{color: theme.gold, marginTop: '25px', borderBottom: `1px solid rgba(102, 192, 244, 0.15)`, paddingBottom: '5px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.refundProcessTitle}</h3>
       <p>{t.refundProcessDesc}</p>

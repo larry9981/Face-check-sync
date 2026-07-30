@@ -482,3 +482,22 @@ button, a, input[type="button"], input[type="submit"] {
   }
 }
 
+/* Mobile Dropdown Menu Items */
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+.mobile-menu-item:hover, .mobile-menu-item:active {
+  background: rgba(212, 175, 55, 0.18);
+  border-color: rgba(212, 175, 55, 0.4);
+}
+

@@ -112,8 +112,6 @@ const MysticApp = {
     const langMap = {
       'zh-CN': '简体中文',
       'en-US': 'English',
-      'ja-JP': '日本語',
-      'ko-KR': '한국어',
       'zh-TW': '繁體中文'
     };
 

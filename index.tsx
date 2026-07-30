@@ -14,6 +14,7 @@ import { CartPage } from './pages/CartPage';
 import { AdminPage } from './pages/AdminPage';
 import { PricingPage } from './pages/PricingPage';
 import { LandingPage } from './pages/LandingPage';
+import { CulturePage } from './pages/CulturePage';
 import { RenderStartView, RenderSelectionView, RenderResultView, LoadingSpinner, RenderHistoryView, RenderCameraView } from './pages/HomeViews';
 
 // =========================================================
@@ -590,6 +591,7 @@ const App = () => {
       dailyGenerations: {}, lastGenerationDate: '', totalTests: 0
   });
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Generate a random User ID if not present (Simple Auth)
   useEffect(() => {
@@ -1759,13 +1761,37 @@ This is a demonstration of the result layout.
     <div style={styles.appContainer}>
       <nav style={styles.navbar}>
         <div className="nav-container">
-          <div style={styles.logo} onClick={handleGoHome}>
+          {/* MOBILE MENU BUTTON (Positioned on the LEFT on mobile) */}
+          <button 
+             className="mobile-menu-btn"
+             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+             style={{
+               background: 'rgba(212, 175, 55, 0.15)',
+               color: theme.gold,
+               border: `1px solid ${theme.darkGold}`,
+               borderRadius: '6px',
+               padding: '4px 10px',
+               fontSize: '0.82rem',
+               fontWeight: '600',
+               cursor: 'pointer',
+               alignItems: 'center',
+               gap: '5px'
+             }}
+          >
+             <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>
+             <span>{t.menu || 'MENU'}</span>
+          </button>
+
+          <div style={styles.logo} onClick={handleGoHome} className="nav-logo">
             <div style={{width: '30px', height: '30px'}}>{BaguaSVG}</div>
             <span style={{color: theme.gold}}>{t.title}</span>
           </div>
-           <div className="nav-links">
+
+          {/* DESKTOP NAV LINKS (Visible on desktop) */}
+          <div className="nav-links desktop-nav-links">
              <span style={getNavLinkStyle('home')} onClick={() => { setCurrentPage('home'); setView('start'); }}>{t.home}</span>
              <span style={getNavLinkStyle('analysis')} onClick={() => { setCurrentPage('analysis'); setView('start'); }}>{t.navAnalysis}</span>
+             <span style={getNavLinkStyle('culture')} onClick={() => { setCurrentPage('culture'); setView('start'); }}>{t.culture || '玄学文化'}</span>
              <span style={getNavLinkStyle('pricing')} onClick={() => { setCurrentPage('pricing'); setView('start'); }}>{t.pricing}</span>
              <span style={getNavLinkStyle('shop')} onClick={() => { setCurrentPage('shop'); setView('start'); }}>{t.shop}</span>
              <span style={getNavLinkStyle('about')} onClick={() => { setCurrentPage('about'); setView('start'); }}>{t.about}</span>
@@ -1822,7 +1848,180 @@ This is a demonstration of the result layout.
                 {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
              </select>
           </div>
+
+          {/* MOBILE NAV CONTROLS (Only Login + Language on right for mobile) */}
+          <div className="mobile-nav-controls">
+             {/* LOGIN BUTTON / USER INFO (Mobile Outside) */}
+             {userState.isLoggedIn ? (
+                 <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                     <div 
+                         onClick={() => { setCurrentPage('history'); setView('start'); setMobileMenuOpen(false); }}
+                         style={{
+                             display: 'flex', 
+                             alignItems: 'center', 
+                             gap: '5px', 
+                             cursor: 'pointer', 
+                             background: 'rgba(212, 175, 55, 0.12)', 
+                             border: `1px solid ${theme.darkGold}`, 
+                             borderRadius: '20px', 
+                             padding: '2px 8px'
+                         }}
+                         title="My Account"
+                     >
+                         <div style={{
+                             width: '20px', 
+                             height: '20px', 
+                             borderRadius: '50%', 
+                             background: theme.gold, 
+                             color: '#000', 
+                             display: 'flex', 
+                             alignItems: 'center', 
+                             justifyContent: 'center', 
+                             fontWeight: 'bold', 
+                             fontSize: '0.75rem'
+                         }}>
+                             {((userState.name || 'U')[0] || 'U').toUpperCase()}
+                         </div>
+                         <span style={{color: theme.gold, fontSize: '0.78rem', fontWeight: '500', maxWidth: '60px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+                             {userState.name || 'Account'}
+                         </span>
+                     </div>
+                     <i className="fas fa-sign-out-alt" style={{cursor: 'pointer', color: '#999', padding: '3px', fontSize: '0.85rem'}} onClick={handleLogout} title={t.logout}></i>
+                 </div>
+             ) : (
+                 <span style={{cursor: 'pointer', color: theme.gold, fontSize: '0.82rem', padding: '3px 8px', border: `1px solid ${theme.darkGold}`, borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '4px'}} onClick={() => setShowAuthModal(true)}>
+                     <i className="fas fa-user"></i> {t.login}
+                 </span>
+             )}
+
+             {/* LANGUAGE SELECTOR (Mobile Outside) */}
+             <select 
+                style={{
+                  background: 'rgba(0,0,0,0.6)', 
+                  color: theme.gold, 
+                  border: '1px solid #555', 
+                  borderRadius: '4px', 
+                  padding: '3px 4px', 
+                  fontSize: '0.8rem'
+                }} 
+                value={language} 
+                onChange={(e) => switchLanguage(e.target.value)}
+             >
+                {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
+             </select>
+          </div>
         </div>
+
+        {/* MOBILE MENU DROPDOWN (Hidden outside, shown inside MENU) */}
+        {mobileMenuOpen && (
+          <div className="mobile-dropdown-menu">
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('home'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'home' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-home" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.home}</span>
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('analysis'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'analysis' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-eye" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.navAnalysis}</span>
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('culture'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'culture' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-book-open" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.culture || '玄学文化'}</span>
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('pricing'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'pricing' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-crown" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.pricing}</span>
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('shop'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'shop' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-gem" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.shop}</span>
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('about'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'about' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-info-circle" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.about}</span>
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('cart'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'cart' ? theme.gold : '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <i className="fas fa-shopping-cart" style={{ width: '20px', color: theme.gold }}></i>
+                <span>{t.cart}</span>
+              </div>
+              {cart.length > 0 && (
+                <span style={{ background: '#c0392b', color: '#fff', borderRadius: '12px', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                  {cart.reduce((a,c) => a + c.quantity, 0)}
+                </span>
+              )}
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('history'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'history' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-history" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.history}</span>
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('privacy'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'privacy' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-user-shield" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.privacy}</span>
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('terms'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'terms' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-file-contract" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.terms}</span>
+            </div>
+
+            <div 
+              className="mobile-menu-item" 
+              onClick={() => { setCurrentPage('refund'); setView('start'); setMobileMenuOpen(false); }}
+              style={{ color: currentPage === 'refund' ? theme.gold : '#fff' }}
+            >
+              <i className="fas fa-undo-alt" style={{ width: '20px', color: theme.gold }}></i>
+              <span>{t.refundTitle || '退款政策'}</span>
+            </div>
+          </div>
+        )}
       </nav>
 
       <div style={styles.main}>
@@ -1881,6 +2080,7 @@ This is a demonstration of the result layout.
                     }} 
                     onUpload={(e: any, targetSlot?: 'face' | 'palm') => handleFileUpload(e, targetSlot)} 
                     onBack={() => setView('start')}
+                    onClose={() => setView('start')}
                     language={language} useAdvancedAnalysis={useAdvancedAnalysis} onToggleAdvanced={() => setUseAdvancedAnalysis(!useAdvancedAnalysis)}
                     height={height} onSetHeight={setHeight} weight={weight} onSetWeight={setWeight}
                 />}
@@ -1942,6 +2142,27 @@ This is a demonstration of the result layout.
              </div>
         )}
         {currentPage === 'pricing' && <div style={styles.heroSection}><PricingPage t={t} onSelectPlan={triggerPayment} onBack={() => setCurrentPage('analysis')} onClose={() => setCurrentPage('analysis')} /></div>}
+        {currentPage === 'culture' && (
+            <div style={{ ...styles.heroSection, justifyContent: 'flex-start', paddingTop: '10px' }}>
+                <CulturePage
+                    language={language}
+                    onNavigateHome={() => { setCurrentPage('home'); setView('start'); }}
+                    onStartAnalysis={(type) => {
+                        setReadingType(type);
+                        if (type === 'both') {
+                            setBothStep('face');
+                            setFaceImage(null);
+                            setPalmImage(null);
+                        } else {
+                            setFaceImage(null);
+                            setPalmImage(null);
+                        }
+                        setCurrentPage('analysis');
+                        setView('selection');
+                    }}
+                />
+            </div>
+        )}
         {currentPage === 'shop' && <div style={styles.heroSection}><ShopPage t={t} onViewProduct={handleViewProduct} /></div>}
         {currentPage === 'cart' && <div style={styles.heroSection}><CartPage t={t} cart={cart} onRemove={handleRemoveFromCart} onCheckout={handleCartCheckout} /></div>}
         {currentPage === 'about' && <div style={styles.heroSection}><AboutPage t={t} /></div>}

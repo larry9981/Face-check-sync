@@ -398,7 +398,7 @@ export const RenderSelectionView = ({
 
     return (
       <div style={{...styles.glassPanel, border: `1px solid rgba(102, 192, 244, 0.22)`, position: 'relative'}} className="glass-panel-mobile">
-          <TopHeaderNav t={t} onBack={onBack} title={headerTitle} />
+          <TopHeaderNav t={t} onBack={onBack} onClose={onClose} title={headerTitle} />
 
           <h2 style={{color: theme.gold, marginBottom: '20px', fontFamily: '"Space Grotesk", sans-serif'}}>{t.chooseMethod}</h2>
           <div style={{textAlign: 'left', marginBottom: '20px'}}>
