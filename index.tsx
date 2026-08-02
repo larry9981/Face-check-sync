@@ -7,6 +7,7 @@ import { LANGUAGES, TRANSLATIONS } from './translations';
 import { calculateAge, calculateWuXing, getWesternZodiac } from './utils';
 import { UserState, Plan, CartItem, Product, HistoryRecord, Order, AppConfig, HomepageConfig, ServiceTierOption } from './types';
 import { BaguaSVG } from './components/Icons';
+import { SecurityShield, DomainSecurityBadge } from './components/SecurityShield';
 import { PaymentModal, ProductDetailModal, FiveElementsBalanceModal } from './components/Modals';
 import { PrivacyPolicy, TermsOfService, RefundPolicy, AboutPage } from './pages/StaticPages';
 import { ShopPage } from './pages/ShopPage';
@@ -511,6 +512,8 @@ const App = () => {
   const [selectedServiceTier, setSelectedServiceTier] = useState<ServiceTierOption | null>(null);
   const [unlockedTiers, setUnlockedTiers] = useState<string[]>([]);
   const [previousPageConfig, setPreviousPageConfig] = useState<{ page: any; view: any } | null>(null);
+  const [analysisReturnPage, setAnalysisReturnPage] = useState<string | null>(null);
+  const [cultureArticleId, setCultureArticleId] = useState<string | null>(null);
   const [cookieConsent, setCookieConsent] = useState<string | null>(localStorage.getItem('cookieConsent'));
 
   useEffect(() => {
@@ -581,6 +584,60 @@ const App = () => {
   });
   // IMPORTANT: Ensure t updates correctly. If translations are missing, this fallback prevents crashes.
   const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
+
+  // Dynamic SEO Title & Meta Description update
+  useEffect(() => {
+    const isZh = language.startsWith('zh');
+    let title = "TianJiEyes 天机之眼 | AI Face & Palm Reading, Bazi & Feng Shui Astrology";
+    let desc = "TianJiEyes merges ancient oriental face reading (Mianxiang), palmistry, Bazi, and Five Elements astrology with advanced AI biometrics.";
+
+    switch (currentPage) {
+      case 'analysis':
+        title = isZh ? "AI 面相手相测算与命理报告 | 天机之眼" : "AI Biometric Analysis & Destiny Chart | TianJiEyes";
+        desc = isZh ? "通过高精度 AI 算法识别面部五官与掌纹特征，结合八字五行为您提供深度命理分析与精准运势预测。" : "Instant AI face and palm scanning combined with ancient Bazi and Five Elements calculations.";
+        break;
+      case 'culture':
+        title = isZh ? "东方玄学文化大观 & 命理深度知识 | 天机之眼" : "Oriental Mysticism & Cultural Insights | TianJiEyes";
+        desc = isZh ? "深入探索面相学、手相相法、阴阳五行、风水地理、八字命理与奇门遁甲的经典智慧。" : "Explore curated knowledge on Physiognomy, Chiromancy, Five Elements, Bazi, I-Ching, and Feng Shui.";
+        break;
+      case 'shop':
+        title = isZh ? "灵宝阁 - 辟邪镇宅开运灵宝 | 天机之眼" : "Spiritual Treasury & Feng Shui Amulets | TianJiEyes";
+        desc = isZh ? "精选生肖星座吉物、五行调理法器与辟邪转运灵宝，为您提升气场、化解凶煞。" : "Handcrafted oriental amulets, gemstones, and elemental spiritual artifacts to balance your magnetic field.";
+        break;
+      case 'pricing':
+        title = isZh ? "会员特权与算命开通方案 | 天机之眼" : "VIP Destiny Plans & Passes | TianJiEyes";
+        desc = isZh ? "开通 VIP 算命特权，解锁无限制高精度 AI 面部与手相测算报告。" : "Select your pass for unlimited real-time AI biometric destiny readings and comprehensive reports.";
+        break;
+      case 'about':
+        title = isZh ? "关于我们 - AI 命理科技与传统智慧 | 天机之眼" : "About Us - Science & Ancient Wisdom | TianJiEyes";
+        desc = isZh ? "天机之眼致力于将千年东方玄学文化与现代 AI 生物特征识别科技完美融合。" : "Learn how TianJiEyes bridges ancestral oriental wisdom and modern AI biometrics.";
+        break;
+      case 'privacy':
+        title = isZh ? "隐私政策 - 30天数据安全承诺 | 天机之眼" : "Privacy Policy & Data Security | TianJiEyes";
+        desc = isZh ? "天机之眼承诺严格保护用户隐私，照片不作保存，所有测算数据30天后自动永久销毁。" : "Our privacy policy details strictly non-persistent data handling and automatic 30-day deletion.";
+        break;
+      case 'terms':
+        title = isZh ? "服务条款 - 使用规范 | 天机之眼" : "Terms of Service | TianJiEyes";
+        desc = isZh ? "天机之眼服务条款与平台使用规范。" : "Terms of service and usage conditions for TianJiEyes AI destiny platform.";
+        break;
+      case 'refund':
+        title = isZh ? "退款与取消政策 | 天机之眼" : "Refund & Cancellation Policy | TianJiEyes";
+        desc = isZh ? "天机之眼退款流程、订阅取消说明与服务保障。" : "Comprehensive refund and subscription cancellation guidelines for digital services.";
+        break;
+      case 'history':
+        title = isZh ? "个人中心与历史测算报告 | 天机之眼" : "Personal Dashboard & Reading History | TianJiEyes";
+        desc = isZh ? "查看与管理您过往的 AI 面相、手相与八字命理测算记录。" : "Access and review your saved AI biometric readings and personal destiny charts.";
+        break;
+      default:
+        break;
+    }
+
+    document.title = title;
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', desc);
+    }
+  }, [currentPage, language]);
   
   const [homepageConfigs, setHomepageConfigs] = useState<HomepageConfig[]>([]);
 
@@ -1598,9 +1655,12 @@ This is a demonstration of the result layout.
           if (type === 'both') {
               setBothStep('face');
           }
+          setAnalysisReturnPage('home');
           setView('selection');
           setCurrentPage('analysis');
       } else {
+          setAnalysisReturnPage('home');
+          setView('start');
           setCurrentPage('analysis');
       }
   };
@@ -1775,6 +1835,7 @@ This is a demonstration of the result layout.
 
   return (
     <div style={styles.appContainer}>
+      <SecurityShield isZh={language === 'zh-CN'} />
       <nav style={styles.navbar}>
         <div className="nav-container">
           {/* MOBILE MENU BUTTON (Positioned on the FAR LEFT on mobile) */}
@@ -2082,7 +2143,21 @@ This is a demonstration of the result layout.
 
         {currentPage === 'analysis' && (
              <div style={{...styles.heroSection, paddingTop: '1rem'}}>
-                {view === 'start' && <RenderStartView t={t} freeTrials={getDailyFreeRemaining()} isLoggedIn={userState.isLoggedIn} isPaidUser={Boolean(userState.isSubscribed || userState.hasPaidSingle)} freeFaceRemaining={userState.freeFaceRemaining} freePalmRemaining={userState.freePalmRemaining} daysRemaining={getDaysRemaining()} language={language} onStart={(type: 'face' | 'palm' | 'both') => { setReadingType(type); if (type === 'both') { setBothStep('face'); setFaceImage(null); setPalmImage(null); } else { setFaceImage(null); setPalmImage(null); } setView('selection'); }} />}
+                {view === 'start' && <RenderStartView t={t} freeTrials={getDailyFreeRemaining()} isLoggedIn={userState.isLoggedIn} isPaidUser={Boolean(userState.isSubscribed || userState.hasPaidSingle)} freeFaceRemaining={userState.freeFaceRemaining} freePalmRemaining={userState.freePalmRemaining} daysRemaining={getDaysRemaining()} language={language}
+                    onStart={(type: 'face' | 'palm' | 'both') => { setReadingType(type); if (type === 'both') { setBothStep('face'); setFaceImage(null); setPalmImage(null); } else { setFaceImage(null); setPalmImage(null); } setView('selection'); }}
+                    onBack={() => {
+                        if (analysisReturnPage === 'home') {
+                            setCurrentPage('home');
+                            setAnalysisReturnPage(null);
+                        }
+                    }}
+                    onClose={() => {
+                        if (analysisReturnPage === 'home') {
+                            setCurrentPage('home');
+                            setAnalysisReturnPage(null);
+                        }
+                    }}
+                />}
                 {view === 'selection' && <RenderSelectionView 
                     t={t} readingType={readingType} bothStep={bothStep} gender={gender} dobYear={dobYear} dobMonth={dobMonth} dobDay={dobDay} dobHour={dobHour} dobMinute={dobMinute} dobSecond={dobSecond}
                     uploadProgress={uploadProgress} userName={userName} onSetUserName={setUserName} onSetGender={setGender} onSetDobYear={setDobYear} onSetDobMonth={setDobMonth} onSetDobDay={setDobDay} onSetDobHour={setDobHour} onSetDobMinute={setDobMinute} onSetDobSecond={setDobSecond}
@@ -2098,8 +2173,28 @@ This is a demonstration of the result layout.
                         startCamera(targetMode);
                     }} 
                     onUpload={(e: any, targetSlot?: 'face' | 'palm') => handleFileUpload(e, targetSlot)} 
-                    onBack={() => setView('start')}
-                    onClose={() => setView('start')}
+                    onBack={() => {
+                        if (analysisReturnPage === 'culture') {
+                            setCurrentPage('culture');
+                            setAnalysisReturnPage(null);
+                        } else if (analysisReturnPage === 'home') {
+                            setCurrentPage('home');
+                            setView('start');
+                            setAnalysisReturnPage(null);
+                        } else {
+                            setView('start');
+                        }
+                    }}
+                    onClose={() => {
+                        if (analysisReturnPage === 'culture') {
+                            setCurrentPage('culture');
+                            setAnalysisReturnPage(null);
+                        } else {
+                            setCurrentPage('home');
+                            setView('start');
+                            setAnalysisReturnPage(null);
+                        }
+                    }}
                     language={language} useAdvancedAnalysis={useAdvancedAnalysis} onToggleAdvanced={() => setUseAdvancedAnalysis(!useAdvancedAnalysis)}
                     height={height} onSetHeight={setHeight} weight={weight} onSetWeight={setWeight}
                 />}
@@ -2165,8 +2260,14 @@ This is a demonstration of the result layout.
             <div style={{ ...styles.heroSection, justifyContent: 'flex-start', paddingTop: '10px' }}>
                 <CulturePage
                     language={language}
+                    initialArticleId={cultureArticleId}
+                    onArticleChange={(artId) => setCultureArticleId(artId)}
                     onNavigateHome={() => { setCurrentPage('home'); setView('start'); }}
-                    onStartAnalysis={(type) => {
+                    onStartAnalysis={(type, articleId) => {
+                        setAnalysisReturnPage('culture');
+                        if (articleId) {
+                            setCultureArticleId(articleId);
+                        }
                         setReadingType(type);
                         if (type === 'both') {
                             setBothStep('face');
@@ -2223,7 +2324,7 @@ This is a demonstration of the result layout.
       </div>
       <footer style={styles.footer}>
         <SocialLinks t={t} />
-        <div style={{marginTop: '30px', marginBottom: '10px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
+        <div style={{marginTop: '25px', marginBottom: '15px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap'}}>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('privacy'); setView('start');}}>{t.privacy}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('terms'); setView('start');}}>{t.terms}</span>
             <span style={{cursor: 'pointer', color: theme.gold}} onClick={() => {setCurrentPage('refund'); setView('start');}}>{t.refundTitle}</span>
@@ -2231,7 +2332,31 @@ This is a demonstration of the result layout.
                 <i className="fas fa-user-shield" style={{marginRight: '5px'}}></i>Admin Portal
             </span>
         </div>
+        
+        {/* Prominent Science & Entertainment Disclaimer */}
+        <div style={{
+          margin: '15px auto 20px auto',
+          padding: '12px 20px',
+          maxWidth: '780px',
+          background: 'rgba(212, 175, 55, 0.08)',
+          border: '1px solid rgba(212, 175, 55, 0.35)',
+          borderRadius: '8px',
+          color: '#e2c57b',
+          fontSize: '0.9rem',
+          lineHeight: '1.6',
+          textAlign: 'center',
+          fontWeight: 500,
+          letterSpacing: '0.02em',
+          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)'
+        }}>
+          <i className="fas fa-microscope" style={{marginRight: '8px', color: '#66c0f4'}}></i>
+          {t.entertainmentDisclaimer || "本网站提供的所有服务仅供娱乐参考，请大家相信科学。"}
+        </div>
+
         <div>&copy; {new Date().getFullYear()} {t.title}. {t.footerRight}</div>
+        <div>
+          <DomainSecurityBadge isZh={language === 'zh-CN'} />
+        </div>
       </footer>
 
       {!cookieConsent && (

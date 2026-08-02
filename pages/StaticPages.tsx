@@ -124,15 +124,15 @@ export const AboutPage = ({ t, onBack, onClose }: { t: any, onBack?: () => void,
           <div style={{ marginTop: '25px', display: 'flex', gap: '20px', justifyContent: 'flex-start' }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{ color: theme.gold, fontSize: '1.5rem', fontWeight: 'bold' }}>10k+</div>
-              <div style={{ fontSize: '0.8rem', color: '#888' }}>Soul Readings</div>
+              <div style={{ fontSize: '0.8rem', color: '#888' }}>{t.statSoulReadings || "Soul Readings"}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ color: theme.gold, fontSize: '1.5rem', fontWeight: 'bold' }}>50+</div>
-              <div style={{ fontSize: '0.8rem', color: '#888' }}>Masters</div>
+              <div style={{ fontSize: '0.8rem', color: '#888' }}>{t.statMasters || "Masters"}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{ color: theme.gold, fontSize: '1.5rem', fontWeight: 'bold' }}>99%</div>
-              <div style={{ fontSize: '0.8rem', color: '#888' }}>Clarity Rate</div>
+              <div style={{ fontSize: '0.8rem', color: '#888' }}>{t.statClarityRate || "Clarity Rate"}</div>
             </div>
           </div>
         </div>

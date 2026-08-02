@@ -7,64 +7,239 @@ import { Article2DDiagram } from '../components/Article2DDiagram';
 interface CulturePageProps {
   language: string;
   onNavigateHome?: () => void;
-  onStartAnalysis?: (type: 'face' | 'palm' | 'both') => void;
+  onStartAnalysis?: (type: 'face' | 'palm' | 'both', articleId?: string) => void;
+  initialArticleId?: string | null;
+  onArticleChange?: (articleId: string | null) => void;
 }
 
 const TAG_MAP_EN: Record<string, string> = {
+  // Physiognomy & Facial Features
   '面相学': 'Physiognomy',
   '事业运': 'Career Destiny',
   '天庭': 'Forehead',
   '官禄宫': 'Career Palace',
+  '眉毛面相': 'Eyebrow Reading',
   '眉毛': 'Eyebrows',
+  '保寿官': 'Longevity Palace',
+  '人际关系': 'Interpersonal Relations',
+  '兄弟宫': 'Siblings Palace',
+  '眼睛面相': 'Eye Reading',
+  '监察官': 'Inspection Palace',
   '眼神': 'Gaze & Focus',
+  '神气': 'Vital Aura',
   '财帛宫': 'Wealth Palace',
-  '唇齿': 'Lips & Chin',
+  '鼻子面相': 'Nose Reading',
+  '财运': 'Financial Luck',
+  '守财': 'Wealth Retention',
+  '下巴面相': 'Chin & Jaw',
+  '地阁': 'Jaw Court',
+  '晚年运': 'Later Life Destiny',
+  '嘴唇': 'Lips',
+  '唇齿': 'Lips & Teeth',
   '人中': 'Philtrum',
-  '三庭五眼': 'Three Courts',
+  '夫妻宫': 'Spouse Palace',
+  '婚姻运': 'Marital Luck',
+  '家族运': 'Family Heritage',
+  '三庭五眼': 'Three Courts & Five Eyes',
+  '面相比例': 'Facial Proportions',
+  '早年运': 'Early Life Fortune',
+  '中年运': 'Mid-Life Destiny',
   '痣相': 'Facial Moles',
+  '眉中藏珠': 'Hidden Gem Mole',
+  '吉痣': 'Auspicious Moles',
+  '财运痣': 'Wealth Moles',
+
+  // Palmistry & Lines
+  '手相学': 'Palmistry',
   '生命线': 'Life Line',
   '智慧线': 'Head Line',
   '感情线': 'Heart Line',
   '事业线': 'Fate Line',
+  '命运线': 'Destiny Line',
   '太阳线': 'Sun Line',
+  '成功线': 'Success Line',
+  '通天纹': 'Celestial Palm Line',
+  '名望': 'Fame & Prestige',
   '掌丘': 'Palm Mounts',
+  '手掌丘陵': 'Palm Mounts',
   '掌纹': 'Palm Lines',
+  '金星丘': 'Venus Mount',
+  '木星丘': 'Jupiter Mount',
+  '水星丘': 'Mercury Mount',
+  '元气': 'Vital Qi Energy',
+  '岛纹': 'Island Patterns',
+  '掌纹化解': 'Palm Line Remedy',
+  '后天开运': 'Destiny Enhancement',
+  '气血调理': 'Vitality Balance',
   '双相互证': 'Dual Biometrics',
+  '面手双证': 'Face & Palm Dual Verification',
+  '职业规划': 'Career Pathing',
+  '思维模式': 'Mindset Pattern',
+  '决断力': 'Decision Power',
+  '姻缘': 'Love Affinity',
+  '情感智商': 'Emotional IQ',
+  '婚姻手相': 'Marriage Palmistry',
+  '转折点': 'Turning Points',
+  '年龄预测': 'Age Timeline',
+  '能量补足': 'Energy Replenishment',
+
+  // Five Elements & Feng Shui
   '五行': 'Five Elements',
-  '五行调理': 'Five Elements',
+  '五行调理': 'Five Elements Remedies',
+  '五行缺失': 'Elemental Deficiency',
+  '喜用神': 'Favorable Element',
+  '开运补足': 'Auspicious Balancing',
+  '能量平衡': 'Energy Equilibrium',
   '风水': 'Feng Shui',
   '家居风水': 'Home Feng Shui',
-  '色彩': 'Color Harmony',
-  '水晶': 'Crystal Resonance',
-  '玄关风水': 'Entryway Feng Shui',
-  '方位吉凶': 'Compass Directions',
-  '卧室风水': 'Bedroom Feng Shui',
+  '居家风水': 'Residential Feng Shui',
+  '明财位': 'Primary Wealth Corner',
+  '聚气': 'Qi Energy Assembly',
+  '客厅风水': 'Living Room Feng Shui',
+  '办公风水': 'Office Feng Shui',
   '办公室': 'Workplace',
-  '八字': 'Bazi',
-  '太岁': 'Tai Sui',
-  '赤马年': 'Red Horse 2026',
+  '青龙白虎': 'Dragon & Tiger Balance',
+  '职场贵人': 'Career Mentors',
+  '防小人': 'Shielding Misfortune',
+  '玄关风水': 'Entryway Feng Shui',
+  '纳气口': 'Qi Intake Portal',
+  '阳宅环境': 'Residential Environment',
+  '家居气场': 'Home Aura Field',
+  '开运方位': 'Lucky Compass Directions',
+  '方位吉凶': 'Compass Directions',
+  '五行喜忌': 'Elemental Compatibility',
+  '地理风水': 'Geomantic Feng Shui',
+  '发展方向': 'Strategic Direction',
+  '卧室风水': 'Bedroom Feng Shui',
+  '睡眠质量': 'Sleep Quality',
+  '安神气场': 'Tranquil Aura Field',
+  '健康理疗': 'Wellness & Balance',
+  '色彩': 'Color Harmony',
+  '颜色五行': 'Color Five Elements',
+  '穿搭开运': 'Auspicious Fashion',
+  '喜用神颜色': 'Lucky Element Colors',
+  '水晶': 'Crystal Resonance',
+  '水晶能量': 'Crystal Energy',
+  '黑曜石': 'Obsidian Crystal',
+  '和田玉': 'Imperial Hetian Jade',
+  '生物磁场': 'Biometric Field',
+  '能量磁场': 'Energy Field',
+
+  // Zodiac, Bazi & Calendar
+  '2026丙午年': '2026 Fire Horse Year',
+  '赤马年': 'Red Fire Horse Year',
+  '十二生肖': 'Twelve Zodiac Signs',
   '生肖': 'Zodiac',
+  '流年运势': 'Annual Horoscope',
+  '生肖六合': 'Six Zodiac Harmonies',
+  '生肖三合': 'Three Zodiac Combinations',
+  '贵人磁场': 'Mentor Attraction',
+  '合伙创业': 'Business Partnership',
+  '八字': 'Bazi Chart',
+  '八字入门': 'Bazi Basics',
+  '四柱命理': 'Four Pillars Astrology',
+  '日干': 'Day Master',
+  '人生坐标': 'Life Blueprint Coordinates',
+  '犯太岁': 'Clash with Tai Sui',
+  '值太岁': 'Presiding Tai Sui',
+  '冲太岁': 'Direct Clash Tai Sui',
+  '太岁': 'Tai Sui Guardian',
+  '开运护身符': 'Auspicious Amulet',
+  '十天干': 'Ten Heavenly Stems',
   '天干': 'Heavenly Stems',
-  '十神': 'Ten Gods',
-  '大运': 'Luck Cycles',
+  '甲木': 'Yang Wood (Jia)',
+  '丙火': 'Yang Fire (Bing)',
+  '庚金': 'Yang Metal (Geng)',
+  '性格底色': 'Core Personality Base',
+  '十神': 'Ten Gods Archetypes',
+  '正财偏财': 'Direct & Indirect Wealth',
+  '正官七杀': 'Authority & Challenger Gods',
+  '命理格局': 'Destiny Structure',
+  '大运': 'Major Luck Cycles',
+  '大运交接': 'Luck Cycle Transition',
+  '人生转折': 'Life Milestone Shifts',
+  '顺势而为': 'Flow with Destiny',
+  '吉祥物原理': 'Amulet Mechanics',
+  '开运饰品': 'Fortune Accessories',
+  '微电场': 'Micro Electro-Magnetic Field',
+  '符文共振': 'Talismanic Resonance',
+
+  // Astrology & Numerology
+  '水星逆行': 'Mercury Retrograde',
+  '星座指南': 'Zodiac Horoscope',
+  '沟通契约': 'Contracts & Communication',
+  '复盘反思': 'Review & Reflection',
+  '上升星座': 'Rising Sign (Ascendant)',
+  '星盘': 'Astrological Natal Chart',
+  '第一印象': 'First Impression',
+  '人格面具': 'Persona Mask',
+  '月亮星座': 'Moon Sign',
+  '潜意识': 'Subconscious Mind',
+  '安全感': 'Emotional Security',
+  '情绪疗愈': 'Emotional Healing',
+
+  // I Ching & Ancient Strategy
   '易经': 'I Ching',
-  '紫微斗数': 'Zi Wei Dou Shu',
+  '六十四卦': '64 Hexagrams',
+  '二进制思维': 'Binary Matrix Logic',
+  '现代决策': 'Modern Decision Making',
   '奇门遁甲': 'Qi Men Dun Jia',
+  '帝王之学': 'Royal Strategic Science',
+  '择日择方': 'Auspicious Timing & Location',
+  '商业谈判': 'High-Stakes Negotiation',
+  '紫微斗数': 'Zi Wei Dou Shu',
+  '十二宫位': 'Twelve Life Palaces',
+  '命宫': 'Self Palace',
+  '紫微星': 'Emperor Star (Zi Wei)',
+  '同步性': 'Synchronicity',
   '共时性': 'Synchronicity',
+  '荣格': 'Carl Jung',
+  '宇宙信号': 'Cosmic Signals',
+  '心灵感应': 'Telepathic Resonance',
+
+  // AI & Metaphysics
+  'AI命理': 'AI Destiny Analytics',
   'AI玄学': 'AI Metaphysics',
-  'AI': 'AI Analytics'
+  'AI': 'AI Technology',
+  '算法准确度': 'Algorithm Precision',
+  '天机之眼': 'TianJiEyes Platform',
+  '科技命理': 'Tech-Driven Destiny',
+  '高精度分析': 'High-Precision Analytics'
 };
 
 export const CulturePage: React.FC<CulturePageProps> = ({
   language,
   onNavigateHome,
-  onStartAnalysis
+  onStartAnalysis,
+  initialArticleId,
+  onArticleChange
 }) => {
   const isZh = language.startsWith('zh');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [activeArticle, setActiveArticle] = useState<Article | null>(null);
   const [articlesList, setArticlesList] = useState<Article[]>(CULTURE_ARTICLES);
+  const [activeArticle, setActiveArticle] = useState<Article | null>(() => {
+    if (initialArticleId) {
+      return CULTURE_ARTICLES.find(a => a.id === initialArticleId) || null;
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (initialArticleId) {
+      const found = articlesList.find(a => a.id === initialArticleId);
+      if (found) {
+        setActiveArticle(found);
+      }
+    }
+  }, [initialArticleId, articlesList]);
+
+  const handleSetArticle = (art: Article | null) => {
+    setActiveArticle(art);
+    if (onArticleChange) {
+      onArticleChange(art ? art.id : null);
+    }
+  };
 
   useEffect(() => {
     fetch('/api/articles')
@@ -97,7 +272,7 @@ export const CulturePage: React.FC<CulturePageProps> = ({
 
       const titleMatch = (isZh ? art.title : (art.titleEn || art.title)).toLowerCase().includes(query);
       const summaryMatch = (isZh ? art.summary : (art.summaryEn || art.summary)).toLowerCase().includes(query);
-      const tagMatch = (art.tags || []).some(t => t.toLowerCase().includes(query));
+      const tagMatch = (art.tags || []).some(t => t.toLowerCase().includes(query) || (TAG_MAP_EN[t] || '').toLowerCase().includes(query));
 
       return matchCat && (titleMatch || summaryMatch || tagMatch);
     });
@@ -305,7 +480,7 @@ export const CulturePage: React.FC<CulturePageProps> = ({
               return (
                 <div
                   key={article.id}
-                  onClick={() => setActiveArticle(article)}
+                  onClick={() => handleSetArticle(article)}
                   style={{
                     background: 'rgba(23, 38, 54, 0.85)',
                     borderRadius: '16px',
@@ -475,7 +650,7 @@ export const CulturePage: React.FC<CulturePageProps> = ({
               
               {/* TOP-RIGHT CLOSE BUTTON 'X' */}
               <button
-                onClick={() => setActiveArticle(null)}
+                onClick={() => handleSetArticle(null)}
                 style={{
                   position: 'absolute',
                   top: '20px',
@@ -783,9 +958,8 @@ export const CulturePage: React.FC<CulturePageProps> = ({
 
                   <button
                     onClick={() => {
-                      setActiveArticle(null);
                       if (onStartAnalysis) {
-                        onStartAnalysis('both');
+                        onStartAnalysis('both', activeArticle ? activeArticle.id : undefined);
                       }
                     }}
                     style={{
@@ -813,7 +987,7 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                 {/* BOTTOM RETURN NAVIGATION BUTTON */}
                 <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
                   <button
-                    onClick={() => setActiveArticle(null)}
+                    onClick={() => handleSetArticle(null)}
                     style={{
                       background: 'none',
                       border: `1px solid rgba(102, 192, 244, 0.4)`,
