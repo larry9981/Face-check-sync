@@ -110,9 +110,8 @@ const MysticApp = {
 
     const wuXing = this.calculateWuXing(this.state.userData.dob);
     const langMap = {
-      'zh-CN': '简体中文',
       'en-US': 'English',
-      'zh-TW': '繁體中文'
+      'zh-CN': '简体中文'
     };
 
     let prompt = `你是一位精通面相和手相的东方命理大师。

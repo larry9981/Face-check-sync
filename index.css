@@ -274,9 +274,47 @@ button, a, input[type="button"], input[type="submit"] {
 
   /* Navbar Adjustments for 9:16 Mobile Screens */
   .nav-container {
-    padding: 0.75rem 1rem !important;
-    flex-direction: column !important;
-    gap: 0.75rem !important;
+    padding: 0.5rem 0.65rem !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    order: 1 !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    padding: 4px 8px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .nav-logo {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    font-size: 0.88rem !important;
+    order: 2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 130px !important;
+    flex-shrink: 1 !important;
+  }
+
+  .mobile-nav-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    order: 3 !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
   }
 
   .nav-links {
@@ -499,5 +537,150 @@ button, a, input[type="button"], input[type="submit"] {
 .mobile-menu-item:hover, .mobile-menu-item:active {
   background: rgba(212, 175, 55, 0.18);
   border-color: rgba(212, 175, 55, 0.4);
+}
+
+/* =========================================================
+   ✨ NEW USER REQUIREMENTS FIXES
+   ========================================================= */
+
+/* 1. 40 Articles 2D Diagram proportional stage box & annotation display box */
+/* Mobile Device (<768px): 2D Diagram graphic perfectly centered in 5:3 ratio, Annotations 100% visible */
+.article-diagram-stage {
+  aspect-ratio: 5 / 3 !important;
+  height: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  border-radius: 12px 12px 0 0 !important;
+  overflow: hidden !important;
+}
+
+.article-diagram-stage svg {
+  margin: auto !important;
+  display: block !important;
+  align-self: center !important;
+  justify-self: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+
+/* Annotation display box (标识显示框) - Mobile (< 768px) */
+.article-diagram-annotations {
+  width: 100% !important;
+  padding: 16px 14px !important;
+  background: rgba(11, 17, 26, 0.96) !important;
+  border-top: 1px solid rgba(102, 192, 244, 0.2) !important;
+  box-sizing: border-box !important;
+}
+
+.article-diagram-annotations-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+.article-diagram-annotation-card {
+  padding: 10px 12px !important;
+  min-height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  border-radius: 10px !important;
+  box-sizing: border-box !important;
+}
+
+/* Tablet Device Adaption (768px - 1023px) */
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .article-diagram-stage {
+    aspect-ratio: 16 / 9 !important;
+    max-height: 420px !important;
+  }
+
+  .article-diagram-annotations {
+    padding: 20px 20px !important;
+  }
+
+  .article-diagram-annotations-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .article-diagram-annotation-card {
+    padding: 12px 16px !important;
+    min-height: 58px !important;
+  }
+}
+
+/* PC / Desktop Device Adaption (>= 1024px) */
+@media screen and (min-width: 1024px) {
+  .article-diagram-stage {
+    aspect-ratio: 16 / 9 !important;
+    max-height: 480px !important;
+  }
+
+  .article-diagram-annotations {
+    padding: 24px 24px !important;
+  }
+
+  .article-diagram-annotations-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .article-diagram-annotation-card {
+    padding: 14px 18px !important;
+    min-height: 62px !important;
+  }
+}
+
+/* 2. Dynamically generated real image display box in 4:3 ratio with full image display */
+.article-real-image-container {
+  aspect-ratio: 4 / 3 !important;
+  width: 100% !important;
+  max-width: 600px !important;
+  margin: 0 auto !important;
+  height: auto !important;
+}
+
+.article-generated-real-image,
+.article-real-image-container img {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+}
+
+/* 2. Top Navigation Bar always stays visible ON TOP of all popups/modals */
+nav, .navbar, nav[style] {
+  z-index: 10000 !important;
+  position: sticky !important;
+  top: 0 !important;
+}
+
+/* Ensure modal overlays start below navbar or don't obstruct top navbar */
+.modal-overlay,
+div[style*="position: fixed"][style*="zIndex: 3000"],
+div[style*="position: fixed"][style*="zIndex: 4000"],
+div[style*="position: fixed"][style*="zIndex: 5000"] {
+  top: 56px !important;
+  height: calc(100vh - 56px) !important;
+  box-sizing: border-box !important;
+}
+
+/* 3. On Desktop (width >= 769px), hide Close and Back buttons on PRICING page when accessed via navigation bar */
+@media screen and (min-width: 769px) {
+  .pricing-top-nav,
+  .pricing-top-nav .nav-back-btn,
+  .pricing-top-nav .nav-close-btn {
+    display: none !important;
+  }
 }
 

@@ -570,7 +570,15 @@ const App = () => {
       return 'en';
   };
 
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(() => {
+      try {
+          const saved = localStorage.getItem('app_lang');
+          if (saved === 'zh-CN' || saved === 'zh') return 'zh-CN';
+          return 'en';
+      } catch {
+          return 'en';
+      }
+  });
   // IMPORTANT: Ensure t updates correctly. If translations are missing, this fallback prevents crashes.
   const t = TRANSLATIONS[language] || TRANSLATIONS['en'];
   
@@ -769,7 +777,11 @@ const App = () => {
   };
 
   const switchLanguage = async (newLang: string) => {
-      setLanguage(newLang);
+      const targetLang = (newLang === 'zh' || newLang === 'zh-CN') ? 'zh-CN' : 'en';
+      setLanguage(targetLang);
+      try {
+          localStorage.setItem('app_lang', targetLang);
+      } catch (e) {}
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
       
@@ -1765,7 +1777,7 @@ This is a demonstration of the result layout.
     <div style={styles.appContainer}>
       <nav style={styles.navbar}>
         <div className="nav-container">
-          {/* MOBILE MENU BUTTON (Positioned on the LEFT on mobile) */}
+          {/* MOBILE MENU BUTTON (Positioned on the FAR LEFT on mobile) */}
           <button 
              className="mobile-menu-btn"
              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -1774,12 +1786,15 @@ This is a demonstration of the result layout.
                color: theme.gold,
                border: `1px solid ${theme.darkGold}`,
                borderRadius: '6px',
-               padding: '4px 10px',
-               fontSize: '0.82rem',
+               padding: '4px 8px',
+               fontSize: '0.8rem',
                fontWeight: '600',
                cursor: 'pointer',
+               display: 'flex',
                alignItems: 'center',
-               gap: '5px'
+               gap: '4px',
+               whiteSpace: 'nowrap',
+               flexShrink: 0
              }}
           >
              <i className={`fas ${mobileMenuOpen ? 'fa-times' : 'fa-bars'}`}></i>

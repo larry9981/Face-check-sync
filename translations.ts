@@ -3,7 +3,6 @@
 export const LANGUAGES = [
   { code: 'en', label: 'English', voiceCode: 'en-US' },
   { code: 'zh-CN', label: '简体中文', voiceCode: 'zh-CN' },
-  { code: 'zh-TW', label: '繁體中文', voiceCode: 'zh-TW' },
 ];
 
 const EN_TRANS = {
@@ -835,5 +834,5 @@ const ZH_TW_TRANS = {
 export const TRANSLATIONS: any = {
   'en': EN_TRANS,
   'zh-CN': ZH_CN_TRANS,
-  'zh-TW': ZH_TW_TRANS,
+  'zh': ZH_CN_TRANS,
 };

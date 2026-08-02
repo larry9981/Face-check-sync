@@ -1,12 +1,59 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { theme, styles } from '../theme';
 import { CULTURE_ARTICLES, Article } from '../data/cultureArticles';
+import { getArticleContent } from '../data/articleTranslator';
+import { Article2DDiagram } from '../components/Article2DDiagram';
 
 interface CulturePageProps {
   language: string;
   onNavigateHome?: () => void;
   onStartAnalysis?: (type: 'face' | 'palm' | 'both') => void;
 }
+
+const TAG_MAP_EN: Record<string, string> = {
+  '面相学': 'Physiognomy',
+  '事业运': 'Career Destiny',
+  '天庭': 'Forehead',
+  '官禄宫': 'Career Palace',
+  '眉毛': 'Eyebrows',
+  '眼神': 'Gaze & Focus',
+  '财帛宫': 'Wealth Palace',
+  '唇齿': 'Lips & Chin',
+  '人中': 'Philtrum',
+  '三庭五眼': 'Three Courts',
+  '痣相': 'Facial Moles',
+  '生命线': 'Life Line',
+  '智慧线': 'Head Line',
+  '感情线': 'Heart Line',
+  '事业线': 'Fate Line',
+  '太阳线': 'Sun Line',
+  '掌丘': 'Palm Mounts',
+  '掌纹': 'Palm Lines',
+  '双相互证': 'Dual Biometrics',
+  '五行': 'Five Elements',
+  '五行调理': 'Five Elements',
+  '风水': 'Feng Shui',
+  '家居风水': 'Home Feng Shui',
+  '色彩': 'Color Harmony',
+  '水晶': 'Crystal Resonance',
+  '玄关风水': 'Entryway Feng Shui',
+  '方位吉凶': 'Compass Directions',
+  '卧室风水': 'Bedroom Feng Shui',
+  '办公室': 'Workplace',
+  '八字': 'Bazi',
+  '太岁': 'Tai Sui',
+  '赤马年': 'Red Horse 2026',
+  '生肖': 'Zodiac',
+  '天干': 'Heavenly Stems',
+  '十神': 'Ten Gods',
+  '大运': 'Luck Cycles',
+  '易经': 'I Ching',
+  '紫微斗数': 'Zi Wei Dou Shu',
+  '奇门遁甲': 'Qi Men Dun Jia',
+  '共时性': 'Synchronicity',
+  'AI玄学': 'AI Metaphysics',
+  'AI': 'AI Analytics'
+};
 
 export const CulturePage: React.FC<CulturePageProps> = ({
   language,
@@ -250,9 +297,10 @@ export const CulturePage: React.FC<CulturePageProps> = ({
           }}>
             {filteredArticles.map((article) => {
               const title = isZh ? article.title : article.titleEn;
-              const summary = isZh ? article.summary : article.summaryEn;
-              const categoryName = isZh ? article.category : article.categoryEn;
-              const authorName = isZh ? article.author : article.authorEn;
+              const summary = isZh ? article.summary : (article.summaryEn || article.summary);
+              const categoryName = isZh ? article.category : (article.categoryEn || article.category);
+              const authorName = isZh ? article.author : (article.authorEn || article.author);
+              const articleTitle = isZh ? article.title : (article.titleEn || article.title);
 
               return (
                 <div
@@ -282,57 +330,43 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                     e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.4)';
                   }}
                 >
-                  {/* CARD COVER IMAGE */}
-                  <div style={{ height: '180px', width: '100%', position: 'relative', overflow: 'hidden' }}>
-                    <img
-                      src={article.coverImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop'}
-                      alt={title}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transition: 'transform 0.5s ease'
-                      }}
-                    />
-                    <div style={{
-                      position: 'absolute',
-                      top: '12px',
-                      left: '12px',
-                      background: 'rgba(11, 16, 26, 0.85)',
-                      backdropFilter: 'blur(8px)',
-                      color: theme.gold,
-                      padding: '4px 12px',
-                      borderRadius: '20px',
-                      fontSize: '0.75rem',
-                      fontWeight: '600',
-                      border: `1px solid rgba(102, 192, 244, 0.4)`
-                    }}>
-                      {categoryName}
-                    </div>
-
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '10px',
-                      right: '12px',
-                      background: 'rgba(0,0,0,0.7)',
-                      color: '#CCC',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      fontSize: '0.72rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      <i className="far fa-clock" /> {article.readTime}
-                    </div>
-                  </div>
-
                   {/* CARD BODY */}
-                  <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                  <div style={{ padding: '1.4rem', flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                    
+                    {/* TOP CATEGORY & READ TIME HEADER BAR */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '1rem'
+                    }}>
+                      <span style={{
+                        background: 'rgba(102, 192, 244, 0.12)',
+                        color: theme.gold,
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        fontSize: '0.78rem',
+                        fontWeight: '600',
+                        border: '1px solid rgba(102, 192, 244, 0.3)'
+                      }}>
+                        {categoryName}
+                      </span>
+                      <span style={{
+                        color: '#7B94A6',
+                        fontSize: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}>
+                        <i className="far fa-clock" /> {isZh ? article.readTime : (article.readTimeEn || article.readTime.replace('分钟', ' min read'))}
+                      </span>
+                    </div>
+
+                    {/* ARTICLE TITLE */}
                     <h3 style={{
                       margin: '0 0 0.75rem 0',
                       color: '#FFFFFF',
-                      fontSize: '1.1rem',
+                      fontSize: '1.12rem',
                       fontWeight: '600',
                       lineHeight: '1.5',
                       textAlign: 'left',
@@ -341,9 +375,10 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden'
                     }}>
-                      {title}
+                      {articleTitle}
                     </h3>
 
+                    {/* SUMMARY */}
                     <p style={{
                       margin: '0 0 1.25rem 0',
                       color: '#90A0B0',
@@ -370,7 +405,7 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                           borderRadius: '4px',
                           border: '1px solid rgba(102, 192, 244, 0.2)'
                         }}>
-                          #{tag}
+                          #{isZh ? tag : (TAG_MAP_EN[tag] || tag)}
                         </span>
                       ))}
                     </div>
@@ -428,7 +463,7 @@ export const CulturePage: React.FC<CulturePageProps> = ({
               background: 'linear-gradient(180deg, #1B2838 0%, #171A21 100%)',
               border: `1px solid rgba(102, 192, 244, 0.35)`,
               borderRadius: '24px',
-              maxWidth: '860px',
+              maxWidth: '1080px',
               width: '100%',
               margin: '2rem auto',
               boxShadow: '0 30px 80px rgba(0,0,0,0.95)',
@@ -471,49 +506,58 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                   e.currentTarget.style.borderColor = 'rgba(102, 192, 244, 0.4)';
                   e.currentTarget.style.transform = 'scale(1)';
                 }}
-                title={isZh ? '关闭文章 (返回上级)' : 'Close Article (Return)'}
+                title={isZh ? '关闭文章 (返回列表)' : 'Close Article (Return to List)'}
               >
                 ✕
               </button>
 
-              {/* ARTICLE BANNER IMAGE */}
-              <div style={{ height: '320px', width: '100%', position: 'relative', overflow: 'hidden' }}>
-                <img
-                  src={activeArticle.coverImage || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1000&auto=format&fit=crop'}
-                  alt={isZh ? activeArticle.title : activeArticle.titleEn}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+              {/* ARTICLE HERO HEADER */}
+              <div style={{
+                padding: '3rem 2.5rem 2rem 2.5rem',
+                width: '100%',
+                position: 'relative',
+                overflow: 'hidden',
+                background: 'linear-gradient(135deg, rgba(26, 40, 56, 0.98) 0%, rgba(15, 22, 32, 0.95) 100%)',
+                borderBottom: '1px solid rgba(102, 192, 244, 0.25)',
+                boxSizing: 'border-box',
+                textAlign: 'left'
+              }}>
                 <div style={{
                   position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(27, 40, 56, 0.95) 100%)'
+                  top: '-40px',
+                  right: '-40px',
+                  width: '220px',
+                  height: '220px',
+                  background: 'radial-gradient(circle, rgba(102, 192, 244, 0.12) 0%, transparent 70%)',
+                  borderRadius: '50%',
+                  pointerEvents: 'none'
                 }} />
 
-                <div style={{ position: 'absolute', bottom: '24px', left: '28px', right: '80px' }}>
-                  <span style={{
-                    display: 'inline-block',
-                    background: 'rgba(102, 192, 244, 0.2)',
-                    border: '1px solid rgba(102, 192, 244, 0.5)',
-                    color: theme.gold,
-                    padding: '4px 14px',
-                    borderRadius: '20px',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    marginBottom: '10px'
-                  }}>
-                    {isZh ? activeArticle.category : activeArticle.categoryEn}
-                  </span>
+                <span style={{
+                  display: 'inline-block',
+                  background: 'rgba(102, 192, 244, 0.2)',
+                  border: '1px solid rgba(102, 192, 244, 0.45)',
+                  color: theme.gold,
+                  padding: '4px 14px',
+                  borderRadius: '20px',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  marginBottom: '12px'
+                }}>
+                  {isZh ? activeArticle.category : (activeArticle.categoryEn || activeArticle.category)}
+                </span>
 
-                  <h1 style={{
-                    margin: 0,
-                    color: '#FFFFFF',
-                    fontSize: '1.8rem',
-                    fontWeight: '700',
-                    textShadow: '0 2px 10px rgba(0,0,0,0.8)'
-                  }}>
-                    {isZh ? activeArticle.title : activeArticle.titleEn}
-                  </h1>
-                </div>
+                <h1 style={{
+                  margin: 0,
+                  color: '#FFFFFF',
+                  fontSize: '1.85rem',
+                  fontWeight: '700',
+                  lineHeight: '1.4',
+                  textShadow: '0 2px 10px rgba(0,0,0,0.8)',
+                  maxWidth: '720px'
+                }}>
+                  {isZh ? activeArticle.title : (activeArticle.titleEn || activeArticle.title)}
+                </h1>
               </div>
 
               {/* ARTICLE META INFO */}
@@ -527,35 +571,60 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                 color: '#89A2B6',
                 flexWrap: 'wrap'
               }}>
-                <span><i className="fas fa-feather-alt" style={{ marginRight: '6px', color: theme.gold }} />{isZh ? activeArticle.author : activeArticle.authorEn}</span>
+                <span><i className="fas fa-feather-alt" style={{ marginRight: '6px', color: theme.gold }} />{isZh ? activeArticle.author : (activeArticle.authorEn || activeArticle.author)}</span>
                 <span><i className="far fa-calendar-alt" style={{ marginRight: '6px', color: theme.gold }} />{activeArticle.publishDate}</span>
-                <span><i className="far fa-clock" style={{ marginRight: '6px', color: theme.gold }} />{activeArticle.readTime}</span>
+                <span><i className="far fa-clock" style={{ marginRight: '6px', color: theme.gold }} />{isZh ? activeArticle.readTime : (activeArticle.readTimeEn || activeArticle.readTime.replace('分钟', ' min read'))}</span>
               </div>
 
               {/* ARTICLE CONTENT */}
-              <div style={{ padding: '28px 36px', fontSize: '1rem', color: '#D6E2EB', lineHeight: '1.9', textAlign: 'left' }}>
+              <div style={{ padding: '24px 28px', fontSize: '0.98rem', color: '#D6E2EB', lineHeight: '1.75', textAlign: 'left' }}>
                 
                 {/* SUMMARY HIGHLIGHT BOX */}
                 <div style={{
                   background: 'rgba(102, 192, 244, 0.08)',
                   borderLeft: `4px solid ${theme.gold}`,
-                  padding: '16px 20px',
-                  borderRadius: '0 12px 12px 0',
-                  marginBottom: '2rem',
-                  fontSize: '0.98rem',
+                  padding: '14px 18px',
+                  borderRadius: '0 10px 10px 0',
+                  marginBottom: '1.2rem',
+                  fontSize: '0.95rem',
                   color: '#E0EBF5',
                   fontStyle: 'italic',
                   textAlign: 'left'
                 }}>
-                  {isZh ? activeArticle.summary : activeArticle.summaryEn}
+                  {isZh ? activeArticle.summary : (activeArticle.summaryEn || activeArticle.summary)}
                 </div>
 
-                {/* MAIN MARKDOWN-LIKE CONTENT WITH INTERSPERSED IMAGES */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', textAlign: 'left' }}>
-                  {(isZh ? activeArticle.content : (activeArticle.contentEn || activeArticle.content))
-                    .split('\n')
-                    .map((paragraph, pIdx) => {
-                      const trimmed = paragraph.trim();
+                {/* 2D DIAGRAM PLACED DIRECTLY BELOW TITLE & SUMMARY AT ARTICLE TOP */}
+                <div style={{ margin: '1.2rem 0 1.6rem 0' }}>
+                  <Article2DDiagram articleId={activeArticle.id} isZh={isZh} />
+                </div>
+
+                {/* MAIN MARKDOWN-LIKE CONTENT WITH TIGHT PARAGRAPH SPACING */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', textAlign: 'left' }}>
+                  {(() => {
+                    const fullContent = getArticleContent(activeArticle, isZh);
+                    const paragraphs = fullContent.split('\n');
+
+                    return paragraphs.map((paragraph, pIdx) => {
+                      let trimmed = paragraph.trim();
+                      if (!trimmed) return null;
+
+                      // Remove all asterisks "*"
+                      trimmed = trimmed.replace(/\*/g, '');
+
+                      // Clean up forbidden jargon phrases
+                      trimmed = trimmed
+                        .replace(/2D 标题导航图全息特征深度图解分析[：:]?/g, '特征结构图解分析：')
+                        .replace(/2D Title Navigation Diagram Holographic Feature Analysis[：:]?/g, 'Feature Structure Analysis:')
+                        .replace(/2D 标题导航图/g, '结构图解')
+                        .replace(/2D 矢量标注/g, '特征标注')
+                        .replace(/2D 标注/g, '特征标注')
+                        .replace(/2D Navigation Diagram Callout/g, 'Feature Callout')
+                        .replace(/通过AI高精度视觉映射算法/g, '通过精准特征分析')
+                        .replace(/AI高精度视觉映射算法/g, '特征分析')
+                        .replace(/高精度视觉映射算法/g, '特征分析');
+
+                      trimmed = trimmed.trim();
                       if (!trimmed) return null;
 
                       // Inline Markdown Image Parser ![alt](url)
@@ -564,32 +633,47 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                         const altText = imgMatch[1];
                         const imgUrl = imgMatch[2];
                         return (
-                          <div key={pIdx} style={{ margin: '1.2rem 0', textAlign: 'left' }}>
-                            <img
-                              src={imgUrl}
-                              alt={altText}
-                              style={{
-                                width: '100%',
-                                maxHeight: '380px',
-                                objectFit: 'cover',
-                                borderRadius: '14px',
-                                border: '1px solid rgba(102, 192, 244, 0.35)',
-                                boxShadow: '0 10px 30px rgba(0,0,0,0.6)',
-                                display: 'block'
-                              }}
-                            />
+                          <div key={pIdx} className="article-real-image-wrapper" style={{ margin: '1.2rem 0', textAlign: 'center', width: '100%' }}>
+                            <div className="article-real-image-container" style={{
+                              width: '100%',
+                              maxWidth: '600px',
+                              margin: '0 auto',
+                              aspectRatio: '4 / 3',
+                              borderRadius: '12px',
+                              overflow: 'hidden',
+                              border: '1px solid rgba(102, 192, 244, 0.35)',
+                              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                              background: '#0a101a',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              <img
+                                src={imgUrl}
+                                alt={altText}
+                                className="article-generated-real-image"
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'contain',
+                                  display: 'block',
+                                  borderRadius: '12px'
+                                }}
+                              />
+                            </div>
                             {altText && (
                               <p style={{
-                                fontSize: '0.85rem',
+                                fontSize: '0.8rem',
                                 color: '#89A2B6',
                                 marginTop: '8px',
-                                textAlign: 'left',
+                                textAlign: 'center',
                                 fontStyle: 'italic',
                                 display: 'flex',
                                 alignItems: 'center',
+                                justifyContent: 'center',
                                 gap: '6px'
                               }}>
-                                <i className="fas fa-camera" style={{ color: theme.gold, fontSize: '0.8rem' }} />
+                                <i className="fas fa-camera" style={{ color: theme.gold, fontSize: '0.75rem' }} />
                                 {isZh ? `插图：${altText}` : `Figure: ${altText}`}
                               </p>
                             )}
@@ -600,13 +684,13 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                       if (trimmed.startsWith('### ')) {
                         return (
                           <h3 key={pIdx} style={{
-                            fontSize: '1.3rem',
+                            fontSize: '1.15rem',
                             color: theme.gold,
-                            marginTop: '1.6rem',
-                            marginBottom: '0.6rem',
+                            marginTop: '1.2rem',
+                            marginBottom: '0.3rem',
                             fontWeight: '600',
                             borderBottom: '1px solid rgba(102,192,244,0.18)',
-                            paddingBottom: '8px',
+                            paddingBottom: '6px',
                             textAlign: 'left'
                           }}>
                             {trimmed.replace('### ', '')}
@@ -614,12 +698,18 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                         );
                       }
 
-                      if (trimmed.startsWith('* ')) {
+                      if (trimmed.startsWith('#### ')) {
                         return (
-                          <div key={pIdx} style={{ display: 'flex', gap: '8px', marginLeft: '4px', margin: '4px 0', textAlign: 'left' }}>
-                            <span style={{ color: theme.gold, fontWeight: 'bold' }}>•</span>
-                            <span style={{ textAlign: 'left' }}>{trimmed.replace('* ', '')}</span>
-                          </div>
+                          <h4 key={pIdx} style={{
+                            fontSize: '1.05rem',
+                            color: '#66C0F4',
+                            marginTop: '0.9rem',
+                            marginBottom: '0.2rem',
+                            fontWeight: '600',
+                            textAlign: 'left'
+                          }}>
+                            {trimmed.replace('#### ', '')}
+                          </h4>
                         );
                       }
 
@@ -627,12 +717,12 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                         return (
                           <div key={pIdx} style={{
                             background: 'rgba(23, 38, 54, 0.65)',
-                            padding: '12px 18px',
-                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            borderRadius: '8px',
                             border: '1px solid rgba(102, 192, 244, 0.15)',
-                            margin: '4px 0',
+                            margin: '2px 0',
                             textAlign: 'left',
-                            lineHeight: '1.7'
+                            lineHeight: '1.65'
                           }}>
                             {trimmed}
                           </div>
@@ -642,14 +732,14 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                       if (trimmed.startsWith('> ')) {
                         return (
                           <blockquote key={pIdx} style={{
-                            margin: '12px 0',
-                            padding: '12px 18px',
+                            margin: '8px 0',
+                            padding: '10px 14px',
                             background: 'rgba(102, 192, 244, 0.05)',
                             borderLeft: `3px solid ${theme.gold}`,
                             color: '#B0C8DC',
                             fontStyle: 'italic',
                             textAlign: 'left',
-                            borderRadius: '0 8px 8px 0'
+                            borderRadius: '0 6px 6px 0'
                           }}>
                             {trimmed.replace('> ', '')}
                           </blockquote>
@@ -657,35 +747,38 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                       }
 
                       if (trimmed === '---') {
-                        return <hr key={pIdx} style={{ border: 'none', borderTop: '1px solid rgba(102, 192, 244, 0.15)', margin: '1.5rem 0' }} />;
+                        return <hr key={pIdx} style={{ border: 'none', borderTop: '1px solid rgba(102, 192, 244, 0.15)', margin: '1rem 0' }} />;
                       }
 
                       return (
-                        <p key={pIdx} style={{ margin: 0, textAlign: 'left', lineHeight: '1.85' }}>
+                        <p key={pIdx} style={{ margin: '0.15rem 0', textAlign: 'left', lineHeight: '1.75' }}>
                           {trimmed}
                         </p>
                       );
-                    })}
+                    });
+                  })()}
                 </div>
 
                 {/* INTERACTIVE CALL TO ACTION BOX */}
                 <div style={{
-                  marginTop: '3rem',
-                  padding: '2rem',
+                  marginTop: '2.5rem',
+                  padding: '1.5rem 1rem',
                   borderRadius: '16px',
                   background: 'linear-gradient(135deg, rgba(26, 68, 194, 0.3) 0%, rgba(71, 191, 255, 0.15) 100%)',
                   border: `1px solid ${theme.gold}`,
                   textAlign: 'center',
-                  boxShadow: '0 15px 35px rgba(0,0,0,0.5)'
+                  boxShadow: '0 15px 35px rgba(0,0,0,0.5)',
+                  boxSizing: 'border-box',
+                  width: '100%'
                 }}>
-                  <i className="fas fa-yin-yang" style={{ fontSize: '2.5rem', color: theme.gold, marginBottom: '1rem', display: 'inline-block' }} />
-                  <h3 style={{ margin: '0 0 0.5rem 0', color: '#FFFFFF', fontSize: '1.3rem' }}>
+                  <i className="fas fa-yin-yang" style={{ fontSize: '2rem', color: theme.gold, marginBottom: '0.75rem', display: 'inline-block' }} />
+                  <h3 style={{ margin: '0 0 0.5rem 0', color: '#FFFFFF', fontSize: 'clamp(1.1rem, 4vw, 1.3rem)' }}>
                     {isZh ? '想探知您个人的面相与手相全息密码？' : 'Ready to decode your unique biometric destiny chart?'}
                   </h3>
-                  <p style={{ margin: '0 0 1.5rem 0', color: '#B0C5D8', fontSize: '0.92rem' }}>
+                  <p style={{ margin: '0 0 1.25rem 0', color: '#B0C5D8', fontSize: '0.9rem', lineHeight: '1.5', textAlign: 'center' }}>
                     {isZh
-                      ? '通过AI高精度视觉映射算法，结合千万级天象与生物特征数据库，30秒生成100%深度精批报告。'
-                      : 'Map your facial geometry and palm lines with our AI biometric scanner for instant destiny insights.'}
+                      ? '结合天象与生物特征数据库，30秒生成100%深度精批报告。'
+                      : 'Map your facial geometry and palm lines with our biometric scanner for instant destiny insights.'}
                   </p>
 
                   <button
@@ -697,13 +790,23 @@ export const CulturePage: React.FC<CulturePageProps> = ({
                     }}
                     style={{
                       ...styles.button,
-                      margin: 0,
-                      padding: '14px 28px',
-                      fontSize: '0.95rem'
+                      margin: '0 auto',
+                      padding: '12px 16px',
+                      fontSize: 'clamp(0.85rem, 3.8vw, 0.95rem)',
+                      width: '100%',
+                      maxWidth: '380px',
+                      minWidth: '0',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      boxSizing: 'border-box',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
                     }}
                   >
                     <i className="fas fa-camera" />
-                    {isZh ? '立即开始 AI 面相+手相深度测算' : 'Start Free AI Biometric Reading'}
+                    <span>{isZh ? '面相+手相深度测算' : 'Biometric Reading'}</span>
                   </button>
                 </div>
 

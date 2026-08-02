@@ -23,7 +23,7 @@ export const styles = {
     borderBottom: `1px solid rgba(102, 192, 244, 0.25)`,
     position: 'sticky' as const,
     top: 0,
-    zIndex: 1000,
+    zIndex: 10000,
     backdropFilter: 'blur(12px)',
     boxShadow: '0 4px 30px rgba(0,0,0,0.8)',
   },
